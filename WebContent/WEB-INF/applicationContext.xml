@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  	xmlns:context="http://www.springframework.org/schema/context"
+  	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+        http://www.springframework.org/schema/context 
+    	http://www.springframework.org/schema/context/spring-context-4.1.xsd
+    	http://www.springframework.org/schema/util 
+    	http://www.springframework.org/schema/util/spring-util-4.1.xsd">
+
+    <context:property-placeholder location="classpath:applicationContext.properties" />
+
+	<!-- définir un bean de type Properties à partir du contenu d'un fichier .properties -->
+    <util:properties id="appConfig" location="classpath:conf.properties" />
+    <!-- <bean id="appConfig" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+    	<property name="location" value="classpath:conf.properties" />
+    </bean> -->
+
+	<!-- The use of <context:component-scan> implicitly enables the functionality of <context:annotation-config>.
+	There is usually no need to include the <context:annotation-config> element when using <context:component-scan> -->
+    <context:annotation-config />
+
+  	<context:component-scan base-package="product" use-default-filters="false">
+  		<context:include-filter type="annotation" expression="org.springframework.stereotype.Component" />
+  		<!-- <context:include-filter type="regex" expression=".*Stub.*Repository" /> -->
+  		<context:include-filter type="regex" expression=".*Properties" />
+
+  		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository" />
+  		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service" />
+  		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+  	</context:component-scan>
+
+	<bean id="dao" class="dao.DAO">
+		<!-- <constructor-arg><null /></constructor-arg>
+		<constructor-arg value="10" /> -->
+
+  		<!-- <constructor-arg ref="dataSource" />
+  		<constructor-arg ref="aclCache" />
+  		<constructor-arg>
+    		<bean class="org.springframework.security.acls.domain.AclAuthorizationStrategyImpl">
+		      	<constructor-arg>
+			        <list>
+			          <ref local="roleAdmin" />
+			          <ref local="roleAdmin" />
+			          <ref local="roleAdmin" />
+			        </list>
+		      	</constructor-arg>
+    		</bean>
+  		</constructor-arg>
+  		<constructor-arg>
+    		<bean class="org.springframework.security.acls.domain.ConsoleAuditLogger" />
+  		</constructor-arg> -->
+  		
+  		<!-- <constructor-arg>
+    		<bean class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+      			<property name="cacheManager">
+      				<bean class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean" />
+        		</property>
+        		<property name="cacheName" value="aclCache" />
+      		</bean>
+  		</constructor-arg> -->
+  
+		<!-- <constructor-arg index="0" type="com.mchange.v2.c3p0.ComboPooledDataSource" ref="db_connection" /> -->
+		<constructor-arg ref="db_connection" />
+		<!-- <constructor-arg index="0" type="com.mchange.v2.c3p0.ComboPooledDataSource">
+			<ref bean="db_connection" />
+			<ref bean="db_connection" />
+    	</constructor-arg> -->
+
+    	<!-- <property name="dataSource" ref="db_connection" /> -->
+   	</bean>
+
+    <!-- DB data source. -->
+    <bean id="db_connection" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+	    <property name="driverClass" value="oracle.jdbc.driver.OracleDriver" />
+	    <property name="jdbcUrl" value="jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/vmdg" />
+	    <property name="user" value="abutu" />
+	    <property name="password" value="kT60#bTh03#18" />
+	    <property name="minPoolSize" value="3" />
+	    <property name="maxPoolSize" value="10" />
+	    <property name="acquireIncrement" value="1" />
+
+	    <property name="idleConnectionTestPeriod" value="100" />
+	    <property name="maxStatements" value="0" />
+	    <property name="checkoutTimeout" value="60000" />
+    </bean>
+    <!-- <bean id="db_connection" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <property name="driverClass" value="${jdbc.driverClassName}" />
+        <property name="jdbcUrl" value="${jdbc.url}" />
+        <property name="user" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}" />
+        <property name="initialPoolSize" value="${jdbc.initialPoolSize}" />
+        <property name="minPoolSize" value="${jdbc.minPoolSize}" />
+        <property name="maxPoolSize" value="${jdbc.maxPoolSize}" />
+        <property name="acquireIncrement" value="${jdbc.acquireIncrement}"/>
+        <property name="preferredTestQuery" value="${jdbc.preferredTestQuery}" />
+        <property name="testConnectionOnCheckout" value="${jdbc.testConnection}" />
+        <property name="acquireRetryAttempts" value="${jdbc.acquireRetryAttempts}" />
+
+        <property name="maxStatements" value="${jdbc.maxStatements}" />
+    	<property name="maxStatementsPerConnection" value="${jdbc.maxStatementsPerConnection}" />
+    </bean> -->
+
+    <!-- this MessageSource is being used in a web application -->
+    <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="basenames">
+			<list>
+				<value>i18n.messages</value>
+				<value>i18n.exceptions</value>
+			</list>
+		</property>
+
+		<property name="defaultEncoding" value="UTF-8" />
+
+		<!-- property named setFallbackToSystemLocale is default to true so if your locale file for locale cs doesn't contains message for a code then Your system locale is used -->
+		<!-- <property name="fallbackToSystemLocale" value="true" /> -->
+		<!-- <property name="fallbackToSystemLocale" value="false" /> -->
+		<property name="fallbackToSystemLocale" value="false"></property>
+	</bean>
+
+	<!-- <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+	    <property name="defaultEncoding" value="UTF-8" />
+	    <property name="basenames">
+	        <list>
+	            <value>classpath:i18n/messages</value>
+	        </list>
+	    </property>
+	    <property name="fallbackToSystemLocale" value="false" />
+	</bean> -->
+
+    <import resource="spring-batch-config.xml" />
+
+</beans>

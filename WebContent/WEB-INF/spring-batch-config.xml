@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-3.0.xsd http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.1.xsd">
+
+    <context:annotation-config />
+    <context:component-scan base-package="jobs" />
+
+	<task:annotation-driven executor="batchTaskExecutor" scheduler="scheduling" exception-handler="myAsyncUncaughtExceptionHandler" />
+
+	<bean id="myAsyncUncaughtExceptionHandler" class="jobs.MyAsyncUncaughtExceptionHandler" />
+
+	<!-- By default when specifying @Async on a method, the executor that will be used is the one supplied to the 'annotation-driven' -->
+	<!-- the value attribute of the @Async annotation can be used when needing to indicate that an executor other than the default should be used -->
+	<!-- set up a default executor -->
+	<task:executor id="batchTaskExecutor" pool-size="5" queue-capacity="10" rejection-policy="CALLER_RUNS" keep-alive="3600" />
+	<!-- <task:executor id="executorWithPoolSizeRange" pool-size="5-25" queue-capacity="100" rejection-policy="DISCARD" keep-alive="3600" /> -->
+	<task:scheduler id="scheduling" pool-size="10" />
+
+	<task:scheduled-tasks scheduler="scheduling">
+		<!-- new CronTrigger("* 15 9-17 * * MON-FRI") -->
+		<!-- java.lang.IllegalArgumentException: Cron expression must consist of 6 fields (found 7 in "0 00 0 1 APR,MAY,JUN ? 2018") -->
+
+		<!-- <task:scheduled ref="jobs" method="run_database_maintenance" cron="0 30 01 ? * *"  /> -->
+  		<task:scheduled ref="jobs" method="import_hcvs" cron="0 00 04 ? * *" />
+
+  		<task:scheduled ref="jobs" method="clear_ussd" fixed-delay="900000" />
+	</task:scheduled-tasks>
+
+    <bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+    <bean id="jobRepository" class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean" p:transactionManager-ref="transactionManager" />
+    <bean id="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher" p:jobRepository-ref="jobRepository" p:taskExecutor-ref="batchTaskExecutor" />
+
+	<batch:job id="cleanExpiredUssdRequestJob">
+	  <batch:step id="cleanUssdRequest">
+	  	<batch:tasklet ref="cleanExpiredUssdRequestTasklet" transaction-manager="transactionManager" />
+	  </batch:step>
+	</batch:job>
+
+	<batch:job id="importHVCJob">
+	  <batch:step id="importHVCs">
+	  	<batch:tasklet ref="importHVCsTasklet" transaction-manager="transactionManager" />
+	  </batch:step>
+	</batch:job>
+
+</beans>
