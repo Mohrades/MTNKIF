@@ -34,12 +34,18 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	@Value("#{appConfig['activation.chargingAmount']}")
 	private long activation_chargingAmount;
-	
+
+	@Value("#{appConfig['default.price.plan']}")
+	private String default_price_plan;
+
 	@Value("#{appConfig['default.price.plan.deactivated']}")
 	private boolean default_price_plan_deactivated;
 
 	@Value("#{appConfig['default.price.plan.url']}")
 	private String default_price_plan_url;
+
+	@Value("#{appConfig['advantages.always']}")
+	private boolean advantages_always;
 
 	@Value("#{appConfig['advantages.sms.da']}")
 	private int advantages_sms_da;
@@ -72,6 +78,9 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	@Value("#{appConfig['crbt.renewal.aspu.minimum']}")
 	private long crbt_renewal_aspu_minimum;
 
+	@Value("#{appConfig['crbt.renewal.aspu.filter']}")
+	private String crbt_renewal_aspu_filter;
+
 	@Value("#{appConfig['crbt.default.song']}")
 	private short crbt_default_song;
 
@@ -84,6 +93,8 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	private List<String> Bnumber_db_include_filter;
 	private List<String> Bnumber_serviceClass_exclude_filter;
 	private List<String> Bnumber_db_exclude_filter;
+
+	private List<String> originOperatorIDs_list;
 
 	@Value("#{appConfig['gsm.mnc']}")
 	public void setMnc(final String gsmmnc) {
@@ -183,6 +194,13 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		}
 	}
 
+	@Value("#{appConfig['originOperatorIDs.list']}")
+	public void setOriginOperatorIDs_list(final String originOperatorIDs_list) {
+		if(isSet(originOperatorIDs_list)) {
+			this.originOperatorIDs_list = Splitter.onPattern("[,]").trimResults().omitEmptyStrings().splitToList(originOperatorIDs_list);
+		}
+	}
+
 	public short getMcc() {
 		return mcc;
 	}
@@ -215,12 +233,20 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		return xtra_serviceOfferings_activeFlags;
 	}
 
+	public String getDefault_price_plan() {
+		return default_price_plan;
+	}
+
 	public boolean isDefault_price_plan_deactivated() {
 		return default_price_plan_deactivated;
 	}
 
 	public String getDefault_price_plan_url() {
 		return default_price_plan_url;
+	}
+
+	public boolean isAdvantages_always() {
+		return advantages_always;
 	}
 
 	public int getAdvantages_sms_da() {
@@ -253,6 +279,10 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	public long getCrbt_renewal_aspu_minimum() {
 		return crbt_renewal_aspu_minimum;
+	}
+
+	public String getCrbt_renewal_aspu_filter() {
+		return crbt_renewal_aspu_filter;
 	}
 
 	public short getDeactivation_freeCharging_startDate() {
@@ -309,6 +339,10 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	public List<String> getBnumber_db_exclude_filter() {
 		return Bnumber_db_exclude_filter;
+	}
+
+	public List<String> getOriginOperatorIDs_list() {
+		return originOperatorIDs_list;
 	}
 
 	public boolean isSet(String property_value) {

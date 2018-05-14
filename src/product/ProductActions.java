@@ -7,7 +7,10 @@ import org.springframework.context.MessageSource;
 
 import connexions.AIRRequest;
 import dao.DAO;
+import dao.queries.CRBTReportingDAOJdbc;
 import dao.queries.RollBackDAOJdbc;
+import dao.queries.SubscriberDAOJdbc;
+import domain.models.CRBTReporting;
 import domain.models.RollBack;
 import util.AccountDetails;
 import util.BalanceAndDate;
@@ -20,7 +23,7 @@ public class ProductActions {
 
 	}
 
-	public String getInfo(MessageSource i18n, ProductProperties productProperties, DAO dao, String msisdn) {
+	public String getInfo(MessageSource i18n, ProductProperties productProperties, String msisdn) {
 		AccountDetails accountDetails = getAccountDetails(new AIRRequest(), msisdn);
 		int language = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
 
@@ -80,7 +83,7 @@ public class ProductActions {
 	}
 
 	@SuppressWarnings("deprecation")
-	public int activation(ProductProperties productProperties, DAO dao, String msisdn, boolean charged, boolean advantages) {
+	public int activation(ProductProperties productProperties, DAO dao, String msisdn, boolean charged, boolean advantages, String originOperatorID) {
 		AIRRequest request = new AIRRequest();
 		if(charged && productProperties.getActivation_chargingAmount() == 0) charged = false;
 
@@ -124,46 +127,7 @@ public class ProductActions {
 
 						// update Anumber Balance
 						if((!advantages) || ((productProperties.getAdvantages_data_value() == 0) || request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "ACTIVATION", "eBA"))) {
-							// set crbt
 
-							// delete others settings
-							// delete serviceOfferings
-							if(productProperties.getXtra_serviceOfferings_IDs() != null) {
-								serviceOfferings = new ServiceOfferings();
-								int size = productProperties.getXtra_serviceOfferings_IDs().size();
-
-								for(int index = 0; index < size; index++) {
-									int serviceOfferingID = Integer.parseInt(productProperties.getXtra_serviceOfferings_IDs().get(index));
-									boolean activeFlag = (Integer.parseInt(productProperties.getXtra_serviceOfferings_activeFlags().get(index)) == 1) ? true : false;
-									serviceOfferings.SetActiveFlag(serviceOfferingID, activeFlag);
-								}
-							}
-
-							if((serviceOfferings == null) || (request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA"))) {
-								// delete offers
-								int[] offerIDs = null;
-								if(productProperties.getXtra_removal_offer_IDs() != null) {
-									offerIDs = new int[productProperties.getXtra_removal_offer_IDs().size()];
-
-									for(int index = 0; index < offerIDs.length; index++) {
-										offerIDs[index] = Integer.parseInt(productProperties.getXtra_removal_offer_IDs().get(index));
-									}
-								}
-
-								if(offerIDs != null) {
-									for(int offerID : offerIDs) {
-										if(request.deleteOffer(msisdn, offerID, "eBA", true));
-										else {
-											// save rollback
-											new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 7 : -7, 1, msisdn, msisdn, null));
-										}
-									}
-								}
-							}
-							else {
-								// save rollback
-								new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 6 : -6, 1, msisdn, msisdn, null));
-							}
 						}
 						else {
 							// save rollback
@@ -173,6 +137,53 @@ public class ProductActions {
 					else {
 						// save rollback
 						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 4 : -4, 1, msisdn, msisdn, null));
+					}
+
+					// crbt advantages
+					if(advantages) {
+						// set crbt song
+
+						 // reporting
+						new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(new CRBTReporting(0, (new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn).getId()), true, new Date(), originOperatorID));
+					}
+
+					// delete others settings
+					// delete serviceOfferings
+					if(productProperties.getXtra_serviceOfferings_IDs() != null) {
+						serviceOfferings = new ServiceOfferings();
+						int size = productProperties.getXtra_serviceOfferings_IDs().size();
+
+						for(int index = 0; index < size; index++) {
+							int serviceOfferingID = Integer.parseInt(productProperties.getXtra_serviceOfferings_IDs().get(index));
+							boolean activeFlag = (Integer.parseInt(productProperties.getXtra_serviceOfferings_activeFlags().get(index)) == 1) ? true : false;
+							serviceOfferings.SetActiveFlag(serviceOfferingID, activeFlag);
+						}
+					}
+
+					if((serviceOfferings == null) || (request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA"))) {
+						// delete offers
+						int[] offerIDs = null;
+						if(productProperties.getXtra_removal_offer_IDs() != null) {
+							offerIDs = new int[productProperties.getXtra_removal_offer_IDs().size()];
+
+							for(int index = 0; index < offerIDs.length; index++) {
+								offerIDs[index] = Integer.parseInt(productProperties.getXtra_removal_offer_IDs().get(index));
+							}
+						}
+
+						if(offerIDs != null) {
+							for(int offerID : offerIDs) {
+								if(request.deleteOffer(msisdn, offerID, "eBA", true));
+								else {
+									// save rollback
+									new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 7 : -7, 1, msisdn, msisdn, null));
+								}
+							}
+						}
+					}
+					else {
+						// save rollback
+						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 6 : -6, 1, msisdn, msisdn, null));
 					}
 
 					return 0;

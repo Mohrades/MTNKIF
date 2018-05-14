@@ -25,7 +25,7 @@ public class ScheduledTasks {
 	private Job cleanExpiredUssdRequestJob;
 
 	@Autowired
-	private Job importHVCJob;
+	private Job crbtRenewalJob;
 
 	public ScheduledTasks() {
 
@@ -44,8 +44,8 @@ public class ScheduledTasks {
 		execute(cleanExpiredUssdRequestJob);
 	}
 
-	public void import_hcvs() {
-		execute(importHVCJob);
+	public void renew_crbt() {
+		execute(crbtRenewalJob);
 	}
 
 	public void execute(Job job) {

@@ -29,7 +29,10 @@
 			<mvc:mapping path="/secure/*" />
 			<bean class="org.example.SecurityInterceptor" />
 		</mvc:interceptor> -->
-		<bean class="api.RestRequestInterceptor" />
+		<bean class="api.ExternalRequestInterceptor">
+			<property name="productProperties" ref="productProperties" />
+			<property name="dao" ref="dao" />
+		</bean>
 	</mvc:interceptors>
 
 </beans>

@@ -1,9 +1,6 @@
 package handlers;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Formatter;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -16,21 +13,18 @@ import com.google.common.base.Splitter;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.SubscriberDAOJdbc;
 import dao.queries.USSDRequestDAOJdbc;
 import dao.queries.USSDServiceDAOJdbc;
-import domain.models.Subscriber;
 import domain.models.USSDRequest;
 import domain.models.USSDService;
 import filter.MSISDNValidator;
+import product.DefaultPricePlan;
+import product.PricePlanCurrent;
 import product.ProductActions;
 import product.ProductProperties;
 import product.USSDMenu;
 import tools.SMPPConnector;
 import util.AccountDetails;
-import util.BalanceAndDate;
-import util.OfferInformation;
-import util.ServiceOfferings;
 
 public class InputHandler {
 
@@ -38,7 +32,6 @@ public class InputHandler {
 
 	}
 
-	@SuppressWarnings("deprecation")
 	public void handle(MessageSource i18n, ProductProperties productProperties, Map<String, String> parameters, Map<String, Object> modele, HttpServletRequest request, DAO dao) {
 		USSDRequest ussd = null;
 
@@ -78,27 +71,48 @@ public class InputHandler {
 			else if(((Integer)flowStatus.get("status")) == 0) {
 				String short_code = productProperties.getSc() + "";
 
-				if(ussd.getInput().equals(short_code + "*3")) {
-					// envoie SMS de statut
+				if(ussd.getInput().equals(short_code + "*2")) {
+					// statut
 					statut(i18n, language, productProperties, dao, ussd, modele);
 				}
-				else if((ussd.getInput().startsWith(short_code + "*1*")) || (ussd.getInput().startsWith(short_code + "*2*"))) {
-					if(ussd.getInput().endsWith("*1")) {
-						if((new MSISDNValidator()).isFiltered(dao, productProperties, ussd.getMsisdn(), "A")) {
-							List<String> inputs = Splitter.onPattern("[*]").trimResults().omitEmptyStrings().splitToList(ussd.getInput());
+				else if(ussd.getInput().equals(short_code + "*3")) {
+					// infos
+					endStep(dao, ussd, modele, productProperties, (new ProductActions()).getInfo(i18n, productProperties, ussd.getMsisdn()), null, null, null, null);
+				}
+				else if((ussd.getInput().equals(short_code + "*1")) || (ussd.getInput().equals(short_code + "*0"))) {
+					if((new MSISDNValidator()).isFiltered(dao, productProperties, ussd.getMsisdn(), "A")) {
+						List<String> inputs = Splitter.onPattern("[*]").trimResults().omitEmptyStrings().splitToList(ussd.getInput());
 
-							if(inputs.size() == 3) {
-								setBonus(dao, hvc, ussd, i18n, productProperties, modele, inputs);
+						if(inputs.size() == 2) {
+							int statusCode = (int)(((new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language))[0]);
+
+							if(statusCode > 0) {
+								if(ussd.getInput().endsWith("*0")) {
+									// deactivation
+									if(statusCode == 0) deactivation(dao, ussd, i18n, language, productProperties, modele);
+									else endStep(dao, ussd, modele, productProperties, i18n.getMessage("status.unsuccessful.already", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+								}
+								else if(ussd.getInput().endsWith("*1")) {
+									// activation
+									if(statusCode == 0) endStep(dao, ussd, modele, productProperties, i18n.getMessage("status.successful.already", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+									else {
+										// check msisdn is in default price plan
+										statusCode = productProperties.isDefault_price_plan_deactivated() ? (new DefaultPricePlan()).requestDefaultPricePlanStatus(productProperties, ussd.getMsisdn(), "eBA") : 0;
+
+										if(statusCode == 0) activation(dao, ussd, i18n, language, productProperties, modele);
+										else endStep(dao, ussd, modele, productProperties, i18n.getMessage("default.price.plan.required", new Object [] {productProperties.getDefault_price_plan()}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+									}
+								}
 							}
 							else {
-								endStep(dao, ussd, modele, productProperties, i18n.getMessage("request.unavailable", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+								endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 							}
 						}
-						else endStep(dao, ussd, modele, productProperties, i18n.getMessage("menu.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);						
+						else {
+							endStep(dao, ussd, modele, productProperties, i18n.getMessage("request.unavailable", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+						}
 					}
-					else if(ussd.getInput().endsWith("*2")) {
-						endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
-					}
+					else endStep(dao, ussd, modele, productProperties, i18n.getMessage("menu.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 				}
 				else {
 					endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
@@ -124,8 +138,7 @@ public class InputHandler {
 	}
 
 	public void statut(MessageSource i18n, int language, ProductProperties productProperties, DAO dao, USSDRequest ussd, Map<String, Object> modele) {
-		int statusCode = new GetStatus().getCode(productProperties, dao, ussd.getMsisdn());
-		endStep(dao, ussd, modele, productProperties, new GetStatus().getMessage(i18n, language, statusCode), null, null, null, null);
+		endStep(dao, ussd, modele, productProperties, (String)(((new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language))[1]), null, null, null, null);
 	}
 
 	public void endStep(DAO dao, USSDRequest ussd, Map<String, Object> modele, ProductProperties productProperties, String messageA, String Anumber, String messageB, String Bnumber, String senderName) {
@@ -163,55 +176,14 @@ public class InputHandler {
 		modele.put("message", message);
 	}
 
-	@SuppressWarnings("deprecation")
-	public void setBonus(DAO dao, Subscriber hvc, USSDRequest ussd, MessageSource i18n, ProductProperties productProperties, Map<String, Object> modele, List<String> inputs) {
-		/*HVC hvc = new HVCDAOJdbc(dao).getOneHVC(ussd.getMsisdn(), 0);*/
+	public void activation(DAO dao, USSDRequest ussd, MessageSource i18n, int language, ProductProperties productProperties, Map<String, Object> modele) {
+		Object [] requestStatus = (new PricePlanCurrent()).activation(dao, ussd.getMsisdn(), i18n, language, productProperties, "eBA");
+		endStep(dao, ussd, modele, productProperties, (String)requestStatus[1], ((int)requestStatus[0] == 0) ? ussd.getMsisdn() : null, null, null, ((int)requestStatus[0] == 0) ? productProperties.getSms_notifications_header() : null);
+	}
 
-		int choice = Integer.parseInt(inputs.get(1));
-		// set bonus choice (data or voice)
-		hvc.setBonus(choice);
-
-		int offer = Integer.parseInt(productProperties.getOffer_id().get(hvc.getSegment() - 1));
-		int da;
-		long volume;
-
-		if(choice == 2) {
-			da = productProperties.getData_da();
-			volume = Long.parseLong(productProperties.getData_volume().get(hvc.getSegment() - 1));
-		}
-		else {
-			da = productProperties.getVoice_da();
-			volume = Long.parseLong(productProperties.getVoice_volume().get(hvc.getSegment() - 1));
-		}
-
-		int result = (new ProductActions()).doActions(dao, hvc, offer, da, volume);
-
-		if(result == 0) {
-			Date expires = new Date();
-			expires.setDate(expires.getDate() + 1);
-			expires.setSeconds(59);expires.setMinutes(59);expires.setHours(23);
-
-			if(choice == 2) {
-				volume = (long) (((double)volume) / ((Double.parseDouble(productProperties.getData_volume_rate().get(hvc.getSegment() - 1)))*1024*1024*100));
-
-				if(volume >= 1024) {
-					endStep(dao, ussd, modele, productProperties, i18n.getMessage("sms.data.bonus", new Object [] {new Formatter().format("%.2f", ((double)volume)/1024), "Go", (new SimpleDateFormat("dd/MM/yyyy 'a' HH:mm")).format(expires)}, null, (hvc.getLanguage() == 2) ? Locale.ENGLISH : null), ussd.getMsisdn(), null, null, "HVC");
-				}
-				else {
-					endStep(dao, ussd, modele, productProperties, i18n.getMessage("sms.data.bonus", new Object [] {volume, "Mo", (new SimpleDateFormat("dd/MM/yyyy 'a' HH:mm")).format(expires)}, null, (hvc.getLanguage() == 2) ? Locale.ENGLISH : null), ussd.getMsisdn(), null, null, "HVC");
-				}
-			}
-			else {
-				volume = (long) (((double)volume) / (Double.parseDouble(productProperties.getVoice_volume_rate().get(hvc.getSegment() - 1))));
-				endStep(dao, ussd, modele, productProperties, i18n.getMessage("sms.voice.bonus", new Object [] {volume/(60*100), (new SimpleDateFormat("dd/MM/yyyy 'a' HH:mm")).format(expires)}, null, (hvc.getLanguage() == 2) ? Locale.ENGLISH : null), ussd.getMsisdn(), null, null, "HVC");
-			}
-		}
-		else if(result == 1) {
-			endStep(dao, ussd, modele, productProperties, i18n.getMessage("bonus.choice.done", null, null, (hvc.getLanguage() == 2) ? Locale.ENGLISH : null), null, null, null, null);
-		}
-		else {
-			endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, (hvc.getLanguage() == 2) ? Locale.ENGLISH : null), null, null, null, null);
-		}
+	public void deactivation(DAO dao, USSDRequest ussd, MessageSource i18n, int language, ProductProperties productProperties, Map<String, Object> modele) {
+		Object [] requestStatus = (new PricePlanCurrent()).deactivation(dao, ussd.getMsisdn(), i18n, language, productProperties, "eBA");
+		endStep(dao, ussd, modele, productProperties, (String)requestStatus[1], ((int)requestStatus[0] == 0) ? ussd.getMsisdn() : null, null, null, ((int)requestStatus[0] == 0) ? productProperties.getSms_notifications_header() : null);
 	}
 
 }

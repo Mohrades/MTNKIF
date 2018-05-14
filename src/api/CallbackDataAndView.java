@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.servlet.View;
 
-public class RestResponseView implements View {
+public class CallbackDataAndView implements View {
 
 	@Override
 	public String getContentType() {

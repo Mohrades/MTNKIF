@@ -8,17 +8,19 @@ public class SubscriptionReporting implements Comparable<SubscriptionReporting> 
 	private boolean flag;
 	private long chargingAmount;
 	private Date created_date_time;
+	private String originOperatorID;
 
 	public SubscriptionReporting() {
 
 	}
 
-	public SubscriptionReporting(int id, int subscriber, boolean flag, long chargingAmount, Date created_date_time) {
+	public SubscriptionReporting(int id, int subscriber, boolean flag, long chargingAmount, Date created_date_time, String originOperatorID) {
 		this.id = id;
 		this.subscriber = subscriber;
 		this.flag = flag;
 		this.chargingAmount = chargingAmount;
 		this.created_date_time = created_date_time;
+		this.originOperatorID = originOperatorID;
 	}
 
 	public int getId() {
@@ -59,6 +61,14 @@ public class SubscriptionReporting implements Comparable<SubscriptionReporting> 
 
 	public void setCreated_date_time(Date created_date_time) {
 		this.created_date_time = created_date_time;
+	}
+
+	public String getOriginOperatorID() {
+		return originOperatorID;
+	}
+
+	public void setOriginOperatorID(String originOperatorID) {
+		this.originOperatorID = originOperatorID;
 	}
 
 	public int hashCode() {

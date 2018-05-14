@@ -23,11 +23,11 @@ public class CRBTReportingDAOJdbc {
 	}
 
 	public void saveOneCRBTReporting(CRBTReporting reporting) {
-		getJdbcTemplate().update("INSERT INTO MTN_KIF_CRBT_REPORT_EBA (SUBSCRIBER,FLAG,CREATED_DATE_TIME) VALUES(" + reporting.getSubscriber() + "," + (reporting.isFlag() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date()) + "')");
+		getJdbcTemplate().update("INSERT INTO MTN_KIF_CRBT_REPORT_EBA (SUBSCRIBER,FLAG,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID) VALUES(" + reporting.getSubscriber() + "," + (reporting.isFlag() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date()) + "','" + reporting.getOriginOperatorID().replace("'", "''") + "')");
 	}
 
 	public List<CRBTReporting> getCRBTReporting(int subscriber) {
-		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,CREATED_DATE_TIME FROM MTN_KIF_CRBT_REPORT_EBA WHERE SUBSCRIBER = " + subscriber, new CRBTReportingRowMapper());
+		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID FROM MTN_KIF_CRBT_REPORT_EBA WHERE SUBSCRIBER = " + subscriber, new CRBTReportingRowMapper());
 	}
 
 }
