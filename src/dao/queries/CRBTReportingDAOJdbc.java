@@ -27,7 +27,7 @@ public class CRBTReportingDAOJdbc {
 	}
 
 	public List<CRBTReporting> getCRBTReporting(int subscriber) {
-		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID FROM MTN_KIF_CRBT_REPORT_EBA WHERE SUBSCRIBER = " + subscriber, new CRBTReportingRowMapper());
+		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID FROM MTN_KIF_CRBT_REPORT_EBA WHERE (SUBSCRIBER = " + subscriber + ") ORDER BY CREATED_DATE_TIME DESC", new CRBTReportingRowMapper());
 	}
 
 }

@@ -24,14 +24,14 @@ public class SubscriberDAOJdbc {
 	}
 
 	@SuppressWarnings("deprecation")
-	public int saveOneSubscriber(Subscriber subscriber) {
+	public int saveOneSubscriber(Subscriber subscriber, int days) {
 		try {
 			if(subscriber.getId() == 0) {
 				Date now = new Date();
 				Date next_month = new Date();
 				next_month.setYear(now.getYear());
 				next_month.setMonth(now.getMonth());
-				next_month.setDate(now.getDate() + 30);
+				next_month.setDate(now.getDate() + days);
 				next_month.setHours(now.getHours());
 				next_month.setMinutes(now.getMinutes());
 				next_month.setSeconds(now.getSeconds());
@@ -60,7 +60,7 @@ public class SubscriberDAOJdbc {
 	}
 
 	@SuppressWarnings("deprecation")
-	public void releaseLock(Subscriber subscriber, boolean rollback) {
+	public void releasePricePlanCurrentStatusAndLock(Subscriber subscriber, boolean rollback, int days) {
 		try {
 			if(rollback) {
 				if(subscriber.getId() > 0) getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET FLAG = (CASE FLAG WHEN 1 THEN 0 ELSE 1 END), LOCKED = 0 WHERE ((ID = " + subscriber.getId() + ") AND (LOCKED = 1))");
@@ -71,7 +71,7 @@ public class SubscriberDAOJdbc {
 				Date next_month = new Date();
 				next_month.setYear(now.getYear());
 				next_month.setMonth(now.getMonth());
-				next_month.setDate(now.getDate() + 30);
+				next_month.setDate(now.getDate() + days);
 				next_month.setHours(now.getHours());
 				next_month.setMinutes(now.getMinutes());
 				next_month.setSeconds(now.getSeconds());
@@ -83,6 +83,27 @@ public class SubscriberDAOJdbc {
 		} catch(Throwable th) {
 
 		}
+	}
+
+	public int lock(Subscriber subscriber) {
+		try {
+			if(subscriber.getId() > 0) {
+				return getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET LOCKED = 1 WHERE ((ID = " + subscriber.getId() + ") AND (LOCKED = 0))");
+			}
+
+		} catch(EmptyResultDataAccessException emptyEx) {
+			return -1;
+
+		} catch(Throwable th) {
+			return -1;
+		}
+
+		return 0;
+	}
+
+	
+	public void unLock(Subscriber subscriber) {
+		getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET LOCKED = 0 WHERE ((ID = " + subscriber.getId() + ") AND (LOCKED = 1))");
 	}
 
 	public int setCRBTFlag(Subscriber subscriber) {

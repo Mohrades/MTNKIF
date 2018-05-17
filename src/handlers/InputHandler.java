@@ -20,7 +20,7 @@ import domain.models.USSDService;
 import filter.MSISDNValidator;
 import product.DefaultPricePlan;
 import product.PricePlanCurrent;
-import product.ProductActions;
+import product.PricePlanCurrentActions;
 import product.ProductProperties;
 import product.USSDMenu;
 import tools.SMPPConnector;
@@ -77,7 +77,7 @@ public class InputHandler {
 				}
 				else if(ussd.getInput().equals(short_code + "*3")) {
 					// infos
-					endStep(dao, ussd, modele, productProperties, (new ProductActions()).getInfo(i18n, productProperties, ussd.getMsisdn()), null, null, null, null);
+					endStep(dao, ussd, modele, productProperties, (new PricePlanCurrentActions()).getInfo(i18n, productProperties, ussd.getMsisdn()), null, null, null, null);
 				}
 				else if((ussd.getInput().equals(short_code + "*1")) || (ussd.getInput().equals(short_code + "*0"))) {
 					if((new MSISDNValidator()).isFiltered(dao, productProperties, ussd.getMsisdn(), "A")) {

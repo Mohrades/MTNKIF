@@ -10,9 +10,9 @@ import util.BalanceAndDate;
 import util.DedicatedAccount;
 import util.ServiceOfferings;
 
-public class RollBackActions {
+public class PricePlanCurrentRollBackActions {
 
-	public RollBackActions() {
+	public PricePlanCurrentRollBackActions() {
 
 	}
 

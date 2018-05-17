@@ -32,7 +32,7 @@ public class SubscriptionReportingDAOJdbc {
 	}
 
 	public List<SubscriptionReporting> getSubscriptionReporting(int subscriber) {
-		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,CHARGING_AMOUNT,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID FROM MTN_KIF_SUBSCRIPTION_REPORT_EB WHERE SUBSCRIBER = " + subscriber, new SubscriptionReportingRowMapper());
+		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,CHARGING_AMOUNT,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID FROM MTN_KIF_SUBSCRIPTION_REPORT_EB WHERE (SUBSCRIBER = " + subscriber + ") ORDER BY CREATED_DATE_TIME DESC", new SubscriptionReportingRowMapper());
 	}
 
 }

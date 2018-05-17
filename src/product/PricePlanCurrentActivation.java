@@ -17,9 +17,9 @@ import domain.models.SubscriptionReporting;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
 
-public class Activation {
+public class PricePlanCurrentActivation {
 
-	public Activation() {
+	public PricePlanCurrentActivation() {
 
 	}
 
@@ -33,11 +33,11 @@ public class Activation {
 
 			if(subscriber == null) {
 				subscriber = new Subscriber(0, msisdn, true, false, null, null, true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_startDate()) == 1) ? true : false;
 			}
 			else {
 				subscriber.setFlag(true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_startDate()) == 1) ? true : false;
 			}
 
 			if(registered) {
@@ -48,7 +48,7 @@ public class Activation {
 				if(productProperties.getChargingDA() == 0) balances.add(new BalanceAndDate(0, -productProperties.getActivation_chargingAmount(), null));
 				else balances.add(new DedicatedAccount(productProperties.getChargingDA(), -productProperties.getActivation_chargingAmount(), null));
 
-				if((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "RESERVATION", "eBA"))) {
+				if((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "ACTIVATIONCHARGING", "eBA"))) {
 					balances = new HashSet<BalanceAndDate>();
 					if(productProperties.getChargingDA() == 0) balances.add(new BalanceAndDate(0, productProperties.getActivation_chargingAmount(), null));
 					else balances.add(new DedicatedAccount(productProperties.getChargingDA(), productProperties.getActivation_chargingAmount(), null));
@@ -61,19 +61,19 @@ public class Activation {
 
 					if(statusCode == 0) {
 						// statusCode = (new ProductActions()).activation(productProperties, dao, subscriber.getValue(), !((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null)), ((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))));
-						statusCode = (new ProductActions()).activation(productProperties, dao, subscriber.getValue(), false, ((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))), originOperatorID); // charged is false because charging already occurs with reservation
+						statusCode = (new PricePlanCurrentActions()).activation(productProperties, dao, subscriber.getValue(), false, ((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))), originOperatorID); // charged is false because charging already occurs with reservation
 
 						if(statusCode == 0) {// change done successfully
 							subscriber.setLocked(false); // synchronisation database and object
 
 							new SubscriptionReportingDAOJdbc(dao).saveOneSubscriptionReporting(new SubscriptionReporting(0, (subscriber.getId() > 0) ? subscriber.getId() : (new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn).getId()), true, (subscriber.getId() == 0) ? 0 : (subscriber.getLast_update_time() == null) ? 0 : productProperties.getActivation_chargingAmount(), new Date(), originOperatorID)); // reporting
-							new SubscriberDAOJdbc(dao).releaseLock(subscriber, false); // release Lock
+							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
 
 							return new Object [] {0, i18n.getMessage("activation.change.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
 						else {
 							// release reserved chargingAmount when activation failed
-							if((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "RELEASE", "eBA")));
+							if((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "ACTIVATIONREFUNDING", "eBA")));
 							else {
 								if(request.isSuccessfully()) {
 									if(statusCode == 1) new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 101, 1, msisdn, msisdn, null));
@@ -87,7 +87,7 @@ public class Activation {
 
 							// statusCode = 1, change not done
 							// statusCode = -1, change done unreliable (errors should occur) : subscriber may 
-							new SubscriberDAOJdbc(dao).releaseLock(subscriber, true); // release Lock
+							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
 							return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("activation.change.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
 					}
@@ -105,7 +105,7 @@ public class Activation {
 							}
 						}
 
-						new SubscriberDAOJdbc(dao).releaseLock(subscriber, true); // release Lock
+						new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
 						return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 					}
 				}
@@ -113,7 +113,7 @@ public class Activation {
 					if(request.isSuccessfully());
 					else new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -100, 1, msisdn, msisdn, null));
 
-					new SubscriberDAOJdbc(dao).releaseLock(subscriber, true); // release Lock
+					new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
 					return new Object [] {request.isSuccessfully() ? 1 : -1, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 				}
 			}

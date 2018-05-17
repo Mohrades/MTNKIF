@@ -15,11 +15,11 @@ public class PricePlanCurrent {
 	}
 	
 	public Object [] activation(DAO dao, String msisdn, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
-		return (new Activation()).execute(dao, msisdn, i18n, language, productProperties, "eBA");
+		return (new PricePlanCurrentActivation()).execute(dao, msisdn, i18n, language, productProperties, "eBA");
 	}
 
 	public Object [] deactivation(DAO dao, String msisdn, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
-		return (new Deactivation()).execute(dao, msisdn, i18n, language, productProperties, "eBA");
+		return (new PricePlanCurrentDeactivation()).execute(dao, msisdn, i18n, language, productProperties, "eBA");
 	}
 
 	public Object [] getStatus(ProductProperties productProperties, MessageSource i18n, DAO dao, String msisdn, int language) {
@@ -27,13 +27,13 @@ public class PricePlanCurrent {
 		int statusCode = -1; // default
 
 		if(subscriber == null) {
-			statusCode = new ProductActions().isActivated(productProperties, dao, msisdn);
+			statusCode = new PricePlanCurrentActions().isActivated(productProperties, dao, msisdn);
 		}
 		else {
 			 if(subscriber.isLocked()) statusCode = -1;
 			 else {
 				 if(subscriber.isFlag()) {
-					 statusCode = new ProductActions().isActivated(productProperties, dao, msisdn);
+					 statusCode = new PricePlanCurrentActions().isActivated(productProperties, dao, msisdn);
 
 					 if(statusCode == 0) statusCode = 0; // success
 					 else if(statusCode == 1) statusCode = -1; // anormal

@@ -20,7 +20,7 @@ import dao.DAO;
 import filter.MSISDNValidator;
 import product.DefaultPricePlan;
 import product.PricePlanCurrent;
-import product.ProductActions;
+import product.PricePlanCurrentActions;
 import product.ProductProperties;
 import tools.SMPPConnector;
 import util.AccountDetails;
@@ -45,7 +45,7 @@ public class ExternalRequestController {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
 		}
 
-		return callback(msisdn, 0, (new ProductActions()).getInfo(i18n, productProperties, msisdn));
+		return callback(msisdn, 0, (new PricePlanCurrentActions()).getInfo(i18n, productProperties, msisdn));
 	}
 
 	@RequestMapping(value = "/status", params={"authentication=true", "originOperatorID"}, produces = "text/xml;charset=UTF-8")
