@@ -29,7 +29,7 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	@Value("#{appConfig['msisdn.length']}")
 	private byte msisdn_length;
 	
-	@Value("#{appConfig['charging.da']}")
+	@Value("#{appConfig['chargingDA']}")
 	private int chargingDA;
 
 	@Value("#{appConfig['activation.chargingAmount']}")
