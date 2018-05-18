@@ -12,9 +12,12 @@ import dao.queries.RollBackDAOJdbc;
 import dao.queries.SubscriberDAOJdbc;
 import domain.models.CRBTReporting;
 import domain.models.RollBack;
+import ema.EMARequest;
 import util.AccountDetails;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
+import util.PamInformationList;
+import util.PamUpdateInformation;
 import util.ServiceOfferings;
 
 public class PricePlanCurrentActions {
@@ -109,6 +112,22 @@ public class PricePlanCurrentActions {
 			if((serviceOfferings == null) || (request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA"))) {
 				// update Anumber Offer
 				if((productProperties.getOffer_id() == 0) || (request.updateOffer(msisdn, productProperties.getOffer_id(), null, null, null, "eBA"))) {
+					// set PAM
+					PamInformationList pamInformationList = new PamInformationList();
+					pamInformationList.add(new PamUpdateInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
+					if(request.addPeriodicAccountManagementData(msisdn, pamInformationList, "eBA")) ;
+					else {
+						// save rollback
+						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 8 : -8, 1, msisdn, msisdn, null));
+					}
+					
+					// set Product id to subscriber through EMA interface
+					if(new EMARequest().execute("SET:PCRFSUB:MSISDN," + msisdn +":ACTIONTYPE,UNSUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", new HashSet<Integer>(), new HashSet<Integer>())) ;
+					else {
+						// save rollback
+						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 9, 1, msisdn, msisdn, null));
+					}
+
 					Date expires = new Date();
 					expires.setSeconds(59);expires.setMinutes(59);expires.setHours(23);
 
@@ -246,6 +265,22 @@ public class PricePlanCurrentActions {
 			if((serviceOfferings == null) || (request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA"))) {
 				// update Anumber Offer
 				if((productProperties.getOffer_id() == 0) || (request.deleteOffer(msisdn, productProperties.getOffer_id(), "eBA", true))) {
+					// remove PAM
+					PamInformationList pamInformationList = new PamInformationList();
+					pamInformationList.add(new PamUpdateInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
+					if(request.deletePeriodicAccountManagementData(msisdn, pamInformationList, "eBA")) ;
+					else {
+						// save rollback
+						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 4 : -4, 2, msisdn, msisdn, null));
+					}
+
+					// remove Product id from subscriber through EMA interface
+					if(new EMARequest().execute("SET:PCRFSUB:MSISDN," + msisdn +":ACTIONTYPE,UNSUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", new HashSet<Integer>(), new HashSet<Integer>())) ;
+					else {
+						// save rollback
+						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 5, 2, msisdn, msisdn, null));
+					}
+
 					return 0;
 				}
 				else {

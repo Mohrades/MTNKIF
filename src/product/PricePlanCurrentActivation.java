@@ -33,11 +33,11 @@ public class PricePlanCurrentActivation {
 
 			if(subscriber == null) {
 				subscriber = new Subscriber(0, msisdn, true, false, null, null, true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_startDate()) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_days()) == 1) ? true : false;
 			}
 			else {
 				subscriber.setFlag(true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_startDate()) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_days()) == 1) ? true : false;
 			}
 
 			if(registered) {
@@ -67,7 +67,7 @@ public class PricePlanCurrentActivation {
 							subscriber.setLocked(false); // synchronisation database and object
 
 							new SubscriptionReportingDAOJdbc(dao).saveOneSubscriptionReporting(new SubscriptionReporting(0, (subscriber.getId() > 0) ? subscriber.getId() : (new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn).getId()), true, (subscriber.getId() == 0) ? 0 : (subscriber.getLast_update_time() == null) ? 0 : productProperties.getActivation_chargingAmount(), new Date(), originOperatorID)); // reporting
-							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
+							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_days()); // release Lock
 
 							return new Object [] {0, i18n.getMessage("activation.change.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
@@ -87,7 +87,7 @@ public class PricePlanCurrentActivation {
 
 							// statusCode = 1, change not done
 							// statusCode = -1, change done unreliable (errors should occur) : subscriber may 
-							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
+							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 							return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("activation.change.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
 					}
@@ -105,7 +105,7 @@ public class PricePlanCurrentActivation {
 							}
 						}
 
-						new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
+						new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 						return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 					}
 				}
@@ -113,7 +113,7 @@ public class PricePlanCurrentActivation {
 					if(request.isSuccessfully());
 					else new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -100, 1, msisdn, msisdn, null));
 
-					new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
+					new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 					return new Object [] {request.isSuccessfully() ? 1 : -1, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 				}
 			}

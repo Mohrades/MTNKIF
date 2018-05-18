@@ -34,11 +34,11 @@ public class PricePlanCurrentDeactivation {
 
 			if(subscriber == null) {
 				subscriber = new Subscriber(0, msisdn, false, false, null, null, true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_startDate()) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_days()) == 1) ? true : false;
 			}
 			else {
 				subscriber.setFlag(false);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_startDate()) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_days()) == 1) ? true : false;
 			}
 
 			if(registered) {
@@ -50,7 +50,7 @@ public class PricePlanCurrentDeactivation {
 				else balances.add(new DedicatedAccount(productProperties.getChargingDA(), -productProperties.getDeactivation_chargingAmount(), null));
 
 				Date now = new Date();
-				now.setDate(now.getDate() - productProperties.getDeactivation_freeCharging_startDate());
+				now.setDate(now.getDate() - productProperties.getDeactivation_freeCharging_days());
 
 				if((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null) || ((subscriber.getLast_update_time().before(now)) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "DEACTIVATIONCHARGING", "eBA")))) {
 					balances = new HashSet<BalanceAndDate>();
@@ -71,7 +71,7 @@ public class PricePlanCurrentDeactivation {
 							subscriber.setLocked(false); // synchronisation database and object
 
 							new SubscriptionReportingDAOJdbc(dao).saveOneSubscriptionReporting(new SubscriptionReporting(0, (subscriber.getId() > 0) ? subscriber.getId() : (new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn).getId()), false, (subscriber.getId() == 0) ? 0 : (subscriber.getLast_update_time() == null) ? 0 : (subscriber.getLast_update_time().before(now)) ? 0 : productProperties.getDeactivation_chargingAmount(), new Date(), originOperatorID)); // reporting
-							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
+							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_days()); // release Lock
 
 							return new Object [] {0, i18n.getMessage("deactivation.change.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
@@ -91,7 +91,7 @@ public class PricePlanCurrentDeactivation {
 
 							// statusCode = 1, change not done
 							// statusCode = -1, change done unreliable (errors should occur) : subscriber may 
-							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
+							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 							return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("deactivation.change.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
 					}
@@ -109,7 +109,7 @@ public class PricePlanCurrentDeactivation {
 							}
 						}
 
-						new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
+						new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 						return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 					}
 				}
@@ -117,7 +117,7 @@ public class PricePlanCurrentDeactivation {
 					if(request.isSuccessfully());
 					else new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -100, 2, msisdn, msisdn, null));
 
-					new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_startDate()); // release Lock
+					new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 					return new Object [] {request.isSuccessfully() ? 1 : -1, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 				}
 			}

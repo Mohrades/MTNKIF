@@ -59,8 +59,8 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	@Value("#{appConfig['advantages.data.value']}")
 	private long advantages_data_value;
 
-	@Value("#{appConfig['deactivation.freeCharging.startDate']}")
-	private short deactivation_freeCharging_startDate;
+	@Value("#{appConfig['deactivation.freeCharging.days']}")
+	private short deactivation_freeCharging_days;
 	
 	@Value("#{appConfig['deactivation.chargingAmount']}")
 	private long deactivation_chargingAmount;
@@ -71,9 +71,21 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	private List<String> serviceOfferings_IDs;
 	private List<String> serviceOfferings_activeFlags;
-	
+
 	@Value("#{appConfig['offer.id']}")
 	private int offer_id;
+
+	@Value("#{appConfig['scheduleID']}")
+	private short scheduleID;
+
+	@Value("#{appConfig['pamServiceID']}")
+	private byte pamServiceID;
+
+	@Value("#{appConfig['pamClassID']}")
+	private short pamClassID;
+
+	@Value("#{appConfig['productID']}")
+	private short productID;
 
 	@Value("#{appConfig['crbt.renewal.aspu.minimum']}")
 	private long crbt_renewal_aspu_minimum;
@@ -285,8 +297,8 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		return crbt_renewal_aspu_filter;
 	}
 
-	public short getDeactivation_freeCharging_startDate() {
-		return deactivation_freeCharging_startDate;
+	public short getDeactivation_freeCharging_days() {
+		return deactivation_freeCharging_days;
 	}
 
 	public long getDeactivation_chargingAmount() {
@@ -303,6 +315,22 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	public int getOffer_id() {
 		return offer_id;
+	}
+
+	public short getScheduleID() {
+		return scheduleID;
+	}
+
+	public byte getPamServiceID() {
+		return pamServiceID;
+	}
+
+	public short getPamClassID() {
+		return pamClassID;
+	}
+
+	public short getProductID() {
+		return productID;
 	}
 
 	public List<String> getXtra_removal_offer_IDs() {
