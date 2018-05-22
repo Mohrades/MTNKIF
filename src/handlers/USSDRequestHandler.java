@@ -73,7 +73,12 @@ public class USSDRequestHandler {
 					(new Production()).execute(i18n, productProperties, parameters, modele, dao, request, response);
 				}
 				else {
-					(new Development()).execute(new USSDServiceDAOJdbc(dao).getOneUSSDService(productProperties.getSc()).getRedirection(), headers, parameters, modele, i18n);
+					if(redirection.getRedirection_url() != null) {
+						(new Development()).execute(redirection.getRedirection_url(), headers, parameters, modele, i18n);
+					}
+					else {
+						(new Development()).execute(new USSDServiceDAOJdbc(dao).getOneUSSDService(productProperties.getSc()).getRedirection(), headers, parameters, modele, i18n);
+					}
 				}
 			}
 

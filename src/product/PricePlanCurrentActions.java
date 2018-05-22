@@ -16,8 +16,8 @@ import ema.EMARequest;
 import util.AccountDetails;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
+import util.PamInformation;
 import util.PamInformationList;
-import util.PamUpdateInformation;
 import util.ServiceOfferings;
 
 public class PricePlanCurrentActions {
@@ -114,8 +114,8 @@ public class PricePlanCurrentActions {
 				if((productProperties.getOffer_id() == 0) || (request.updateOffer(msisdn, productProperties.getOffer_id(), null, null, null, "eBA"))) {
 					// set PAM
 					PamInformationList pamInformationList = new PamInformationList();
-					pamInformationList.add(new PamUpdateInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
-					if(request.addPeriodicAccountManagementData(msisdn, pamInformationList, "eBA")) ;
+					pamInformationList.add(new PamInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
+					if(request.addPeriodicAccountManagementData(msisdn, pamInformationList, true, "eBA")) ;
 					else {
 						// save rollback
 						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 8 : -8, 1, msisdn, msisdn, null));
@@ -267,8 +267,8 @@ public class PricePlanCurrentActions {
 				if((productProperties.getOffer_id() == 0) || (request.deleteOffer(msisdn, productProperties.getOffer_id(), "eBA", true))) {
 					// remove PAM
 					PamInformationList pamInformationList = new PamInformationList();
-					pamInformationList.add(new PamUpdateInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
-					if(request.deletePeriodicAccountManagementData(msisdn, pamInformationList, "eBA")) ;
+					pamInformationList.add(new PamInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
+					if(request.deletePeriodicAccountManagementData(msisdn, pamInformationList, "eBA", true)) ;
 					else {
 						// save rollback
 						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 4 : -4, 2, msisdn, msisdn, null));

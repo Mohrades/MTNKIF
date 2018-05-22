@@ -21,7 +21,7 @@ public class MSISDNRedirectionDAOJdbc {
 	}
 
 	public MSISDNRedirection getOneMSISDNRedirection(int sc, String msisdn)  {
-		List<MSISDNRedirection> redirections = getJdbcTemplate().query("SELECT ID,SERVICE_CODE,TYPE,EXPRESSION FROM MSISDN_REDIRECTION_EBA WHERE ((SERVICE_CODE = " + sc + ") AND ((TYPE = 'ALL') OR ((TYPE = 'MSISDN') AND (EXPRESSION = '" + msisdn + "'))))", new MSISDNRedirectionRowMapper());
+		List<MSISDNRedirection> redirections = getJdbcTemplate().query("SELECT ID,SERVICE_CODE,TYPE,EXPRESSION,REDIRECTION_URL FROM MSISDN_REDIRECTION_EBA WHERE ((SERVICE_CODE = " + sc + ") AND ((TYPE = 'ALL') OR ((TYPE = 'MSISDN') AND (EXPRESSION = '" + msisdn + "'))))", new MSISDNRedirectionRowMapper());
 		return redirections.isEmpty() ? null : redirections.get(0);
 	}
 

@@ -12,7 +12,7 @@ public class MSISDNRedirectionRowMapper implements RowMapper<MSISDNRedirection>{
 	public MSISDNRedirection mapRow(ResultSet rs, int rowNum) throws SQLException {
 		// TODO Auto-generated method stub
 
-		return new MSISDNRedirection(rs.getInt("ID"), rs.getInt("SERVICE_CODE"), rs.getString("TYPE"), rs.getString("EXPRESSION"));
+		return new MSISDNRedirection(rs.getInt("ID"), rs.getInt("SERVICE_CODE"), rs.getString("TYPE"), rs.getString("EXPRESSION"), rs.getString("REDIRECTION_URL"));
 	}
 
 }

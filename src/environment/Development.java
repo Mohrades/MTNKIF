@@ -94,7 +94,7 @@ public class Development {
 						modele.put("amount", http.getHeaderField("Amount"));
 					}
 					modele.put("next", http.getHeaderField("FreeFlow").equals("FC"));
-					modele.put("message", response.toString());
+					modele.put("message", response.toString().replace("\\n", "\n"));
 
 				} catch (NullPointerException|NumberFormatException e) {
 

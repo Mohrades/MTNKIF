@@ -14,6 +14,7 @@ import dao.queries.SubscriptionReportingDAOJdbc;
 import domain.models.RollBack;
 import domain.models.Subscriber;
 import domain.models.SubscriptionReporting;
+import tools.SMPPConnector;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
 
@@ -68,6 +69,12 @@ public class PricePlanCurrentActivation {
 
 							new SubscriptionReportingDAOJdbc(dao).saveOneSubscriptionReporting(new SubscriptionReporting(0, (subscriber.getId() > 0) ? subscriber.getId() : (new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn).getId()), true, (subscriber.getId() == 0) ? 0 : (subscriber.getLast_update_time() == null) ? 0 : productProperties.getActivation_chargingAmount(), new Date(), originOperatorID)); // reporting
 							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_days()); // release Lock
+
+							// At first opt-in to MTN KIF+ subscriber will receive welcome Gift
+							// Notification message :
+							if((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))) {
+								new SMPPConnector().submitSm(productProperties.getSms_notifications_header(), msisdn.substring((productProperties.getMcc() + "").length()), i18n.getMessage("welcome.gift.notification.message", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+							}
 
 							return new Object [] {0, i18n.getMessage("activation.change.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}

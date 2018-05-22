@@ -4,16 +4,18 @@ public class MSISDNRedirection {
 
 	private int id, code;
 	private String type, expression;
+	private String redirection_url;
 	
 	public MSISDNRedirection() {
 
 	}
 	
-	public MSISDNRedirection(int id, int code, String type, String expression) {
+	public MSISDNRedirection(int id, int code, String type, String expression, String redirection_url) {
 		this.id = id;
 		this.code = code;
 		this.type = type;
 		this.expression = expression;
+		this.redirection_url = redirection_url;
 	}
 
 	public int getId() {
@@ -46,6 +48,14 @@ public class MSISDNRedirection {
 
 	public void setExpression(String expression) {
 		this.expression = expression;
+	}
+
+	public String getRedirection_url() {
+		return redirection_url;
+	}
+
+	public void setRedirection_url(String redirection_url) {
+		this.redirection_url = redirection_url;
 	}
 
 }
