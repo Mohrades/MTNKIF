@@ -15,6 +15,7 @@ import connexions.AIRRequest;
 import dao.DAO;
 import dao.queries.USSDRequestDAOJdbc;
 import dao.queries.USSDServiceDAOJdbc;
+import domain.models.Subscriber;
 import domain.models.USSDRequest;
 import domain.models.USSDService;
 import filter.MSISDNValidator;
@@ -84,22 +85,22 @@ public class InputHandler {
 						List<String> inputs = Splitter.onPattern("[*]").trimResults().omitEmptyStrings().splitToList(ussd.getInput());
 
 						if(inputs.size() == 2) {
-							int statusCode = (int)(((new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language))[0]);
+							Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language);
 
-							if(statusCode > 0) {
+							if((int)(requestStatus[0]) >= 0) {
 								if(ussd.getInput().endsWith("*0")) {
 									// deactivation
-									if(statusCode == 0) deactivation(dao, ussd, i18n, language, productProperties, modele);
+									if((int)(requestStatus[0]) == 0) deactivation(dao, ussd, (Subscriber)requestStatus[2], i18n, language, productProperties, modele);
 									else endStep(dao, ussd, modele, productProperties, i18n.getMessage("status.unsuccessful.already", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 								}
 								else if(ussd.getInput().endsWith("*1")) {
 									// activation
-									if(statusCode == 0) endStep(dao, ussd, modele, productProperties, i18n.getMessage("status.successful.already", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+									if((int)(requestStatus[0]) == 0) endStep(dao, ussd, modele, productProperties, i18n.getMessage("status.successful.already", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 									else {
 										// check msisdn is in default price plan
-										statusCode = productProperties.isDefault_price_plan_deactivated() ? (new DefaultPricePlan()).requestDefaultPricePlanStatus(productProperties, ussd.getMsisdn(), "eBA") : 0;
+										requestStatus[0] = productProperties.isDefault_price_plan_deactivated() ? (new DefaultPricePlan()).requestDefaultPricePlanStatus(productProperties, ussd.getMsisdn(), "eBA") : 0;
 
-										if(statusCode == 0) activation(dao, ussd, i18n, language, productProperties, modele);
+										if((int)(requestStatus[0]) == 0) activation(dao, ussd, (Subscriber)requestStatus[2], i18n, language, productProperties, modele);
 										else endStep(dao, ussd, modele, productProperties, i18n.getMessage("default.price.plan.required", new Object [] {productProperties.getDefault_price_plan()}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 									}
 								}
@@ -176,13 +177,13 @@ public class InputHandler {
 		modele.put("message", message);
 	}
 
-	public void activation(DAO dao, USSDRequest ussd, MessageSource i18n, int language, ProductProperties productProperties, Map<String, Object> modele) {
-		Object [] requestStatus = (new PricePlanCurrent()).activation(dao, ussd.getMsisdn(), i18n, language, productProperties, "eBA");
+	public void activation(DAO dao, USSDRequest ussd, Subscriber subscriber, MessageSource i18n, int language, ProductProperties productProperties, Map<String, Object> modele) {
+		Object [] requestStatus = (new PricePlanCurrent()).activation(dao, ussd.getMsisdn(), subscriber, i18n, language, productProperties, "eBA");
 		endStep(dao, ussd, modele, productProperties, (String)requestStatus[1], ((int)requestStatus[0] == 0) ? ussd.getMsisdn() : null, null, null, ((int)requestStatus[0] == 0) ? productProperties.getSms_notifications_header() : null);
 	}
 
-	public void deactivation(DAO dao, USSDRequest ussd, MessageSource i18n, int language, ProductProperties productProperties, Map<String, Object> modele) {
-		Object [] requestStatus = (new PricePlanCurrent()).deactivation(dao, ussd.getMsisdn(), i18n, language, productProperties, "eBA");
+	public void deactivation(DAO dao, USSDRequest ussd, Subscriber subscriber, MessageSource i18n, int language, ProductProperties productProperties, Map<String, Object> modele) {
+		Object [] requestStatus = (new PricePlanCurrent()).deactivation(dao, ussd.getMsisdn(), subscriber, i18n, language, productProperties, "eBA");
 		endStep(dao, ussd, modele, productProperties, (String)requestStatus[1], ((int)requestStatus[0] == 0) ? ussd.getMsisdn() : null, null, null, ((int)requestStatus[0] == 0) ? productProperties.getSms_notifications_header() : null);
 	}
 

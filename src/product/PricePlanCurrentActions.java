@@ -9,9 +9,9 @@ import connexions.AIRRequest;
 import dao.DAO;
 import dao.queries.CRBTReportingDAOJdbc;
 import dao.queries.RollBackDAOJdbc;
-import dao.queries.SubscriberDAOJdbc;
 import domain.models.CRBTReporting;
 import domain.models.RollBack;
+import domain.models.Subscriber;
 import ema.EMARequest;
 import util.AccountDetails;
 import util.BalanceAndDate;
@@ -86,8 +86,10 @@ public class PricePlanCurrentActions {
 	}
 
 	@SuppressWarnings("deprecation")
-	public int activation(ProductProperties productProperties, DAO dao, String msisdn, boolean charged, boolean advantages, String originOperatorID) {
+	public int activation(ProductProperties productProperties, DAO dao, Subscriber subscriber, boolean charged, boolean advantages, String originOperatorID) {
 		AIRRequest request = new AIRRequest();
+		String msisdn = subscriber.getValue();
+
 		if(charged && productProperties.getActivation_chargingAmount() == 0) charged = false;
 
 		HashSet<BalanceAndDate> balances = new HashSet<BalanceAndDate>();
@@ -122,7 +124,9 @@ public class PricePlanCurrentActions {
 					}
 					
 					// set Product id to subscriber through EMA interface
-					if(new EMARequest().execute("SET:PCRFSUB:MSISDN," + msisdn +":ACTIONTYPE,UNSUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", new HashSet<Integer>(), new HashSet<Integer>())) ;
+					HashSet<Integer> allResp = new HashSet<Integer>(); allResp.add(0);
+					HashSet<Integer> successResp = new HashSet<Integer>(); successResp.add(0);
+					if(new EMARequest().execute("SET:PCRFSUB:MSISDN," + msisdn + ":ACTIONTYPE,SUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", allResp, successResp)) ;
 					else {
 						// save rollback
 						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 9, 1, msisdn, msisdn, null));
@@ -163,7 +167,8 @@ public class PricePlanCurrentActions {
 						// set crbt song
 
 						 // reporting
-						new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(new CRBTReporting(0, (new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn).getId()), true, new Date(), originOperatorID));
+						subscriber.setCrbt(true); // update status
+						new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(new CRBTReporting(0, subscriber.getId(), true, new Date(), originOperatorID));
 					}
 
 					// delete others settings
@@ -275,7 +280,9 @@ public class PricePlanCurrentActions {
 					}
 
 					// remove Product id from subscriber through EMA interface
-					if(new EMARequest().execute("SET:PCRFSUB:MSISDN," + msisdn +":ACTIONTYPE,UNSUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", new HashSet<Integer>(), new HashSet<Integer>())) ;
+					HashSet<Integer> allResp = new HashSet<Integer>(); allResp.add(0);
+					HashSet<Integer> successResp = new HashSet<Integer>(); successResp.add(0);
+					if(new EMARequest().execute("SET:PCRFSUB:MSISDN," + msisdn + ":ACTIONTYPE,UNSUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", allResp, successResp)) ;
 					else {
 						// save rollback
 						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 5, 2, msisdn, msisdn, null));

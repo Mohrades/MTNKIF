@@ -67,7 +67,8 @@ public class DefaultPricePlan {
 				StringBuffer response = new StringBuffer();
 
 				while ((inputLine = in.readLine()) != null) {
-					response.append(inputLine);
+					if(response.length() == 0) response.append(inputLine);
+					else response.append("\n" + inputLine);
 				}
 				in.close();
 
@@ -148,7 +149,8 @@ public class DefaultPricePlan {
 				StringBuffer response = new StringBuffer();
 
 				while ((inputLine = in.readLine()) != null) {
-					response.append(inputLine);
+					if(response.length() == 0) response.append(inputLine);
+					else response.append("\n" + inputLine);
 				}
 				in.close();
 

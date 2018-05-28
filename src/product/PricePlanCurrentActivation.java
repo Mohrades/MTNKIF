@@ -24,21 +24,20 @@ public class PricePlanCurrentActivation {
 
 	}
 
-	public Object [] execute(DAO dao, String msisdn, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
+	public Object [] execute(DAO dao, String msisdn, Subscriber subscriber, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
 		AIRRequest request = new AIRRequest();
 		// Object [] requestStatus = new Object [2];
 
 		if((request.getBalanceAndDate(msisdn, 0)) != null) {
-			Subscriber subscriber = new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn);
 			boolean registered = false;
 
 			if(subscriber == null) {
 				subscriber = new Subscriber(0, msisdn, true, false, null, null, true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_days()) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
 			}
 			else {
 				subscriber.setFlag(true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_days()) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
 			}
 
 			if(registered) {
@@ -62,7 +61,7 @@ public class PricePlanCurrentActivation {
 
 					if(statusCode == 0) {
 						// statusCode = (new ProductActions()).activation(productProperties, dao, subscriber.getValue(), !((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null)), ((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))));
-						statusCode = (new PricePlanCurrentActions()).activation(productProperties, dao, subscriber.getValue(), false, ((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))), originOperatorID); // charged is false because charging already occurs with reservation
+						statusCode = (new PricePlanCurrentActions()).activation(productProperties, dao, subscriber, false, ((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))), originOperatorID); // charged is false because charging already occurs with reservation
 
 						if(statusCode == 0) {// change done successfully
 							subscriber.setLocked(false); // synchronisation database and object

@@ -46,18 +46,41 @@ public class ExternalRequestInterceptor implements HandlerInterceptor {
 			Date now = new Date();
 
 			if((service == null) || (((service.getStart_date() != null) && (now.before(service.getStart_date()))) || ((service.getStop_date() != null) && (now.after(service.getStop_date()))))) {
+				// Avec le protocole HTTP 1.1, le code HTTP de redirection est 303 alors qu'avec HTTP 1.0 c'est le code 302
+				//  Comme beaucoup de clients HTTP 1.1 traitent le code 302 comme le code 303, il peut être intéressant d'envoyer le code 302 qui conviendra à la fois aux clients HTTP 1.0 et 1.1
+
+				// this will redirect a request with a temporary 302 HTTP status code
+				if(service.getStart_date() != null) {
+					response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY); // response.setStatus(301);
+				}
+				// But is it possible to redirect it with a permanent 301 HTTP status code
+				if(service.getStop_date() != null) {
+					response.setStatus(403); // 404 Not found.
+
+					// You need to set the response status and the Location header manually.
+					// response.setStatus(HttpServletResponse.SC_MOVED_PERMANENTLY); // response.setStatus(301);
+					// response.setHeader("Location", null); // response.addHeader("Location", "/a01");
+				}
+
 				return false;
 			}
 
 			String originOperatorID = request.getParameter("originOperatorID");
 
 			if((originOperatorID == null) || (originOperatorID.trim().length() == 0)) {
+				response.setStatus(403); // 403 - Access Forbidden.
+
 				return false;
 			}
 			else {
-				// on passe la main à l'intecepteur suivant
+				boolean logon = false;
 				originOperatorID = originOperatorID.trim();
-				return (productProperties.getOriginOperatorIDs_list() == null) ? true : productProperties.getOriginOperatorIDs_list().contains(originOperatorID);				
+
+				logon = (productProperties.getOriginOperatorIDs_list() == null) ? true : productProperties.getOriginOperatorIDs_list().contains(originOperatorID);
+				if(!logon)response.setStatus(401); // 401 - Access denied.
+
+				// on passe la main à l'intecepteur suivant
+				return logon;
 			}
 
 		} catch(Throwable th) {

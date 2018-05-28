@@ -23,7 +23,8 @@ public class CRBTReportingDAOJdbc {
 	}
 
 	public void saveOneCRBTReporting(CRBTReporting reporting) {
-		getJdbcTemplate().update("INSERT INTO MTN_KIF_CRBT_REPORT_EBA (SUBSCRIBER,FLAG,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID) VALUES(" + reporting.getSubscriber() + "," + (reporting.isFlag() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date()) + "','" + reporting.getOriginOperatorID().replace("'", "''") + "')");
+		Date now = new Date();
+		getJdbcTemplate().update("INSERT INTO MTN_KIF_CRBT_REPORT_EBA (SUBSCRIBER,FLAG,CREATED_DATE_TIME,CREATED_DATE_TIME_INDEX,ORIGIN_OPERATOR_ID) VALUES(" + reporting.getSubscriber() + "," + (reporting.isFlag() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "'," + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ",'" + reporting.getOriginOperatorID().replace("'", "''") + "')");
 	}
 
 	public List<CRBTReporting> getCRBTReporting(int subscriber) {

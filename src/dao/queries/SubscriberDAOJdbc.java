@@ -23,26 +23,10 @@ public class SubscriberDAOJdbc {
 		return dao.getJdbcTemplate();
 	}
 
-	@SuppressWarnings("deprecation")
-	public int saveOneSubscriber(Subscriber subscriber, int days) {
+	public int saveOneSubscriber(Subscriber subscriber) {
 		try {
 			if(subscriber.getId() == 0) {
-				Date now = new Date();
-				Date next_month = new Date();
-				next_month.setYear(now.getYear());
-				next_month.setMonth(now.getMonth());
-				next_month.setDate(now.getDate() + days);
-				next_month.setHours(now.getHours());
-				next_month.setMinutes(now.getMinutes());
-				next_month.setSeconds(now.getSeconds());
-
-				if(subscriber.isLocked()) {
-					getJdbcTemplate().update("INSERT INTO MTN_KIF_MSISDN_EBA (MSISDN,FLAG,CRBT,CRBT_NEXT_RENEWAL_DATE,LOCKED) VALUES('" + subscriber.getValue() + "'," + (subscriber.isFlag() ? 1 : 0) + "," + (subscriber.isCrbt() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(next_month) + "'," + (subscriber.isLocked() ? 1 : 0) + ")");
-				}
-				else {
-					getJdbcTemplate().update("INSERT INTO MTN_KIF_MSISDN_EBA (MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED) VALUES('" + subscriber.getValue() + "'," + (subscriber.isFlag() ? 1 : 0) + "," + (subscriber.isCrbt() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "',TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(next_month) + "'," + (subscriber.isLocked() ? 1 : 0) + ")");
-				}
-
+				getJdbcTemplate().update("INSERT INTO MTN_KIF_MSISDN_EBA (MSISDN,FLAG,CRBT,LAST_UPDATE_TIME_INDEX,CRBT_NEXT_RENEWAL_DATE_INDEX,LOCKED) VALUES('" + subscriber.getValue() + "'," + (subscriber.isFlag() ? 1 : 0) + "," + (subscriber.isCrbt() ? 1 : 0) + ",0,0," + (subscriber.isLocked() ? 1 : 0) + ")");
 				return 1;
 			}
 			else if(subscriber.getId() > 0) {
@@ -76,8 +60,8 @@ public class SubscriberDAOJdbc {
 				next_month.setMinutes(now.getMinutes());
 				next_month.setSeconds(now.getSeconds());
 
-				if(subscriber.getId() > 0) getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET LAST_UPDATE_TIME = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "', CRBT_NEXT_RENEWAL_DATE = (CASE FLAG WHEN 1 THEN TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(next_month) + "' ELSE CRBT_NEXT_RENEWAL_DATE END), LOCKED = 0 WHERE ((ID = " + subscriber.getId() + ") AND (LOCKED = 1))");
-				else getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET LAST_UPDATE_TIME = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "', CRBT_NEXT_RENEWAL_DATE = (CASE FLAG WHEN 1 THEN TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(next_month) + "' ELSE CRBT_NEXT_RENEWAL_DATE END), LOCKED = 0 WHERE ((MSISDN = '" + subscriber.getValue() + "') AND (LOCKED = 1))");
+				if(subscriber.getId() > 0) getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET CRBT = " + (subscriber.isCrbt() ? 1 : 0) + ", LAST_UPDATE_TIME = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "', LAST_UPDATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ", CRBT_NEXT_RENEWAL_DATE = (CASE FLAG WHEN 1 THEN TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(next_month) + "' ELSE CRBT_NEXT_RENEWAL_DATE END), CRBT_NEXT_RENEWAL_DATE_INDEX = (CASE FLAG WHEN 1 THEN " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(next_month)) + " ELSE CRBT_NEXT_RENEWAL_DATE_INDEX END), LOCKED = 0 WHERE ((ID = " + subscriber.getId() + ") AND (LOCKED = 1))");
+				else getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET CRBT = " + (subscriber.isCrbt() ? 1 : 0) + ", LAST_UPDATE_TIME = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "', LAST_UPDATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ", CRBT_NEXT_RENEWAL_DATE = (CASE FLAG WHEN 1 THEN TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(next_month) + "' ELSE CRBT_NEXT_RENEWAL_DATE END), CRBT_NEXT_RENEWAL_DATE_INDEX = (CASE FLAG WHEN 1 THEN " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(next_month)) + " ELSE CRBT_NEXT_RENEWAL_DATE_INDEX), LOCKED = 0 WHERE ((MSISDN = '" + subscriber.getValue() + "') AND (LOCKED = 1))");
 			}
 
 		} catch(Throwable th) {
@@ -110,7 +94,7 @@ public class SubscriberDAOJdbc {
 		try {
 			if(subscriber.getId() > 0) {
 				// return getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET CRBT = " + (subscriber.isCrbt() ? 1 : 0) + ", CRBT_NEXT_RENEWAL_DATE = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date()) + "' WHERE ((ID = " + subscriber.getId() + ") AND (FLAG = 1))");
-				return getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET CRBT = " + (subscriber.isCrbt() ? 1 : 0) + ", CRBT_NEXT_RENEWAL_DATE = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(subscriber.getCrbtNextRenewalDate()) + "' WHERE (ID = " + subscriber.getId() + ")");
+				return getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET CRBT = " + (subscriber.isCrbt() ? 1 : 0) + ", CRBT_NEXT_RENEWAL_DATE = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(subscriber.getCrbtNextRenewalDate()) + "', CRBT_NEXT_RENEWAL_DATE_INDEX = "  + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(subscriber.getCrbtNextRenewalDate())) + " WHERE (ID = " + subscriber.getId() + ")");
 			}
 
 		} catch(EmptyResultDataAccessException emptyEx) {
@@ -151,8 +135,14 @@ public class SubscriberDAOJdbc {
 		return  getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA", new SubscriberRowMapper());
 	}
 
+	public List<Subscriber> getAllRunnablePAMSubscribers(Date now) {
+		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((FLAG = 1) AND (TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "' >= LAST_UPDATE_TIME))", new SubscriberRowMapper());
+		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((LAST_UPDATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (FLAG = 1) AND (LOCKED = 0))", new SubscriberRowMapper());
+	}
+
 	public List<Subscriber> getAllRenewableCRBTSubscribers(Date now) {
-		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((FLAG = 1) AND (TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "' >= CRBT_NEXT_RENEWAL_DATE))", new SubscriberRowMapper());
+		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((CRBT_NEXT_RENEWAL_DATE_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (FLAG = 1) AND (LOCKED = 0))", new SubscriberRowMapper());
+		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((FLAG = 1) AND (TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "' >= CRBT_NEXT_RENEWAL_DATE))", new SubscriberRowMapper());
 	}/*
 
 	public void setNextCRBTRenewalDate(Date now) {

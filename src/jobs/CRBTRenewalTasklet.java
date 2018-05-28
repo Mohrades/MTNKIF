@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 
@@ -58,12 +59,14 @@ public class CRBTRenewalTasklet implements Tasklet {
 
 				try {
 					Class.forName("oracle.jdbc.driver.OracleDriver"); // chargement du pilote JDBC
-					connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/vmdg", "abutu", "kT60#bTh03#18"); // ouverture connexion
+					// connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/vmdg", "abutu", "kT60#bTh03#18"); // ouverture connexion
+					connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/itbidg2", "ebauser", "bBt0518#taBut"); // ouverture connexion
 					connexion.setAutoCommit(false); // début transaction
 					connexion.setReadOnly(true); // en mode lecture seule
 
 					// on lit la table PRICEPLAN.VALUE_BAND_LIST [MSISDN, CUSTOMER_SEGMENT]
-					ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter());
+					// ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter());
+					ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(now)));
 					rs = ps.executeQuery();
 					// Liste des elements
 					while (rs.next()) {

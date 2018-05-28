@@ -24,21 +24,20 @@ public class PricePlanCurrentDeactivation {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Object [] execute(DAO dao, String msisdn, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
+	public Object [] execute(DAO dao, String msisdn, Subscriber subscriber, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
 		AIRRequest request = new AIRRequest();
 		// Object [] requestStatus = new Object [2];
 
 		if((request.getBalanceAndDate(msisdn, 0)) != null) {
-			Subscriber subscriber = new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn);
 			boolean registered = false;
 
 			if(subscriber == null) {
 				subscriber = new Subscriber(0, msisdn, false, false, null, null, true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_days()) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
 			}
 			else {
 				subscriber.setFlag(false);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber, productProperties.getDeactivation_freeCharging_days()) == 1) ? true : false;
+				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
 			}
 
 			if(registered) {

@@ -134,10 +134,26 @@ public class USSDFlow {
 									}
 									else if(element.getAttributeValue("type").equals("number")) {
 										try {
-											Long.parseLong(input);
-											currentState = element;
-											tree.add(step + "");
-											continue transitions;
+											long number = Long.parseLong(input);
+
+											if((((element.getAttributeValue("min") != null) && (number < Long.parseLong(element.getAttributeValue("min")))) || ((element.getAttributeValue("max") != null) && (number > Long.parseLong(element.getAttributeValue("max")))))) {
+												if(children.size() == 1) {
+													if((element.getAttributeValue("min") != null) && (element.getAttributeValue("max") != null)) {
+														return handleInvalidInput(i18n.getMessage("integer.range", new Object[] {Long.parseLong(element.getAttributeValue("min")), Long.parseLong(element.getAttributeValue("max"))}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+													}
+													else if(element.getAttributeValue("min") != null) {
+														return handleInvalidInput(i18n.getMessage("integer.min", new Object[] {Long.parseLong(element.getAttributeValue("min"))}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+													}
+													else if(element.getAttributeValue("max") != null) {
+														return handleInvalidInput(i18n.getMessage("integer.max", new Object[] {Long.parseLong(element.getAttributeValue("max"))}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+													}
+												}
+											}
+											else {
+												currentState = element;
+												tree.add(step + "");
+												continue transitions;
+											}
 
 										} catch(NullPointerException|NumberFormatException ex) {
 											if(children.size() == 1) {

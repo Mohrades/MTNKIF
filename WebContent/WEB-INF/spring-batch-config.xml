@@ -17,7 +17,7 @@
 	<!-- By default when specifying @Async on a method, the executor that will be used is the one supplied to the 'annotation-driven' -->
 	<!-- the value attribute of the @Async annotation can be used when needing to indicate that an executor other than the default should be used -->
 	<!-- set up a default executor -->
-	<task:executor id="batchTaskExecutor" pool-size="5" queue-capacity="10" rejection-policy="CALLER_RUNS" keep-alive="3600" />
+	<task:executor id="batchTaskExecutor" pool-size="7" queue-capacity="10" rejection-policy="CALLER_RUNS" keep-alive="3600" />
 	<!-- <task:executor id="executorWithPoolSizeRange" pool-size="5-25" queue-capacity="100" rejection-policy="DISCARD" keep-alive="3600" /> -->
 	<task:scheduler id="scheduling" pool-size="05" />
 
@@ -25,8 +25,11 @@
 		<!-- new CronTrigger("* 15 9-17 * * MON-FRI") -->
 		<!-- java.lang.IllegalArgumentException: Cron expression must consist of 6 fields (found 7 in "0 00 0 1 APR,MAY,JUN ? 2018") -->
 
+  		<task:scheduled ref="jobs" method="run_pam" cron="0 00 02 ? * *" />
+  		<!-- <task:scheduled ref="jobs" method="run_pam" cron="00 30 01 ? * *" /> -->
+
 		<!-- <task:scheduled ref="jobs" method="run_database_maintenance" cron="0 30 01 ? * *"  /> -->
-  		<task:scheduled ref="jobs" method="renew_crbt" cron="0 00 02 ? * *" />
+  		<task:scheduled ref="jobs" method="renew_crbt" cron="30 01 00 ? * *" />
 
   		<task:scheduled ref="jobs" method="clear_ussd" fixed-delay="900000" />
 	</task:scheduled-tasks>
@@ -41,10 +44,39 @@
 	  </batch:step>
 	</batch:job>
 
+	<batch:job id="runningPAMJob">
+	  <batch:step id="runningPAM">
+	  	<batch:tasklet>
+	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="100" /> -->
+	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="50" /> -->
+	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="10" /> -->
+	      <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="1">
+	      </batch:chunk>
+	    </batch:tasklet>
+	  </batch:step>
+	</batch:job>
+
 	<batch:job id="crbtRenewalJob">
 	  <batch:step id="crbtRenewal">
 	  	<batch:tasklet ref="crbtRenewalTasklet" transaction-manager="transactionManager" />
 	  </batch:step>
 	</batch:job>
+
+	<bean id="subscribers" class="org.springframework.batch.item.database.JdbcCursorItemReader">
+	<!-- <bean id="subscribers" class="jobs.RunnablePAMSubscribers"> -->
+		<!-- <constructor-arg index="0" type="int" value="0" /> -->
+		<!-- <constructor-arg index="0" type="int" value="1" /> -->
+   		<!-- <constructor-arg index="1" type="java.lang.String" value="${AWS_SECRET_ACCESS_KEY}" /> -->
+
+	  	<property name="dataSource" ref="db_connection" />
+	  	<property name="rowMapper">
+	    	<bean class="dao.mapping.SubscriberRowMapper" />
+	  	</property>
+	  	<property name="sql">
+	  		<value>
+	    		SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((FLAG = 1) AND (LOCKED = 0))
+	  		</value>
+	  	</property>
+	</bean>
 
 </beans>

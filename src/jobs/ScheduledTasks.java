@@ -25,6 +25,9 @@ public class ScheduledTasks {
 	private Job cleanExpiredUssdRequestJob;
 
 	@Autowired
+	private Job runningPAMJob;
+
+	@Autowired
 	private Job crbtRenewalJob;
 
 	public ScheduledTasks() {
@@ -46,6 +49,10 @@ public class ScheduledTasks {
 
 	public void renew_crbt() {
 		execute(crbtRenewalJob);
+	}
+
+	public void run_pam() {
+		execute(runningPAMJob);
 	}
 
 	public void execute(Job job) {

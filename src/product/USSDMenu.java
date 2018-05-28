@@ -15,6 +15,7 @@ public class USSDMenu {
 
 	public Document getContent(int root) {
 		// attributes : type = [text|number|msisdn|static] ; network = [on|off] ; ton = [National|International] ; value = [value_to_fixe]
+		// in case type equals to number, set attribute <<min>> and <<max>> to fix range if needed
 		// in case type equals to msisdn, set attribute <<ton>> required
 		// in case type equals to msisdn, set attribute <<network>> if needed (<<ton>> must be set to 'National')
 		// in case type equals to static, set attribute <<value>> required

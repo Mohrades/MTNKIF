@@ -76,7 +76,8 @@ public class Development {
 				StringBuffer response = new StringBuffer();
 
 				while ((inputLine = in.readLine()) != null) {
-					response.append(inputLine);
+					if(response.length() == 0) response.append(inputLine);
+					else response.append("\n" + inputLine);
 				}
 				in.close();
 
@@ -94,7 +95,7 @@ public class Development {
 						modele.put("amount", http.getHeaderField("Amount"));
 					}
 					modele.put("next", http.getHeaderField("FreeFlow").equals("FC"));
-					modele.put("message", response.toString().replace("\\n", "\n"));
+					modele.put("message", response.toString());
 
 				} catch (NullPointerException|NumberFormatException e) {
 

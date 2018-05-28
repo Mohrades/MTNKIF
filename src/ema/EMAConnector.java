@@ -32,7 +32,7 @@ public class EMAConnector {
 		        int totalsleep = 0;
 
 		        while (in.available() == 0) {
-		        	if(totalsleep >= 30000) {
+		        	if(totalsleep >= 5000) {
 		        		break;
 		        	}
 
@@ -60,31 +60,34 @@ public class EMAConnector {
 
 	public void fermer() {
 		try {
-			execute("LOGOUT;");
+			execute("LOGOUT;", true);
 			socket.close();
 
 		} catch (IOException e) {
 
 		}
 		catch (Exception e) {
+
 		}
 	}
 
-     public int login(){
-        return execute("LOGIN:"+login+":"+password+";");
+     public int login() {
+        return execute("LOGIN:"+login+":"+password+";", false);
      }
 
-     public int execute(String command) {
+     public int execute(String command, boolean noResponse) {
     	try {
     		int totalsleep = 0;
 
             out.println(command + "\n");
             out.flush();
 
+            if(noResponse) return 0;
+
             String reponse = new String("");
             byte[] lecteur = new byte[1024];
             while (in.available() == 0) {
-            	if(totalsleep >= 30000) return -2;
+            	if(totalsleep >= 5000) return -2;
             	totalsleep += sleep;
             	Thread.sleep(sleep);
             }
@@ -97,10 +100,10 @@ public class EMAConnector {
 	        	lecteur = new byte[1024];
 	        }
 
-            int init=reponse.indexOf("RESP:");
-            int last=reponse.indexOf(";",init);
+            int init = reponse.indexOf("RESP:");
+            int last = reponse.indexOf(";", init);
 
-            int retour=Integer.parseInt(reponse.substring(init+5,last));
+            int retour = Integer.parseInt(reponse.substring(init+5,last));
 
             return retour;
 

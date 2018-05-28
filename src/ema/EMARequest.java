@@ -12,7 +12,7 @@ public class EMARequest {
 		EMAConnector connection = null;
 
 		try {
-			connection = new EMAConnector("10.77.85.73", 3300, 5, "login", "password");
+			connection = new EMAConnector("10.77.85.73", 3300, 5, "psappuser", "psappuser@123");
 			int retry = 0;
 
 			while(!connection.isOpen()) {
@@ -30,10 +30,10 @@ public class EMARequest {
 					else Thread.sleep(50);
 
 					if((retry%2) == 0) {
-						connection = new EMAConnector("10.77.85.75", 3300, 5, "login", "password");
+						connection = new EMAConnector("10.77.85.75", 3300, 5, "psappuser", "psappuser@123");
 					}
 					else {
-						connection = new EMAConnector("10.77.85.73", 3300, 5, "login", "password");
+						connection = new EMAConnector("10.77.85.73", 3300, 5, "psappuser", "psappuser@123");
 					}
 
 					retry++;
@@ -63,7 +63,7 @@ public class EMARequest {
 		try {
 			if(connection != null) {
 		    	int retry = 0;
-		    	int responseCode = connection.execute(command);
+		    	int responseCode = connection.execute(command, false);
 
 		        while((responseCode == 3006) || (responseCode == 3007)) {
 		        	if(retry >= 5) {
@@ -71,11 +71,13 @@ public class EMARequest {
 		        	}
 
 		        	retry++;
+		        	// login
 		        	responseCode = connection.login();
+			        if(responseCode == 3008) responseCode = 0;
 		        }
 
 		        if((retry != 0) && (responseCode == 0)) {
-		        	responseCode = connection.execute(command);
+		        	responseCode = connection.execute(command, false);
 		        }
 
 		        boolean AfterError = false;
@@ -86,7 +88,7 @@ public class EMARequest {
 		        		AfterError = true;
 		        	}
 
-		        	responseCode = connection.execute(command);
+		        	responseCode = connection.execute(command, false);
 
 		        	if(retry > 150) {
 		        		break;
@@ -110,7 +112,11 @@ public class EMARequest {
 		        if(AfterError && (successResp.contains(responseCode))) {
 		        	responseCode = 0;
 		        }
-		        return responseCode == 0;			
+
+		        // logout
+		        connection.fermer();
+
+		        return responseCode == 0;
 			}
 
 		} catch(Throwable th) {
