@@ -9,6 +9,32 @@
 	</param-value>
   </context-param>
 
+
+
+  <!-- From Log4J 1's documentation : log4j.jar file -->
+  <!-- How to configure the log4j output file path in web.xml and log4j.properties? -->
+  <!-- <context-param>
+  	<param-name>log4jConfigLocation</param-name>
+   	<param-value>/WEB-INF/classes/log4j.properties</param-value>
+  </context-param> -->
+  <!-- How to configure the log4j output file path in web.xml and log4j.properties? -->
+  <!-- <listener>
+  	<listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
+  </listener> -->
+
+
+  <!-- If using a Servlet 3 compatible servlet container, Log4j 2 will automatically be set up on startup by using a ServletContainerInitializer provided by the log4j-web artifact. If you would like to dynamically specify the configuration file to be used, you have to first deactivate the initializer by adding this to your web.xml: -->
+  <context-param>
+  	<param-name>isLog4jAutoInitializationDisabled</param-name>
+  	<param-value>true</param-value>
+  </context-param>
+  <!-- To implement the logic to specify the config file you have to add the following to your servlet listener: log4j2.Log4j2WebArtifact -->
+  <!-- One last thing: Be aware that your servlet listener should be the first one in your web.xml so that no logging is done before the logger is correctly set up. -->
+  <listener>
+  	<listener-class>log4j.Log4j2WebConfiguration</listener-class>
+  </listener>
+
+
   <listener>
     <listener-class>
 		org.springframework.web.context.ContextLoaderListener

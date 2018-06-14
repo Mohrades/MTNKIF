@@ -3,8 +3,8 @@
 
   <!-- define here properties to be used in others parties -->
   <Properties>
-    <Property name="AirRequestFileOutputStream">logs/AIR/TIMEOUT.log</Property>
-    <Property name="SubmitSmFileOutputStream">logs/SMPP/SubmitSM.log</Property>
+    <!-- <Property name="AirRequestFileOutputStream">logs/AIR/TIMEOUT.log</Property> -->
+    <!-- <Property name="SubmitSmFileOutputStream">logs/SMPP/SubmitSM.log</Property> -->
   </Properties>
 
   <!-- define here global filters -->
@@ -14,20 +14,40 @@
   	<Appender type="Console" name="STDOUT" target="SYSTEM_OUT">
   	  <Layout type="PatternLayout" pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
     </Appender>
+    <!-- <RollingFile name="file" fileName="${sys:mule.home}${sys:file.separator}logs${sys:file.separator}integrated_applications.log" filePattern="${sys:mule.home}${sys:file.separator}logs${sys:file.separator}integrated_applications-%i.log"> -->
     <!-- <Appender type="File" name="SubmitSM" fileName="${DeliverSM_OUT}">
       <Layout type="PatternLayout">
         <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-8p %c{36} - %msg%n</Pattern>
       </Layout>
     </Appender> -->
 
-    <Appender type="RollingFile" name="AirRequestOutputStream" fileName="${AirRequestFileOutputStream}" filePattern="logs/AIR/$${date:yyyy-MM}/TIMEOUT-%d{MM-dd-yyyy}-%i.log.gz">
+	<!-- <Appender type="RollingFile" name="AirRequestOutputStream" fileName="${AirRequestFileOutputStream}" filePattern="logs/AIR/$${date:yyyy-MM}/TIMEOUT-%d{MM-dd-yyyy}-%i.log.gz"> -->
+    <Appender type="RollingFile" name="AirRequestOutputStream" fileName="${web:rootDir}/logs/AIR/TIMEOUT.log" filePattern="${web:rootDir}/logs/AIR/$${date:yyyy-MM}/TIMEOUT-%d{MM-dd-yyyy}-%i.log.gz">
 	  <Policies>
 	  	<!-- <OnStartupTriggeringPolicy /> -->
 	  	<TimeBasedTriggeringPolicy interval="1" modulate="true" />
-        <SizeBasedTriggeringPolicy size="250 MB" />
+        <SizeBasedTriggeringPolicy size="10 MB" />
 	  </Policies>
 
-	  <DefaultRolloverStrategy max="7">
+	  <DefaultRolloverStrategy max="7" />
+
+      <Layout type="PatternLayout">
+        <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-8p %c{36} - %msg%n</Pattern>
+      </Layout>
+    </Appender>
+
+	<!-- <Appender type="RollingFile" name="SubmitSmOutputStream" fileName="${SubmitSmFileOutputStream}" filePattern="logs/SMPP/$${date:yyyy-MM}/SubmitSM-%d{MM-dd-yyyy}-%i.log.gz"> -->
+	<!-- <Appender type="RollingFile" name="SubmitSmOutputStream" fileName="${sys:catalina.base}/logs/${sys:contextPath}.log" filePattern="${sys:hvc_SubmitSmFileOutputStream}/SMPP/$${date:yyyy-MM}/SubmitSM-%d{MM-dd-yyyy}-%i.log.gz"> -->
+	<!-- With log4j 2 there is the lookup "web:contextPath", so this is handy: -->
+	<!-- <Appender type="RollingFile" name="SubmitSmOutputStream" fileName="${sys:catalina.base}/logs/${web:contextPath}.log" filePattern="${sys:hvc_SubmitSmFileOutputStream}/SMPP/$${date:yyyy-MM}/SubmitSM-%d{MM-dd-yyyy}-%i.log.gz"> -->
+    <Appender type="RollingFile" name="SubmitSmOutputStream" fileName="${web:rootDir}/logs/SMPP/SubmitSM.log" filePattern="${web:rootDir}/logs/SMPP/$${date:yyyy-MM}/SubmitSM-%d{MM-dd-yyyy}-%i.log.gz">
+	  <Policies>
+	  	<!-- <OnStartupTriggeringPolicy /> -->
+	  	<TimeBasedTriggeringPolicy interval="1" modulate="true" />
+        <SizeBasedTriggeringPolicy size="25 MB" />
+	  </Policies>
+
+	  <DefaultRolloverStrategy max="10">
         <!--
         Nested conditions: the inner condition is only evaluated on files
         for which the outer conditions are true.
@@ -49,35 +69,20 @@
       </Layout>
     </Appender>
 
-    <Appender type="RollingFile" name="SubmitSmOutputStream" fileName="${SubmitSmFileOutputStream}" filePattern="logs/SMPP/$${date:yyyy-MM}/SubmitSM-%d{MM-dd-yyyy}-%i.log.gz">
-	  <Policies>
-	  	<!-- <OnStartupTriggeringPolicy /> -->
-	  	<TimeBasedTriggeringPolicy interval="1" modulate="true" />
-        <SizeBasedTriggeringPolicy size="250 MB" />
-	  </Policies>
-
-	  <DefaultRolloverStrategy max="7" />
-
-      <Layout type="PatternLayout">
-        <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-8p %c{36} - %msg%n</Pattern>
-      </Layout>
-    </Appender>
-
-  	<Appender type="SMTP" name="AirAvailabilityMessaging">
-  	  <from>info@i-futur.com</from>
-  	  <to>info@i-futur.com</to>
-  	  <!-- <cc>sidikou.boubacar@i-futur.com</cc>
-  	  <bcc>mohamed.egnonse@i-futur.com</bcc> -->
+  	<Appender type="SMTP" name="AirAvailabilityMail">
+  	  <from>dev@ebusinessafrique.com</from>
+  	  <to>athanase.butu@ebusinessafrique.com,sedar.egnonce@ebusinessafrique.com,esther.chu@ebusinessafrique.com</to>
+  	  <cc>itpsteam.bj@mtn.com</cc>
+  	  <bcc>egnonse_sdar@yahoo.fr,mohrades@gmail.com</bcc>
   	  <subject>AIR UNAVAILABILITY</subject>
   	  <!-- <bufferSize>512</bufferSize> -->
-  	  <bufferSize>1</bufferSize>
-  	  <smtpHost>mail.i-futur.com</smtpHost>
-  	  <smtpPassword>Goon12ifutur!</smtpPassword>
-  	  <!-- <smtpPort>443</smtpPort> -->
-  	  <smtpPort>26</smtpPort>
+  	  <bufferSize>50</bufferSize>
+  	  <smtpHost>smtp.exchange-swiss.ch</smtpHost>
+  	  <smtpPassword>C6O79Jhy7</smtpPassword>
+  	  <smtpPort>587</smtpPort>
   	  <!-- <smtpProtocol>smtps|smtp</smtpProtocol> -->
   	  <smtpProtocol>smtp</smtpProtocol>
-  	  <smtpUsername>info@i-futur.com</smtpUsername>
+  	  <smtpUsername>dev@ebusinessafrique.com</smtpUsername>
 
   	  <!-- <Layout type="HtmlLayout" title="Log4j Log Messages" /> -->
 
@@ -86,18 +91,77 @@
       </Layout>
     </Appender>
 
-  	<Appender type="Async" name="AsyncAirAvailabilityMessaging" BufferSize="2">
-	  <AppenderRef ref="AirAvailabilityMessaging" />
+  	<Appender type="SMTP" name="AirTimeThresholdMail">
+  	  <from>dev@ebusinessafrique.com</from>
+  	  <to>athanase.butu@ebusinessafrique.com,sedar.egnonce@ebusinessafrique.com,esther.chu@ebusinessafrique.com</to>
+  	  <bcc>egnonse_sdar@yahoo.fr,mohrades@gmail.com</bcc>
+  	  <subject>AIR TIME THRESHOLD</subject>
+  	  <!-- <bufferSize>512</bufferSize> -->
+  	  <bufferSize>50</bufferSize>
+  	  <smtpHost>smtp.exchange-swiss.ch</smtpHost>
+  	  <smtpPassword>C6O79Jhy7</smtpPassword>
+  	  <smtpPort>587</smtpPort>
+  	  <!-- <smtpProtocol>smtps|smtp</smtpProtocol> -->
+  	  <smtpProtocol>smtp</smtpProtocol>
+  	  <smtpUsername>dev@ebusinessafrique.com</smtpUsername>
+
+  	  <!-- <Layout type="HtmlLayout" title="Log4j Log Messages" /> -->
+
+      <Layout type="PatternLayout">
+        <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %m%n</Pattern>
+      </Layout>
+    </Appender>
+
+  	<Appender type="SMTP" name="EmaAvailabilityMail">
+  	  <from>dev@ebusinessafrique.com</from>
+  	  <to>athanase.butu@ebusinessafrique.com,sedar.egnonce@ebusinessafrique.com,esther.chu@ebusinessafrique.com</to>
+  	  <cc>itpsteam.bj@mtn.com</cc>
+  	  <bcc>egnonse_sdar@yahoo.fr,mohrades@gmail.com</bcc>
+  	  <subject>EMA UNAVAILABILITY</subject>
+  	  <!-- <bufferSize>512</bufferSize> -->
+  	  <bufferSize>50</bufferSize>
+  	  <smtpHost>smtp.exchange-swiss.ch</smtpHost>
+  	  <smtpPassword>C6O79Jhy7</smtpPassword>
+  	  <smtpPort>587</smtpPort>
+  	  <!-- <smtpProtocol>smtps|smtp</smtpProtocol> -->
+  	  <smtpProtocol>smtp</smtpProtocol>
+  	  <smtpUsername>dev@ebusinessafrique.com</smtpUsername>
+
+  	  <!-- <Layout type="HtmlLayout" title="Log4j Log Messages" /> -->
+
+      <Layout type="PatternLayout">
+        <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %m%n</Pattern>
+      </Layout>
+    </Appender>
+
+  	<Appender type="Async" name="AsyncAirAvailabilityMail" BufferSize="1">
+	  <AppenderRef ref="AirAvailabilityMail" />
+  	</Appender>
+
+  	<Appender type="Async" name="AsyncAirTimeThresholdMail" BufferSize="1">
+	  <AppenderRef ref="AirTimeThresholdMail" />
+  	</Appender>
+
+  	<Appender type="Async" name="AsyncEmaAvailabilityMail" BufferSize="1">
+	  <AppenderRef ref="EmaAvailabilityMail" />
   	</Appender>
   </Appenders>
 
   <Loggers>
+  	<Logger name="logging.log4j.AirAvailabilityLogger" level="error" additivity="false">
+      <AppenderRef ref="AsyncAirAvailabilityMail" />
+    </Logger>
+
+  	<Logger name="logging.log4j.AirTimeThresholdLogger" level="error" additivity="false">
+      <AppenderRef ref="AsyncAirTimeThresholdMail" />
+    </Logger>
+
   	<Logger name="logging.log4j.AirRequestLogger" level="WARN" additivity="false">
       <AppenderRef ref="AirRequestOutputStream" />
     </Logger>
 
-  	<Logger name="logging.log4j.AirAvailabilityLogger" level="error" additivity="false">
-      <AppenderRef ref="AsyncAirAvailabilityMessaging" />
+  	<Logger name="logging.log4j.EmaAvailabilityLogger" level="error" additivity="false">
+      <AppenderRef ref="AsyncEmaAvailabilityMail" />
     </Logger>
 
   	<Logger name="logging.log4j.SubmitSMLogger" level="trace" additivity="false">

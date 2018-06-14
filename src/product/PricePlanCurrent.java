@@ -27,7 +27,7 @@ public class PricePlanCurrent {
 		int statusCode = -1; // default
 
 		if(subscriber == null) {
-			statusCode = new PricePlanCurrentActions().isActivated(productProperties, dao, msisdn);
+			statusCode = (new PricePlanCurrentActions()).isActivated(productProperties, dao, msisdn);
 
 			// initialization the former price plan Status (formerly)
 			if((statusCode == 0) || (statusCode == 1)) {

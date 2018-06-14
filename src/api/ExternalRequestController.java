@@ -6,6 +6,9 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,7 +61,7 @@ public class ExternalRequestController {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
 		}
 
-		AccountDetails accountDetails = new AIRRequest().getAccountDetails(msisdn);
+		AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold())).getAccountDetails(msisdn);
 		int language = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
 
 		originOperatorID = originOperatorID.trim();
@@ -77,7 +80,7 @@ public class ExternalRequestController {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
 		}
 
-		AccountDetails accountDetails = new AIRRequest().getAccountDetails(msisdn);
+		AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold())).getAccountDetails(msisdn);
 		int language = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
 
 		if((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "A")) {
@@ -160,13 +163,17 @@ public class ExternalRequestController {
 	
 	public void requestSubmitSmToSmppConnector(ProductProperties productProperties, String messageA, String Anumber, String messageB, String Bnumber, String senderName) {
 		if(senderName != null) {
+			Logger logger = LogManager.getLogger("logging.log4j.SubmitSMLogger");
+
 			if(Anumber != null) {
-				if(Anumber.startsWith(productProperties.getMcc() + "")) Anumber = Anumber.substring((productProperties.getMcc() + "").length());
+				// if(Anumber.startsWith(productProperties.getMcc() + "")) Anumber = Anumber.substring((productProperties.getMcc() + "").length());
 				new SMPPConnector().submitSm(senderName, Anumber, messageA);
+				logger.log(Level.TRACE, "[" + Anumber + "] " + messageA);
 			}
 			if(Bnumber != null) {
-				if(Bnumber.startsWith(productProperties.getMcc() + "")) Bnumber = Bnumber.substring((productProperties.getMcc() + "").length());
+				// if(Bnumber.startsWith(productProperties.getMcc() + "")) Bnumber = Bnumber.substring((productProperties.getMcc() + "").length());
 				new SMPPConnector().submitSm(senderName, Bnumber, messageB);
+				logger.trace("[" + Bnumber + "] " + messageB);
 			}
 		}
 	}

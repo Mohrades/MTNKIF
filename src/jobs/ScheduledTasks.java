@@ -57,17 +57,26 @@ public class ScheduledTasks {
 
 	public void execute(Job job) {
 		try {
-			SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
+			JobParameters jobParams = createJobParameters();
 
-			Map<String, JobParameter> map = new HashMap<String, JobParameter>();
-			map.put("date.lancement", new JobParameter(timestampFormat.format(new Date())));
-			JobParameters params = new JobParameters(map);
-			JobExecution jobExecution = jobLauncher.run(job, params);
+			// Launches job
+			@SuppressWarnings("unused")
+			JobExecution jobExecution = jobLauncher.run(job, jobParams);
 
-			jobExecution.getStatus();
+			// jobExecution.getStatus();
 
 		} catch(Throwable th) {
 
 		}
+	}
+
+	// Creates job parameters
+	private JobParameters createJobParameters() {
+		SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
+
+		Map<String, JobParameter> map = new HashMap<String, JobParameter>();
+		map.put("date.lancement", new JobParameter(timestampFormat.format(new Date())));
+		JobParameters params = new JobParameters(map);
+		return params;
 	}
 }

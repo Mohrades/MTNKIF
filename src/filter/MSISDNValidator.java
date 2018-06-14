@@ -17,19 +17,19 @@ public class MSISDNValidator {
 	public boolean isFiltered(DAO dao, ProductProperties productProperties, String msisdn, String type) {
 		if(type.equals("A")) {
 			if(onNet(productProperties, msisdn)) {
-				return validate(dao, productProperties.getAnumber_serviceClass_include_filter(), productProperties.getAnumber_db_include_filter(), productProperties.getAnumber_serviceClass_exclude_filter(), productProperties.getAnumber_db_exclude_filter(), msisdn);
+				return validate(dao, productProperties.getAnumber_serviceClass_include_filter(), productProperties.getAnumber_db_include_filter(), productProperties.getAnumber_serviceClass_exclude_filter(), productProperties.getAnumber_db_exclude_filter(), msisdn, productProperties);
 			}
 		}
 		else if(type.equals("B")) {
 			if(onNet(productProperties, msisdn)) {
-				return validate(dao, productProperties.getBnumber_serviceClass_include_filter(), productProperties.getBnumber_db_include_filter(), productProperties.getBnumber_serviceClass_exclude_filter(), productProperties.getBnumber_db_exclude_filter(), msisdn);
+				return validate(dao, productProperties.getBnumber_serviceClass_include_filter(), productProperties.getBnumber_db_include_filter(), productProperties.getBnumber_serviceClass_exclude_filter(), productProperties.getBnumber_db_exclude_filter(), msisdn, productProperties);
 			}
 		}
 
 		return false;
 	}
 
-	private boolean validate(DAO dao, List<String> number_serviceClass_include_filter, List<String> number_db_include_filter, List<String> number_serviceClass_exclude_filter, List<String> number_db_exclude_filter, String msisdn) {
+	private boolean validate(DAO dao, List<String> number_serviceClass_include_filter, List<String> number_db_include_filter, List<String> number_serviceClass_exclude_filter, List<String> number_db_exclude_filter, String msisdn, ProductProperties productProperties) {
 		// include
 		boolean included = false;
 		// exclude
@@ -42,7 +42,7 @@ public class MSISDNValidator {
 			}
 			else {
 				if(number_serviceClass_include_filter != null) {
-					if(isServiceClassFiltered(number_serviceClass_include_filter, msisdn)) {
+					if(isServiceClassFiltered(number_serviceClass_include_filter, msisdn, productProperties)) {
 						included = true;
 					}
 					else if(number_db_include_filter != null) {
@@ -60,7 +60,7 @@ public class MSISDNValidator {
 			}
 			else {
 				if(number_serviceClass_exclude_filter != null) {
-					if(isServiceClassFiltered(number_serviceClass_exclude_filter, msisdn)) {
+					if(isServiceClassFiltered(number_serviceClass_exclude_filter, msisdn, productProperties)) {
 						excluded = true;
 					}
 					else if(number_db_exclude_filter != null) {
@@ -80,10 +80,10 @@ public class MSISDNValidator {
 		return included && (!excluded);
 	}
 
-	private boolean isServiceClassFiltered(List<String> number_serviceClass_filter, String msisdn) {
+	private boolean isServiceClassFiltered(List<String> number_serviceClass_filter, String msisdn, ProductProperties productProperties) {
 		try {
-			AccountDetails accountDetails = new AIRRequest().getAccountDetails(msisdn);
-
+			AccountDetails accountDetails = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold()).getAccountDetails(msisdn);
+			
 			if(number_serviceClass_filter.contains(accountDetails.getServiceClassCurrent() + "")) {
 				return true;
 			}
@@ -129,7 +129,7 @@ public class MSISDNValidator {
 		if((country_code.length() + productProperties.getMsisdn_length()) == (msisdn.length())) {
 			for(String prefix : productProperties.getMnc()) {
 				if(msisdn.startsWith(country_code+prefix)) {
-					return (new AIRRequest().getAccountDetails(msisdn)) != null;
+					return (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold()).getAccountDetails(msisdn)) != null;
 					// return true;
 				}
 			}

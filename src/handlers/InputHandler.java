@@ -7,6 +7,9 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.context.MessageSource;
 
 import com.google.common.base.Splitter;
@@ -36,7 +39,7 @@ public class InputHandler {
 	public void handle(MessageSource i18n, ProductProperties productProperties, Map<String, String> parameters, Map<String, Object> modele, HttpServletRequest request, DAO dao) {
 		USSDRequest ussd = null;
 
-		AccountDetails accountDetails = new AIRRequest().getAccountDetails(parameters.get("msisdn"));
+		AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold())).getAccountDetails(parameters.get("msisdn"));
 		int language = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
 
 		try {
@@ -61,7 +64,7 @@ public class InputHandler {
 			}
 
 			// USSD Flow Status
-			Map<String, Object> flowStatus = new USSDFlow().validate(ussd, language, (new USSDMenu()).getContent(productProperties.getSc()), productProperties, i18n);
+			Map<String, Object> flowStatus = new USSDFlow().validate(ussd, language, (new USSDMenu()).getContent(productProperties.getSc()), productProperties, i18n, dao);
 
 			// -1 : exit with error (delete state from ussd table; message)
 			if(((Integer)flowStatus.get("status")) == -1) {
@@ -80,20 +83,20 @@ public class InputHandler {
 					// infos
 					endStep(dao, ussd, modele, productProperties, (new PricePlanCurrentActions()).getInfo(i18n, productProperties, ussd.getMsisdn()), null, null, null, null);
 				}
-				else if((ussd.getInput().equals(short_code + "*1")) || (ussd.getInput().equals(short_code + "*0"))) {
+				else if(((ussd.getInput().startsWith(short_code + "*1")) || (ussd.getInput().startsWith(short_code + "*0"))) && (ussd.getInput().endsWith("*1"))) {
 					if((new MSISDNValidator()).isFiltered(dao, productProperties, ussd.getMsisdn(), "A")) {
 						List<String> inputs = Splitter.onPattern("[*]").trimResults().omitEmptyStrings().splitToList(ussd.getInput());
 
-						if(inputs.size() == 2) {
+						if(inputs.size() == 3) {
 							Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language);
 
 							if((int)(requestStatus[0]) >= 0) {
-								if(ussd.getInput().endsWith("*0")) {
+								if(ussd.getInput().endsWith("*0*1")) {
 									// deactivation
 									if((int)(requestStatus[0]) == 0) deactivation(dao, ussd, (Subscriber)requestStatus[2], i18n, language, productProperties, modele);
 									else endStep(dao, ussd, modele, productProperties, i18n.getMessage("status.unsuccessful.already", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 								}
-								else if(ussd.getInput().endsWith("*1")) {
+								else if(ussd.getInput().endsWith("*1*1")) {
 									// activation
 									if((int)(requestStatus[0]) == 0) endStep(dao, ussd, modele, productProperties, i18n.getMessage("status.successful.already", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 									else {
@@ -114,6 +117,9 @@ public class InputHandler {
 						}
 					}
 					else endStep(dao, ussd, modele, productProperties, i18n.getMessage("menu.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+				}
+				else if(((ussd.getInput().startsWith(short_code + "*1")) || (ussd.getInput().startsWith(short_code + "*0"))) && (ussd.getInput().endsWith("*2"))) {
+					endStep(dao, ussd, modele, productProperties, i18n.getMessage("price.plan.change.canceled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 				}
 				else {
 					endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
@@ -151,13 +157,18 @@ public class InputHandler {
 		modele.put("message", messageA);
 
 		if(senderName != null) {
+			Logger logger = LogManager.getLogger("logging.log4j.SubmitSMLogger");
+			// Logger logger = LogManager.getRootLogger();
+
 			if(Anumber != null) {
-				if(Anumber.startsWith(productProperties.getMcc() + "")) Anumber = Anumber.substring((productProperties.getMcc() + "").length());
+				// if(Anumber.startsWith(productProperties.getMcc() + "")) Anumber = Anumber.substring((productProperties.getMcc() + "").length());
 				new SMPPConnector().submitSm(senderName, Anumber, messageA);
+				logger.trace("[" + Anumber + "] " + messageA);
 			}
 			if(Bnumber != null) {
-				if(Bnumber.startsWith(productProperties.getMcc() + "")) Bnumber = Bnumber.substring((productProperties.getMcc() + "").length());
+				// if(Bnumber.startsWith(productProperties.getMcc() + "")) Bnumber = Bnumber.substring((productProperties.getMcc() + "").length());
 				new SMPPConnector().submitSm(senderName, Bnumber, messageB);
+				logger.log(Level.TRACE, "[" + Bnumber + "] " + messageB);
 			}
 		}
 	}

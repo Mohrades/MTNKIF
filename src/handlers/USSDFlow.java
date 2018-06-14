@@ -1,6 +1,7 @@
 package handlers;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -16,9 +17,11 @@ import org.springframework.context.MessageSource;
 
 import com.google.common.base.Splitter;
 
+import dao.DAO;
 import domain.models.Subscriber;
 import domain.models.USSDRequest;
 import filter.MSISDNValidator;
+import product.PricePlanCurrent;
 import product.ProductProperties;
 
 @SuppressWarnings("unused")
@@ -28,7 +31,8 @@ public class USSDFlow {
 
 	}
 
-	public Map<String, Object> validate(USSDRequest ussd, int language, Document document, ProductProperties productProperties, MessageSource i18n) {
+	@SuppressWarnings("deprecation")
+	public Map<String, Object> validate(USSDRequest ussd, int language, Document document, ProductProperties productProperties, MessageSource i18n, DAO dao) {
 		// on crée le modèle de la vue à afficher
 		Map<String, Object> modele = new HashMap<String, Object>();
 		// initialization
@@ -248,7 +252,21 @@ public class USSDFlow {
 				modele.put("status", 1);
 				/*if(transitions.length() == 0) modele.put("message", i18n.getMessage("menu", null, null, null));
 				else modele.put("message", i18n.getMessage("menu." + transitions, null, null, null));*/
-				modele.put("message", i18n.getMessage("menu" + transitions, null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+				if((("menu" + transitions).equals("menu.2")) || (("menu" + transitions).equals("menu.1"))) {
+					Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language);
+
+					if(("menu" + transitions).equals("menu.2")) {
+						modele.put("message", i18n.getMessage("menu.2", new Object[] {(((Subscriber)requestStatus[2] == null) || (((Subscriber)requestStatus[2]).getId() == 0) || (((Subscriber)requestStatus[2]).getLast_update_time() == null)) ? 0 : (productProperties.getActivation_chargingAmount()/100)}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+					}
+					else {
+						Date now = new Date();
+						now.setDate(now.getDate() - productProperties.getDeactivation_freeCharging_days());
+						modele.put("message", i18n.getMessage("menu.1", new Object[] {(((Subscriber)requestStatus[2] == null) || (((Subscriber)requestStatus[2]).getId() == 0) || (((Subscriber)requestStatus[2]).getLast_update_time() == null) || (((Subscriber)requestStatus[2]).getLast_update_time().before(now))) ? 0 : (productProperties.getDeactivation_chargingAmount()/100)}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+					}
+				}
+				else {
+					modele.put("message", i18n.getMessage("menu" + transitions, null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+				}
 			}
 			// on-end : end-state
 			else {

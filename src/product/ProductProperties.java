@@ -93,8 +93,11 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	@Value("#{appConfig['crbt.renewal.aspu.filter']}")
 	private String crbt_renewal_aspu_filter;
 
-	@Value("#{appConfig['crbt.default.song']}")
-	private short crbt_default_song;
+	@Value("#{appConfig['song.rbt.code']}")
+	private String song_rbt_code;
+
+	@Value("#{appConfig['song.rbt.id']}")
+	private String song_rbt_id;
 
 	private List<String> Anumber_serviceClass_include_filter;
 	private List<String> Anumber_db_include_filter;
@@ -106,7 +109,28 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	private List<String> Bnumber_serviceClass_exclude_filter;
 	private List<String> Bnumber_db_exclude_filter;
 
-	private List<String> originOperatorIDs_list;
+	/*private List<String> originOperatorIDs_list;*/
+
+	private List<String> air_hosts;
+	@Value("#{appConfig['air.io.sleep']}")
+	private int air_io_sleep;
+	@Value("#{appConfig['air.io.timeout']}")
+	private int air_io_timeout;
+	@Value("#{appConfig['air.io.threshold']}")
+	private int air_io_threshold;
+
+	private List<String> ema_hosts;
+	@Value("#{appConfig['ema.io.sleep']}")
+	private int ema_io_sleep;
+	@Value("#{appConfig['ema.io.timeout']}")
+	private int ema_io_timeout;
+
+	@Value("#{appConfig['crbt.server.host']}")
+	private String crbt_server_host;
+	@Value("#{appConfig['crbt.server.io.sleep']}")
+	private int crbt_server_io_sleep;
+	@Value("#{appConfig['crbt.server.io.timeout']}")
+	private int crbt_server_io_timeout;
 
 	@Value("#{appConfig['gsm.mnc']}")
 	public void setMnc(final String gsmmnc) {
@@ -114,6 +138,20 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 			mnc = Splitter.onPattern("[,]").trimResults().omitEmptyStrings().splitToList(gsmmnc);
 		}
 	 }
+
+	@Value("#{appConfig['air.hosts']}")
+	public void setAir_hosts(final String air_hosts) {
+		if(isSet(air_hosts)) {
+			this.air_hosts = Splitter.onPattern("[;]").trimResults().omitEmptyStrings().splitToList(air_hosts);
+		}
+	}
+
+	@Value("#{appConfig['ema.hosts']}")
+	public void setEma_hosts(final String ema_hosts) {
+		if(isSet(ema_hosts)) {
+			this.ema_hosts = Splitter.onPattern("[;]").trimResults().omitEmptyStrings().splitToList(ema_hosts);
+		}
+	}
 
 	@Value("#{appConfig['xtra.serviceOfferings.IDs']}")
 	public void setXtra_serviceOfferings_IDs(final String xtra_serviceOfferings_IDs) {
@@ -206,12 +244,12 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		}
 	}
 
-	@Value("#{appConfig['originOperatorIDs.list']}")
+	/*@Value("#{appConfig['originOperatorIDs.list']}")
 	public void setOriginOperatorIDs_list(final String originOperatorIDs_list) {
 		if(isSet(originOperatorIDs_list)) {
 			this.originOperatorIDs_list = Splitter.onPattern("[,]").trimResults().omitEmptyStrings().splitToList(originOperatorIDs_list);
 		}
-	}
+	}*/
 
 	public short getMcc() {
 		return mcc;
@@ -285,8 +323,12 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		return activation_chargingAmount;
 	}
 
-	public short getCrbt_default_song() {
-		return crbt_default_song;
+	public String getSong_rbt_code() {
+		return song_rbt_code;
+	}
+
+	public String getSong_rbt_id() {
+		return song_rbt_id;
 	}
 
 	public long getCrbt_renewal_aspu_minimum() {
@@ -369,8 +411,48 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		return Bnumber_db_exclude_filter;
 	}
 
-	public List<String> getOriginOperatorIDs_list() {
+	/*public List<String> getOriginOperatorIDs_list() {
 		return originOperatorIDs_list;
+	}*/
+
+	public List<String> getAir_hosts() {
+		return air_hosts;
+	}
+
+	public int getAir_io_sleep() {
+		return air_io_sleep;
+	}
+
+	public int getAir_io_timeout() {
+		return air_io_timeout;
+	}
+
+	public int getAir_io_threshold() {
+		return air_io_threshold;
+	}
+
+	public List<String> getEma_hosts() {
+		return ema_hosts;
+	}
+
+	public int getEma_io_sleep() {
+		return ema_io_sleep;
+	}
+
+	public int getEma_io_timeout() {
+		return ema_io_timeout;
+	}
+
+	public String getCrbt_server_host() {
+		return crbt_server_host;
+	}
+
+	public int getCrbt_server_io_sleep() {
+		return crbt_server_io_sleep;
+	}
+
+	public int getCrbt_server_io_timeout() {
+		return crbt_server_io_timeout;
 	}
 
 	public boolean isSet(String property_value) {

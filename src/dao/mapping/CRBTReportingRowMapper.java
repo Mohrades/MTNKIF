@@ -12,7 +12,11 @@ public class CRBTReportingRowMapper implements RowMapper<CRBTReporting> {
 	public CRBTReporting mapRow(ResultSet rs, int rowNum) throws SQLException {
 		// TODO Auto-generated method stub
 
-		return new CRBTReporting(rs.getInt("ID"), rs.getInt("SUBSCRIBER"), ((rs.getInt("FLAG") == 1) ? true : false), rs.getTimestamp("CREATED_DATE_TIME"), rs.getString("ORIGIN_OPERATOR_ID"));
+		CRBTReporting reporting =  new CRBTReporting(rs.getInt("ID"), rs.getInt("SUBSCRIBER"), ((rs.getInt("FLAG") == 1) ? true : false), rs.getTimestamp("CREATED_DATE_TIME"), rs.getString("ORIGIN_OPERATOR_ID"));
+		reporting.setAuto((rs.getInt("AUTO") == 1) ? true : false);
+		reporting.setToneBoxID(rs.getString("TONEBOXID"));
+
+		return reporting;
 	}
 
 }

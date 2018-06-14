@@ -17,7 +17,7 @@ public class PricePlanCurrentRollBackActions {
 	}
 
 	public int activation(int step, ProductProperties productProperties, DAO dao, String msisdn, boolean charged) {
-		AIRRequest request = new AIRRequest();
+		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold());
 
 		if((step < 3) || ((productProperties.getOffer_id() == 0) || (request.deleteOffer(msisdn, productProperties.getOffer_id(), "eBA", true)))) {
 			step = (step < 3) ? step : (step-1);
@@ -84,7 +84,7 @@ public class PricePlanCurrentRollBackActions {
 	}
 
 	public int deactivation(int step, ProductProperties productProperties, DAO dao, String msisdn, boolean charged) {
-		AIRRequest request = new AIRRequest();
+		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold());
 
 		if((step < 3) || ((productProperties.getOffer_id() == 0) || (request.updateOffer(msisdn, productProperties.getOffer_id(), null, null, null, "eBA")))) {
 			step = (step < 3) ? step : (step-1);

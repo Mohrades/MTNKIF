@@ -24,11 +24,12 @@ public class CRBTReportingDAOJdbc {
 
 	public void saveOneCRBTReporting(CRBTReporting reporting) {
 		Date now = new Date();
-		getJdbcTemplate().update("INSERT INTO MTN_KIF_CRBT_REPORT_EBA (SUBSCRIBER,FLAG,CREATED_DATE_TIME,CREATED_DATE_TIME_INDEX,ORIGIN_OPERATOR_ID) VALUES(" + reporting.getSubscriber() + "," + (reporting.isFlag() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "'," + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ",'" + reporting.getOriginOperatorID().replace("'", "''") + "')");
+		if(reporting.getToneBoxID() != null) getJdbcTemplate().update("INSERT INTO MTN_KIF_CRBT_REPORT_EBA_" + ((new SimpleDateFormat("MMMyy")).format(now)).toUpperCase() + " (SUBSCRIBER,TONEBOXID,FLAG,AUTO,CREATED_DATE_TIME,CREATED_DATE_TIME_INDEX,ORIGIN_OPERATOR_ID) VALUES(" + reporting.getSubscriber() + ",'" + reporting.getToneBoxID() + "'," + (reporting.isFlag() ? 1 : 0) + "," + (reporting.isAuto() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "'," + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ",'" + reporting.getOriginOperatorID().replace("'", "''") + "')");
+		else getJdbcTemplate().update("INSERT INTO MTN_KIF_CRBT_REPORT_EBA_" + ((new SimpleDateFormat("MMMyy")).format(now)).toUpperCase() + " (SUBSCRIBER,FLAG,AUTO,CREATED_DATE_TIME,CREATED_DATE_TIME_INDEX,ORIGIN_OPERATOR_ID) VALUES(" + reporting.getSubscriber() + "," + (reporting.isFlag() ? 1 : 0) + "," + (reporting.isAuto() ? 1 : 0) + ",TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "'," + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ",'" + reporting.getOriginOperatorID().replace("'", "''") + "')");
 	}
 
 	public List<CRBTReporting> getCRBTReporting(int subscriber) {
-		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID FROM MTN_KIF_CRBT_REPORT_EBA WHERE (SUBSCRIBER = " + subscriber + ") ORDER BY CREATED_DATE_TIME DESC", new CRBTReportingRowMapper());
+		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,AUTO,CREATED_DATE_TIME,ORIGIN_OPERATOR_ID,TONEBOXID FROM MTN_KIF_CRBT_REPORT_EBA_" + ((new SimpleDateFormat("MMMyy")).format(new Date())).toUpperCase() + " WHERE (SUBSCRIBER = " + subscriber + ") ORDER BY CREATED_DATE_TIME DESC", new CRBTReportingRowMapper());
 	}
 
 }

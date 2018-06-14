@@ -25,7 +25,7 @@ public class PricePlanCurrentActivation {
 	}
 
 	public Object [] execute(DAO dao, String msisdn, Subscriber subscriber, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
-		AIRRequest request = new AIRRequest();
+		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold());
 		// Object [] requestStatus = new Object [2];
 
 		if((request.getBalanceAndDate(msisdn, 0)) != null) {

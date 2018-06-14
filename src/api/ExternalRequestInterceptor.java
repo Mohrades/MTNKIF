@@ -8,7 +8,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
 import dao.DAO;
+import dao.queries.ServiceAccessDAOJdbc;
 import dao.queries.USSDServiceDAOJdbc;
+import domain.models.ServiceAccess;
 import domain.models.USSDService;
 import product.ProductProperties;
 
@@ -23,6 +25,14 @@ public class ExternalRequestInterceptor implements HandlerInterceptor {
 
 	public void setProductProperties(ProductProperties productProperties) {
 		this.productProperties = productProperties;
+	}
+
+	public DAO getDao() {
+		return dao;
+	}
+
+	public void setDao(DAO dao) {
+		this.dao = dao;
 	}
 
 	@Override
@@ -73,11 +83,22 @@ public class ExternalRequestInterceptor implements HandlerInterceptor {
 				return false;
 			}
 			else {
-				boolean logon = false;
 				originOperatorID = originOperatorID.trim();
 
-				logon = (productProperties.getOriginOperatorIDs_list() == null) ? true : productProperties.getOriginOperatorIDs_list().contains(originOperatorID);
-				if(!logon)response.setStatus(401); // 401 - Access denied.
+				boolean logon = false;
+				/*boolean logon = (productProperties.getOriginOperatorIDs_list() != null) && (productProperties.getOriginOperatorIDs_list().contains(originOperatorID));*/
+
+				if(logon) ;
+				else {
+					ServiceAccess access = (new ServiceAccessDAOJdbc(dao)).getOneServiceAccess(productProperties.getSc(), originOperatorID);
+
+					if(access == null) {
+						response.setStatus(401); // 401 - Access denied.
+					}
+					else {
+						logon = true;
+					}
+				}
 
 				// on passe la main à l'intecepteur suivant
 				return logon;

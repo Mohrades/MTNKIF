@@ -25,7 +25,7 @@ public class PricePlanCurrentDeactivation {
 
 	@SuppressWarnings("deprecation")
 	public Object [] execute(DAO dao, String msisdn, Subscriber subscriber, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
-		AIRRequest request = new AIRRequest();
+		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold());
 		// Object [] requestStatus = new Object [2];
 
 		if((request.getBalanceAndDate(msisdn, 0)) != null) {
@@ -64,9 +64,9 @@ public class PricePlanCurrentDeactivation {
 
 					if(statusCode == 0) {
 						// statusCode = (new ProductActions()).deactivation(productProperties, dao, subscriber.getValue(), !((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null) || (subscriber.getLast_update_time().before(now))));
-						statusCode = (new PricePlanCurrentActions()).deactivation(productProperties, dao, subscriber.getValue(), false); // charged is false because charging already occurs with reservation 
+						statusCode = (new PricePlanCurrentActions()).deactivation(productProperties, dao, subscriber, false, originOperatorID); // charged is false because charging already occurs with reservation
 
-						if(statusCode == 0) {// change done successfully
+						if(statusCode == 0) { // change done successfully
 							subscriber.setLocked(false); // synchronisation database and object
 
 							new SubscriptionReportingDAOJdbc(dao).saveOneSubscriptionReporting(new SubscriptionReporting(0, (subscriber.getId() > 0) ? subscriber.getId() : (new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn).getId()), false, (subscriber.getId() == 0) ? 0 : (subscriber.getLast_update_time() == null) ? 0 : (subscriber.getLast_update_time().before(now)) ? 0 : productProperties.getDeactivation_chargingAmount(), new Date(), originOperatorID)); // reporting

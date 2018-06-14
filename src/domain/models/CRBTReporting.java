@@ -5,9 +5,9 @@ import java.util.Date;
 public class CRBTReporting implements Comparable<CRBTReporting> {
 
 	private int id, subscriber;
-	private boolean flag;
+	private boolean flag, auto;
 	private Date created_date_time;
-	private String originOperatorID;
+	private String originOperatorID, toneBoxID;
 
 	public CRBTReporting() {
 
@@ -43,6 +43,22 @@ public class CRBTReporting implements Comparable<CRBTReporting> {
 
 	public void setFlag(boolean flag) {
 		this.flag = flag;
+	}
+
+	public String getToneBoxID() {
+		return toneBoxID;
+	}
+
+	public void setToneBoxID(String toneBoxID) {
+		this.toneBoxID = toneBoxID;
+	}
+
+	public boolean isAuto() {
+		return auto;
+	}
+
+	public void setAuto(boolean auto) {
+		this.auto = auto;
 	}
 
 	public Date getCreated_date_time() {

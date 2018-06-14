@@ -26,7 +26,7 @@ public class CleanExpiredUssdRequestTasklet implements Tasklet {
 
 		try {
 			Date now = new Date();
-			now.setMinutes(now.getMinutes()-5);
+			now.setMinutes(now.getMinutes() - 5);
 
 			dao.getJdbcTemplate().update("DELETE FROM MTN_KIF_USSD_EBA WHERE LAST_UPDATE_TIME < TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "'");
 
