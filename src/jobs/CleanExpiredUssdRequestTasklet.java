@@ -11,7 +11,9 @@ import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import connexions.AIRRequest;
 import dao.DAO;
+import product.ProductProperties;
 
 @Component("cleanExpiredUssdRequestTasklet")
 public class CleanExpiredUssdRequestTasklet implements Tasklet {
@@ -19,12 +21,19 @@ public class CleanExpiredUssdRequestTasklet implements Tasklet {
 	@Autowired
 	private DAO dao;
 
+	@Autowired
+	private ProductProperties productProperties;
+
 	@SuppressWarnings("deprecation")
 	@Override
 	public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) {
 		// TODO Auto-generated method stub
 
 		try {
+			// test AIR Connection
+			productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+
+			// delete expired ussd
 			Date now = new Date();
 			now.setMinutes(now.getMinutes() - 5);
 

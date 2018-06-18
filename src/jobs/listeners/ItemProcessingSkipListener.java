@@ -4,7 +4,7 @@ import org.springframework.batch.core.SkipListener;
 
 import domain.models.Subscriber;
 
-public class RunningPAMSkipListener implements SkipListener<Subscriber, Subscriber> {
+public class ItemProcessingSkipListener implements SkipListener<Subscriber, Subscriber> {
 
 	@Override
 	public void onSkipInProcess(Subscriber item, Throwable th) {

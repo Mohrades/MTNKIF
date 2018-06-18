@@ -4,6 +4,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.context.MessageSource;
 
 import connexions.AIRRequest;
@@ -14,6 +16,7 @@ import dao.queries.SubscriptionReportingDAOJdbc;
 import domain.models.RollBack;
 import domain.models.Subscriber;
 import domain.models.SubscriptionReporting;
+import tools.DefaultPricePlan;
 import tools.SMPPConnector;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
@@ -25,7 +28,7 @@ public class PricePlanCurrentActivation {
 	}
 
 	public Object [] execute(DAO dao, String msisdn, Subscriber subscriber, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
-		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold());
+		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 		// Object [] requestStatus = new Object [2];
 
 		if((request.getBalanceAndDate(msisdn, 0)) != null) {
@@ -72,7 +75,11 @@ public class PricePlanCurrentActivation {
 							// At first opt-in to MTN KIF+ subscriber will receive welcome Gift
 							// Notification message :
 							if((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))) {
-								new SMPPConnector().submitSm(productProperties.getSms_notifications_header(), msisdn.substring((productProperties.getMcc() + "").length()), i18n.getMessage("welcome.gift.notification.message", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+								String message = i18n.getMessage("welcome.gift.notification.message", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+								new SMPPConnector().submitSm(productProperties.getSms_notifications_header(), msisdn.substring((productProperties.getMcc() + "").length()), message);
+
+								Logger logger = LogManager.getLogger("logging.log4j.SubmitSMLogger");
+								logger.trace("[" + subscriber.getValue() + "] " + message);
 							}
 
 							return new Object [] {0, i18n.getMessage("activation.change.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};

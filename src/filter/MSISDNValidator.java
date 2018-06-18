@@ -82,7 +82,7 @@ public class MSISDNValidator {
 
 	private boolean isServiceClassFiltered(List<String> number_serviceClass_filter, String msisdn, ProductProperties productProperties) {
 		try {
-			AccountDetails accountDetails = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold()).getAccountDetails(msisdn);
+			AccountDetails accountDetails = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host()).getAccountDetails(msisdn);
 			
 			if(number_serviceClass_filter.contains(accountDetails.getServiceClassCurrent() + "")) {
 				return true;
@@ -129,7 +129,7 @@ public class MSISDNValidator {
 		if((country_code.length() + productProperties.getMsisdn_length()) == (msisdn.length())) {
 			for(String prefix : productProperties.getMnc()) {
 				if(msisdn.startsWith(country_code+prefix)) {
-					return (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold()).getAccountDetails(msisdn)) != null;
+					return (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host()).getAccountDetails(msisdn)) != null;
 					// return true;
 				}
 			}

@@ -58,7 +58,7 @@ public class CRBTRenewalTasklet implements Tasklet {
 				stepContribution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 			}
 			else {
-				// set today HVC
+				// set today CRBT RENEWABLE MTNKIF+ Subscribers
 				Connection connexion = null;
 				PreparedStatement ps = null;
 				ResultSet rs = null;
@@ -75,7 +75,7 @@ public class CRBTRenewalTasklet implements Tasklet {
 
 					// on lit la table PRICEPLAN.VALUE_BAND_LIST [MSISDN, CUSTOMER_SEGMENT]
 					// ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter());
-					ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(now)));
+					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(now)).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + ""));
 					rs = ps.executeQuery();
 					// Liste des elements
 					while (rs.next()) {
@@ -146,7 +146,7 @@ public class CRBTRenewalTasklet implements Tasklet {
 							HashMap<String, String> multiRef = new Subscribe(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, true);
 							if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("301009"))) {
 								 // step two : order  tone
-								multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", null, true);
+								multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null, true);
 								if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302011"))) {
 									// step three : add tone
 									multiRef = new AddToneBox(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, "2", "mtnkif", null, new String[] {productProperties.getSong_rbt_code()}, null, null, "2", "1", "000000000", national, true);

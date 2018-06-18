@@ -1,14 +1,10 @@
 package jobs.listeners;
 
-import java.util.Date;
-
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
 
 import dao.DAO;
-import dao.queries.USSDServiceDAOJdbc;
-import domain.models.USSDService;
 import product.ProductProperties;
 
 public class StagingRunningPAMStepListener implements StepExecutionListener {
@@ -58,24 +54,6 @@ public class StagingRunningPAMStepListener implements StepExecutionListener {
 
 		/*updates all the records you identify with the job id you pass in to be processed by your step*/
 		/*update("update " + tableName + SQL + whereClause, new Object [] {jobId});*/
-
-
-		/*The first way to stop execution is to throw an exception. This works all the time, unless you configured the job to skip some exceptions in a chunk-oriented step!*/
-		// STOPPING A JOB FROM A CHUNK-ORIENTED STEP
-		/*If you look at the ItemReader, ItemProcessor, and ItemWriter interfaces, you won’t see a StepExecution.
-		You access the StepExecution to stop the execution using listeners.
-		Not dealing with stopping a job in item readers, processors, and writers is a good thing. These components should focus on their processing to enforce separation of concerns.*/
-        // listeners will still work, but any other step logic (reader, processor, writer) will not happen
-
-		USSDService service = new USSDServiceDAOJdbc(dao).getOneUSSDService(productProperties.getSc());
-		Date now = new Date();
-
-		// Stopping a job from a tasklet : Setting the stop flag in a tasklet is straightforward;
-		if((service == null) || (((service.getStart_date() != null) && (now.before(service.getStart_date()))) || ((service.getStop_date() != null) && (now.after(service.getStop_date()))))) {
-			stepExecution.setTerminateOnly(); // Sets stop flag if necessary
-	        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
-			stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE OUT OF RANGE", "Job should not be run right now."));
-		}
 	}
 
 }

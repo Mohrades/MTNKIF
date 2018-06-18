@@ -17,7 +17,7 @@ public class OrderTone {
 		this.timeout = timeout;
 	}
 
-	public HashMap<String, String> execute(String portalType, String moduleCode, String role, String roleCode, String phoneNumber, String recommendNumber, String resourceCode, String resourceType, String discount, String smAccessCode, boolean waitingForResponse) {
+	public HashMap<String, String> execute(String portalType, String moduleCode, String role, String roleCode, String phoneNumber, String recommendNumber, String resourceCode, String resourceType, String discount, String reorderMode, String smAccessCode, boolean waitingForResponse) {
 		SocketConnection connection;
 		String portalAccount = "admin"; String portalPwd = "Mtn123#$"; portalPwd = "admin";
 
@@ -25,7 +25,7 @@ public class OrderTone {
 			connection = new SocketConnection(ip, port, waitingForResponse ? sleep : 0, timeout);
 
 			if(connection.isOpen()) {
-				String rawQuery = getRequest(portalAccount, portalPwd, portalType, moduleCode, role, roleCode, phoneNumber, recommendNumber, resourceCode, resourceType, discount, smAccessCode);
+				String rawQuery = getRequest(portalAccount, portalPwd, portalType, moduleCode, role, roleCode, phoneNumber, recommendNumber, resourceCode, resourceType, discount, reorderMode, smAccessCode);
 				String rawResponse = connection.submitRequest("/jboss-net/services/UserToneManage", rawQuery);
 				connection.fermer();
 
@@ -40,7 +40,7 @@ public class OrderTone {
 		return null;
 	}
 
-	public String getRequest(String portalAccount, String portalPwd, String portalType, String moduleCode, String role, String roleCode, String phoneNumber, String recommendNumber, String resourceCode, String resourceType, String discount, String smAccessCode) {
+	public String getRequest(String portalAccount, String portalPwd, String portalType, String moduleCode, String role, String roleCode, String phoneNumber, String recommendNumber, String resourceCode, String resourceType, String discount, String reorderMode, String smAccessCode) {
 		String rawQuery = "<soapenv:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:user=\"http://usertonemanage.ivas.huawei.com\" xmlns:soapenc=\"http://schemas.xmlsoap.org/soap/encoding/\">\r\n" + 
 				"   <soapenv:Header/>\r\n" + 
 				"   <soapenv:Body>\r\n" + 
@@ -72,7 +72,8 @@ public class OrderTone {
 				"            <productID xsi:type=\"xsd:string\" xsi:nil=\"true\"></productID>\r\n" + 
 				"            <rankType xsi:type=\"xsd:string\" xsi:nil=\"true\"></rankType>\r\n" + 
 				"            <recommendNumber xsi:type=\"xsd:string\">" + recommendNumber + "</recommendNumber>\r\n" + 
-				"            <reorderMode xsi:type=\"xsd:string\" xsi:nil=\"true\"></reorderMode>\r\n" + 
+				/*"            <reorderMode xsi:type=\"xsd:string\" xsi:nil=\"true\"></reorderMode>\r\n" + */
+				"            <reorderMode xsi:type=\"xsd:string\"" + ((reorderMode == null) ? " xsi:nil=\"true\"" : "") + ">" + ((reorderMode == null) ? "" : reorderMode) + "</reorderMode>\r\n" + 
 				"            <resourceCode xsi:type=\"xsd:string\">" + resourceCode + "</resourceCode>\r\n" + 
 				"            <resourceID xsi:type=\"xsd:string\" xsi:nil=\"true\"></resourceID>\r\n" + 
 				"            <resourceType xsi:type=\"xsd:string\">" + resourceType + "</resourceType>\r\n" + 

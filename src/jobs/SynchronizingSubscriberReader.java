@@ -10,7 +10,7 @@ import org.springframework.batch.item.UnexpectedInputException;
 
 import domain.models.Subscriber;
 
-public class SynchronizingItemReader implements ItemReader<Subscriber>, ItemStream {
+public class SynchronizingSubscriberReader implements ItemReader<Subscriber>, ItemStream {
 
 	private ItemReader<Subscriber> delegate;
 

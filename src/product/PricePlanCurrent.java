@@ -58,14 +58,16 @@ public class PricePlanCurrent {
 
 		String message = null;
 
-		if(statusCode == 0) {
-			message = i18n.getMessage("status.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
-		}
-		else if(statusCode == 1) {
-			message = i18n.getMessage("status.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
-		}
-		else {
-			message = i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+		if(i18n != null) {
+			if(statusCode == 0) {
+				message = i18n.getMessage("status.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+			}
+			else if(statusCode == 1) {
+				message = i18n.getMessage("status.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+			}
+			else {
+				message = i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+			}	
 		}
 
 		return new Object [] {statusCode, message, subscriber};

@@ -65,6 +65,21 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	@Value("#{appConfig['deactivation.chargingAmount']}")
 	private long deactivation_chargingAmount;
 
+	@Value("#{appConfig['happy.birthday.bonus.voice.da']}")
+	private int happy_birthday_bonus_voice_da;
+
+	@Value("#{appConfig['happy.birthday.bonus.voice.volume']}")
+	private long happy_birthday_bonus_voice_volume;
+
+	@Value("#{appConfig['happy.birthday.bonus.data.da']}")
+	private int happy_birthday_bonus_data_da;
+
+	@Value("#{appConfig['happy.birthday.bonus.data.volume']}")
+	private long happy_birthday_bonus_data_volume;
+
+	@Value("#{appConfig['happy.birthday.bonus.offer.id']}")
+	private int happy_birthday_bonus_offer_id;
+
 	private List<String> xtra_serviceOfferings_IDs;
 	private List<String> xtra_serviceOfferings_activeFlags;
 	private List<String> xtra_removal_offer_IDs;
@@ -90,8 +105,11 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	@Value("#{appConfig['crbt.renewal.aspu.minimum']}")
 	private long crbt_renewal_aspu_minimum;
 
-	@Value("#{appConfig['crbt.renewal.aspu.filter']}")
-	private String crbt_renewal_aspu_filter;
+	@Value("#{appConfig['happy.birthday.bonus.aspu.minimum']}")
+	private long happy_birthday_bonus_aspu_minimum;
+
+	@Value("#{appConfig['database.aspu.filter']}")
+	private String database_aspu_filter;
 
 	@Value("#{appConfig['song.rbt.code']}")
 	private String song_rbt_code;
@@ -118,6 +136,10 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	private int air_io_timeout;
 	@Value("#{appConfig['air.io.threshold']}")
 	private int air_io_threshold;
+	@Value("#{appConfig['air.test.connection.msisdn']}")
+	private String air_test_connection_msisdn;
+	@Value("#{appConfig['air.preferred.host']}")
+	private byte air_preferred_host;
 
 	private List<String> ema_hosts;
 	@Value("#{appConfig['ema.io.sleep']}")
@@ -295,6 +317,30 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		return default_price_plan_url;
 	}
 
+	public long getHappy_birthday_bonus_aspu_minimum() {
+		return happy_birthday_bonus_aspu_minimum;
+	}
+
+	public int getHappy_birthday_bonus_offer_id() {
+		return happy_birthday_bonus_offer_id;
+	}
+
+	public int getHappy_birthday_bonus_data_da() {
+		return happy_birthday_bonus_data_da;
+	}
+
+	public long getHappy_birthday_bonus_data_volume() {
+		return happy_birthday_bonus_data_volume;
+	}
+
+	public int getHappy_birthday_bonus_voice_da() {
+		return happy_birthday_bonus_voice_da;
+	}
+
+	public long getHappy_birthday_bonus_voice_volume() {
+		return happy_birthday_bonus_voice_volume;
+	}
+
 	public boolean isAdvantages_always() {
 		return advantages_always;
 	}
@@ -335,8 +381,8 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		return crbt_renewal_aspu_minimum;
 	}
 
-	public String getCrbt_renewal_aspu_filter() {
-		return crbt_renewal_aspu_filter;
+	public String getDatabase_aspu_filter() {
+		return database_aspu_filter;
 	}
 
 	public short getDeactivation_freeCharging_days() {
@@ -429,6 +475,18 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	public int getAir_io_threshold() {
 		return air_io_threshold;
+	}
+
+	public String getAir_test_connection_msisdn() {
+		return air_test_connection_msisdn;
+	}
+
+	public byte getAir_preferred_host() {
+		return air_preferred_host;
+	}
+
+	public void setAir_preferred_host(byte air_preferred_host) {
+		this.air_preferred_host = air_preferred_host;
 	}
 
 	public List<String> getEma_hosts() {

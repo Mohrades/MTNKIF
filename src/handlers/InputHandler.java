@@ -21,12 +21,13 @@ import dao.queries.USSDServiceDAOJdbc;
 import domain.models.Subscriber;
 import domain.models.USSDRequest;
 import domain.models.USSDService;
+import exceptions.AirAvailabilityException;
 import filter.MSISDNValidator;
-import product.DefaultPricePlan;
 import product.PricePlanCurrent;
 import product.PricePlanCurrentActions;
 import product.ProductProperties;
 import product.USSDMenu;
+import tools.DefaultPricePlan;
 import tools.SMPPConnector;
 import util.AccountDetails;
 
@@ -38,11 +39,17 @@ public class InputHandler {
 
 	public void handle(MessageSource i18n, ProductProperties productProperties, Map<String, String> parameters, Map<String, Object> modele, HttpServletRequest request, DAO dao) {
 		USSDRequest ussd = null;
-
-		AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold())).getAccountDetails(parameters.get("msisdn"));
-		int language = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
+		int language = 1;
 
 		try {
+			if(productProperties.getAir_preferred_host() != -1) {
+				AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).getAccountDetails(parameters.get("msisdn"));
+				language = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
+			}
+			else {
+				throw new AirAvailabilityException();
+			}
+
 			long sessionId = Long.parseLong(parameters.get("sessionid"));
 			ussd = new USSDRequestDAOJdbc(dao).getOneUSSD(sessionId, parameters.get("msisdn"));
 
@@ -137,10 +144,13 @@ public class InputHandler {
 			}
 
 		} catch(NullPointerException ex) {
-			endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, null), null, null, null, null);
+			endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH), null, null, null, null);
+
+		} catch(AirAvailabilityException ex) {
+			endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH), null, null, null, null);
 
 		} catch(Throwable th) {
-			endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, null), null, null, null, null);
+			endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH), null, null, null, null);
 		}
 	}
 

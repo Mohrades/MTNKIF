@@ -2,19 +2,26 @@ package jobs;
 
 import java.util.List;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import dao.DAO;
 import dao.queries.PAMRunningReportingDAOJdbc;
 import domain.models.PAMRunningReporting;
 import domain.models.Subscriber;
 
-@Component("runningPAMWriter")
 public class RunningPAMWriter implements ItemWriter<Subscriber> {
 
-	@Autowired
 	private DAO dao;
+
+	public RunningPAMWriter() {
+		
+	}
+
+	public DAO getDao() {
+		return dao;
+	}
+
+	public void setDao(DAO dao) {
+		this.dao = dao;
+	}
 
 	@Override
 	public void write(List<? extends Subscriber> subscribers) {

@@ -14,6 +14,7 @@ import dao.queries.SubscriptionReportingDAOJdbc;
 import domain.models.RollBack;
 import domain.models.Subscriber;
 import domain.models.SubscriptionReporting;
+import tools.DefaultPricePlan;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
 
@@ -25,7 +26,7 @@ public class PricePlanCurrentDeactivation {
 
 	@SuppressWarnings("deprecation")
 	public Object [] execute(DAO dao, String msisdn, Subscriber subscriber, MessageSource i18n, int language, ProductProperties productProperties, String originOperatorID) {
-		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold());
+		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 		// Object [] requestStatus = new Object [2];
 
 		if((request.getBalanceAndDate(msisdn, 0)) != null) {

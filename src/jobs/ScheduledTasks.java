@@ -30,6 +30,9 @@ public class ScheduledTasks {
 	@Autowired
 	private Job crbtRenewalJob;
 
+	@Autowired
+	private Job happyBirthdayBonusJob;
+
 	public ScheduledTasks() {
 
 	}
@@ -53,6 +56,10 @@ public class ScheduledTasks {
 
 	public void run_pam() {
 		execute(runningPAMJob);
+	}
+
+	public void setHappyBirthdayBonus() {
+		execute(happyBirthdayBonusJob);
 	}
 
 	public void execute(Job job) {
