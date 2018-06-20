@@ -32,7 +32,7 @@
   		<task:scheduled ref="jobs" method="renew_crbt" cron="0 30 02 ? * *" />
   		<!-- <task:scheduled ref="jobs" method="run_pam" cron="00 30 01 ? * *" /> -->
 
-		<task:scheduled ref="jobs" method="setHappyBirthdayBonus" cron="0 00 08 ? * *" />
+		<task:scheduled ref="jobs" method="setHappyBirthdayBonus" cron="0 30 07 ? * *" />
 
   		<task:scheduled ref="jobs" method="clear_ussd" fixed-delay="900000" />
 	</task:scheduled-tasks>
@@ -54,9 +54,8 @@
 
 	<batch:job id="runningPAMJob">
 	  <batch:listeners>
-      	<!-- <batch:listener ref="importProductsJobListener" /> -->
       	<batch:listener>
-          <bean class="jobs.listeners.RunningPAMJobListener" scope="step" />
+          <bean class="jobs.listeners.RunningPAMJobListener" />
         </batch:listener>
   	  </batch:listeners>
 
@@ -68,7 +67,8 @@
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="100" /> -->
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="50" /> -->
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="100" skip-limit="10" retry-limit="3"> -->
-	      <batch:chunk reader="subscribers" commit-interval="100" skip-limit="25" retry-limit="3">
+	      <!-- <batch:chunk reader="subscribers" commit-interval="100" skip-limit="25" retry-limit="3"> -->
+	      <batch:chunk reader="subscribers" commit-interval="20" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
 	          <bean class="jobs.RunningPAMProcessor">
@@ -158,7 +158,7 @@
 	<batch:job id="happyBirthdayBonusJob">
 	  <batch:listeners>
       	<batch:listener>
-          <bean class="jobs.listeners.HappyBirthdayBonusJobListener" scope="step" />
+          <bean class="jobs.listeners.HappyBirthdayBonusJobListener" />
         </batch:listener>
   	  </batch:listeners>
 
@@ -166,8 +166,8 @@
 	  <!-- <batch:step id="stepA" next="stepB" /> -->
 	  <batch:step id="happyBirthdayBonus">
 	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="5">
-	      <!-- <batch:chunk reader="allMTNKIFSubscribersWithNoBonusReader" processor="happyBirthdayBonusProcessor" writer="happyBirthdayBonusWriter" commit-interval="10" skip-limit="10" retry-limit="3"> -->
-	      <batch:chunk reader="allMTNKIFSubscribersWithNoBonusReader" commit-interval="10" skip-limit="10" retry-limit="3">
+	      <!-- <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" processor="happyBirthdayBonusProcessor" writer="happyBirthdayBonusWriter" commit-interval="10" skip-limit="20" retry-limit="3"> -->
+	      <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" commit-interval="10" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
 	          <bean class="jobs.HappyBirthdayBonusProcessor">
@@ -217,14 +217,14 @@
     	  	<batch:listener ref="jobRunListener" />
 
       		<batch:listener>
-      			<bean class="jobs.listeners.StagingHappyBirthdayBonusSubscriberStepListener" scope="step">
+      			<bean class="jobs.listeners.StagingHappyBirthDayBonusSubscriberStepListener" scope="step">
       				<property name="dao" ref="dao" />
       				<property name="productProperties" ref="productProperties" />
       			</bean>
       		</batch:listener>
 
       		<batch:listener>
-      			<bean class="jobs.listeners.StagingHappyBirthdayBonusProcessedSubscriberChunkUpdater" scope="step" />
+      			<bean class="jobs.listeners.StagingHappyBirthDayBonusProcessedSubscriberChunkUpdater" scope="step" />
       		</batch:listener>
 
       		<batch:listener ref="itemProcessingSkipListener" />
@@ -267,18 +267,18 @@
 	Finally, you  disable Spring Batch state management. This is the other requirement to make the item reader thread-safe (with the synchronization of the read method).
 	But by doing that, you lose the reader’s restartability feature, because the item reader won’t know where it left off after a failure.
 	Luckily, the process indicator is there to enable restartability: the reader reads only unprocessed items. The item writer then needs to flag the product as handled using the processed column and then write the item, as described in the following listing. -->
-	<bean id="allMTNKIFSubscribersWithNoBonusReader" class="jobs.SynchronizingBirthdayBonusSubscriberReader">
+	<bean id="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" class="jobs.SynchronizingBirthDayBonusSubscriberReader">
 	  	<property name="delegate">
 	  		<!-- reader must be evaluated for every scheduled execution of the given job. -->
 	  		<!-- If you set the scope of the bean to step, then a new bean will be created every time the step is executed. -->
-			<bean class="jobs.BirthdayBonusSubscribersReader" scope="step">
+			<bean class="jobs.BirthDayBonusSubscribersReader" scope="step">
 				<constructor-arg index="0" type="int" value="2" />
 		   		<!-- <constructor-arg index="1" type="java.lang.String" value="${AWS_SECRET_ACCESS_KEY}" /> -->
 
 			  	<property name="dataSource" ref="db_connection" />
 			  	<property name="saveState" value="false" />
 			  	<property name="rowMapper">
-			    	<bean class="dao.mapping.BirthdayBonusSubscriberRowMapper" />
+			    	<bean class="dao.mapping.BirthDayBonusSubscriberRowMapper" />
 			  	</property>
 			  	<!-- <property name="sql">
 			  		<value>

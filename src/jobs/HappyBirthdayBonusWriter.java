@@ -8,12 +8,12 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.MessageSource;
 import connexions.AIRRequest;
-import domain.models.BirthdayBonusSubscriber;
+import domain.models.BirthDayBonusSubscriber;
 import product.ProductProperties;
 import tools.SMPPConnector;
 import util.AccountDetails;
 
-public class HappyBirthdayBonusWriter implements ItemWriter<BirthdayBonusSubscriber> {
+public class HappyBirthdayBonusWriter implements ItemWriter<BirthDayBonusSubscriber> {
 
 	private MessageSource i18n;
 
@@ -40,13 +40,13 @@ public class HappyBirthdayBonusWriter implements ItemWriter<BirthdayBonusSubscri
 	}
 
 	@Override
-	public void write(List<? extends BirthdayBonusSubscriber> hvcs) {
+	public void write(List<? extends BirthDayBonusSubscriber> hvcs) {
 		// TODO Auto-generated method stub
 
 		try {
 			Logger logger = LogManager.getLogger("logging.log4j.SubmitSMLogger");
 
-			for(BirthdayBonusSubscriber hvc : hvcs) {
+			for(BirthDayBonusSubscriber hvc : hvcs) {
 				if(hvc != null) {
 					try {
 						AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).getAccountDetails(hvc.getValue());

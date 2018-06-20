@@ -16,17 +16,18 @@ import org.springframework.batch.core.StepExecutionListener;
 import dao.DAO;
 import dao.queries.BirthdayBonusSubscriberDAOJdbc;
 import dao.queries.USSDServiceDAOJdbc;
-import domain.models.BirthdayBonusSubscriber;
+import domain.models.BirthDayBonusSubscriber;
 import domain.models.USSDService;
 import product.PricePlanCurrent;
 import product.ProductProperties;
 
-public class StagingHappyBirthdayBonusSubscriberStepListener implements StepExecutionListener {
+public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExecutionListener {
 
 	private DAO dao;
+
 	private ProductProperties productProperties;
 
-	public StagingHappyBirthdayBonusSubscriberStepListener() {
+	public StagingHappyBirthDayBonusSubscriberStepListener() {
 
 	}
 
@@ -67,6 +68,11 @@ public class StagingHappyBirthdayBonusSubscriberStepListener implements StepExec
 		        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 				stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE OUT OF RANGE", "Job should not be run right now."));
 			}
+			else if((new BirthdayBonusSubscriberDAOJdbc(dao)).isBirthDayReported()) {
+				stepExecution.setTerminateOnly(); // Sets stop flag if necessary
+		        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
+		        stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE EXCLUDED", "Job should not be run right now."));
+			}
 			else {
 				// TODO Auto-generated method stub
 				/*Before the step begins, you tag all the records in a way that identifies them as the records to be processed in the current batch run (or JobInstance) using a StepListener
@@ -85,8 +91,8 @@ public class StagingHappyBirthdayBonusSubscriberStepListener implements StepExec
 				PreparedStatement ps = null;
 				ResultSet rs = null;
 
-				HashSet <BirthdayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE = new HashSet <BirthdayBonusSubscriber>((new BirthdayBonusSubscriberDAOJdbc(dao)).getOneBirthdayBonusSubscribers());
-				HashSet <BirthdayBonusSubscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <BirthdayBonusSubscriber>();
+				HashSet <BirthDayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE = new HashSet <BirthDayBonusSubscriber>((new BirthdayBonusSubscriberDAOJdbc(dao)).getOneBirthdayBonusSubscribers());
+				HashSet <BirthDayBonusSubscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <BirthDayBonusSubscriber>();
 
 				try {
 					Class.forName("oracle.jdbc.driver.OracleDriver"); // chargement du pilote JDBC
@@ -101,7 +107,7 @@ public class StagingHappyBirthdayBonusSubscriberStepListener implements StepExec
 					// Liste des elements
 					while (rs.next()) {
 						String msisdn = rs.getString("MSISDN").trim();
-						BirthdayBonusSubscriber birthdayBonusSubscriber = new BirthdayBonusSubscriber(0, (msisdn.length() == productProperties.getMsisdn_length()) ? productProperties.getMcc() + msisdn : msisdn, null, 0, null);
+						BirthDayBonusSubscriber birthdayBonusSubscriber = new BirthDayBonusSubscriber(0, (msisdn.length() == productProperties.getMsisdn_length()) ? productProperties.getMcc() + msisdn : msisdn, null, 0, null);
 						birthdayBonusSubscriber.setAspu(Long.parseLong(rs.getString("ASPU").trim()));
 						allMSISDN_With_ASPU_ReachedFlag.add(birthdayBonusSubscriber);
 					}
@@ -126,7 +132,7 @@ public class StagingHappyBirthdayBonusSubscriberStepListener implements StepExec
 				// croiser today_is_birthday and aspu reached
 				allMSISDN_Today_Is_BIRTHDATE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
 
-				for(BirthdayBonusSubscriber birthdayBonusSubscriber : allMSISDN_Today_Is_BIRTHDATE) {
+				for(BirthDayBonusSubscriber birthdayBonusSubscriber : allMSISDN_Today_Is_BIRTHDATE) {
 					try {
 						// store birthdayBonusSubscriber : verify again msisdn is mtnkif subscriber
 						Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, null, dao, birthdayBonusSubscriber.getValue(), 0);

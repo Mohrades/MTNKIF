@@ -6,15 +6,15 @@ public class USSDService {
 
 	private int id, code, requests_count;
 	private Date start_date, stop_date;
-	private String redirection;
+	private String url;
 
-	public USSDService(int id, int code, Date start_date, Date stop_date, int requests_count, String redirection) {
+	public USSDService(int id, int code, Date start_date, Date stop_date, int requests_count, String url) {
 		this.id = id;
 		this.code = code;
 		this.start_date = start_date;
 		this.stop_date = stop_date;
 		this.requests_count = requests_count;
-		this.redirection = redirection;
+		this.url = url;
 	}
 
 	public int getId() {
@@ -57,12 +57,12 @@ public class USSDService {
 		this.requests_count = requests_count;
 	}
 
-	public String getRedirection() {
-		return redirection;
+	public String getUrl() {
+		return url;
 	}
 
-	public void setRedirection(String redirection) {
-		this.redirection = redirection;
+	public void setUrl(String url) {
+		this.url = url;
 	}
 
 }

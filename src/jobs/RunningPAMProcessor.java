@@ -43,16 +43,36 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 		try {
 			// do action
 
+			// attempts
+			int retry = 0;
+
+			while(productProperties.getAir_preferred_host() == -1) {
+				if(retry >= 3) throw new AirAvailabilityException();
+
+				productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+				retry++;
+			}
+
+			retry = 0;
+
 			if(!request.isWaitingForResponse()) {
 				if((itemProcessedCount % 500) == 0) {
 					itemProcessedCount = 0;
 
-					byte air_preferred_host = (byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host());
-					productProperties.setAir_preferred_host(air_preferred_host);
-					if(air_preferred_host == -1) {
-						throw new AirAvailabilityException();
+					// attempts
+					retry = 0;
+					productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+
+					while(productProperties.getAir_preferred_host() == -1) {
+						if(retry >= 2) throw new AirAvailabilityException();
+
+						productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+						retry++;
 					}
+
+					retry = 0;
 				}
+
 				itemProcessedCount++;
 			}
 

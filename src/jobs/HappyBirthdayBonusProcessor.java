@@ -2,12 +2,12 @@ package jobs;
 
 import org.springframework.batch.item.ItemProcessor;
 import dao.DAO;
-import domain.models.BirthdayBonusSubscriber;
+import domain.models.BirthDayBonusSubscriber;
 import exceptions.AirAvailabilityException;
 import product.HappyBirthdayBonusActions;
 import product.ProductProperties;
 
-public class HappyBirthdayBonusProcessor implements ItemProcessor<BirthdayBonusSubscriber, BirthdayBonusSubscriber> {
+public class HappyBirthdayBonusProcessor implements ItemProcessor<BirthDayBonusSubscriber, BirthDayBonusSubscriber> {
 
 	private DAO dao;
 
@@ -34,7 +34,7 @@ public class HappyBirthdayBonusProcessor implements ItemProcessor<BirthdayBonusS
 	}
 
 	@Override
-	public BirthdayBonusSubscriber process(BirthdayBonusSubscriber birthdayBonusSubscriber) throws AirAvailabilityException {
+	public BirthDayBonusSubscriber process(BirthDayBonusSubscriber birthdayBonusSubscriber) throws AirAvailabilityException {
 		// TODO Auto-generated method stub
 
 		try {

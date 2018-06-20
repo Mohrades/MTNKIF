@@ -8,17 +8,17 @@ import org.springframework.batch.item.NonTransientResourceException;
 import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.UnexpectedInputException;
 
-import domain.models.BirthdayBonusSubscriber;
+import domain.models.BirthDayBonusSubscriber;
 
-public class SynchronizingBirthdayBonusSubscriberReader implements ItemReader<BirthdayBonusSubscriber>, ItemStream {
+public class SynchronizingBirthDayBonusSubscriberReader implements ItemReader<BirthDayBonusSubscriber>, ItemStream {
 
-	private ItemReader<BirthdayBonusSubscriber> delegate;
+	private ItemReader<BirthDayBonusSubscriber> delegate;
 
-	public ItemReader<BirthdayBonusSubscriber> getDelegate() {
+	public ItemReader<BirthDayBonusSubscriber> getDelegate() {
 		return delegate;
 	}
 
-	public void setDelegate(ItemReader<BirthdayBonusSubscriber> delegate) {
+	public void setDelegate(ItemReader<BirthDayBonusSubscriber> delegate) {
 		this.delegate = delegate;
 	}
 
@@ -47,7 +47,7 @@ public class SynchronizingBirthdayBonusSubscriberReader implements ItemReader<Bi
 	}
 
 	@Override
-	public synchronized BirthdayBonusSubscriber read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
+	public synchronized BirthDayBonusSubscriber read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
 		// TODO Auto-generated method stub
 		return delegate.read(); // Synchronizes read method
 	}

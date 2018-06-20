@@ -7,13 +7,14 @@ import connexions.AIRRequest;
 import dao.DAO;
 import dao.queries.BirthdayBonusSubscriberDAOJdbc;
 import dao.queries.RollBackDAOJdbc;
-import domain.models.BirthdayBonusSubscriber;
+import domain.models.BirthDayBonusSubscriber;
 import domain.models.RollBack;
 import exceptions.AirAvailabilityException;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
 
 public class HappyBirthdayBonusActions {
+
 	ProductProperties productProperties;
 
 	public HappyBirthdayBonusActions(ProductProperties productProperties) {
@@ -21,10 +22,22 @@ public class HappyBirthdayBonusActions {
 	}
 
 	@SuppressWarnings("deprecation")
-	public int doActions(DAO dao, BirthdayBonusSubscriber birthdayBonusSubscriber) throws AirAvailabilityException {
+	public int doActions(DAO dao, BirthDayBonusSubscriber birthdayBonusSubscriber) throws AirAvailabilityException {
 		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 
 		int responseCode = -1;
+
+		// attempts
+		int retry = 0;
+
+		while(productProperties.getAir_preferred_host() == -1) {
+			if(retry >= 3) throw new AirAvailabilityException();
+
+			productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+			retry++;
+		}
+
+		retry = 0;
 
 		if((productProperties.getAir_preferred_host() != -1) && ((request.getBalanceAndDate(birthdayBonusSubscriber.getValue(), 0)) != null)) {
 			try {

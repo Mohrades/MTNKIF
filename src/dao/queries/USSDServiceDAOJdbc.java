@@ -20,7 +20,7 @@ public class USSDServiceDAOJdbc {
 	}
 
 	public USSDService getOneUSSDService(int sc) {
-		List<USSDService> services = getJdbcTemplate().query("SELECT ID,CODE,REDIRECTION,START_DATE,STOP_DATE,REQUESTS_COUNT FROM SERVICE_CODE_EBA WHERE (CODE = " + sc + ")", new USSDServiceRowMapper());
+		List<USSDService> services = getJdbcTemplate().query("SELECT ID,CODE,URL,START_DATE,STOP_DATE,REQUESTS_COUNT FROM SERVICE_CODE_EBA WHERE (CODE = " + sc + ")", new USSDServiceRowMapper());
 		return services.isEmpty() ? null : services.get(0);
 	}
 

@@ -2,18 +2,18 @@ package domain.models;
 
 import java.util.Date;
 
-public class BirthdayBonusSubscriber extends MSISDN {
+public class BirthDayBonusSubscriber extends MSISDN {
 
 	private String name;
 	private int language, bonus;
 	private long aspu;
 	private Date birth_date, last_update_time, bonus_expires_in;
 
-	public BirthdayBonusSubscriber() {
+	public BirthDayBonusSubscriber() {
 		super();
 	}
 
-	public BirthdayBonusSubscriber(int id, String msisdn, String name, int language, Date birth_date) {
+	public BirthDayBonusSubscriber(int id, String msisdn, String name, int language, Date birth_date) {
 		super(id, msisdn);
 		this.name = name;
 		this.language = language;
@@ -82,7 +82,7 @@ public class BirthdayBonusSubscriber extends MSISDN {
 
 	public boolean equals (Object pp) {
 		try {
-			BirthdayBonusSubscriber p = (BirthdayBonusSubscriber) pp;
+			BirthDayBonusSubscriber p = (BirthDayBonusSubscriber) pp;
 
 			if(this.getValue().equals(p.getValue())) {
 				/*if(p.last_update_time != null) {

@@ -7,15 +7,15 @@ import org.springframework.stereotype.Component;
 
 import dao.DAO;
 import dao.queries.BirthdayBonusSubscriberDAOJdbc;
-import domain.models.BirthdayBonusSubscriber;
+import domain.models.BirthDayBonusSubscriber;
 import filter.MSISDNValidator;
 import product.PricePlanCurrent;
 import product.ProductProperties;
 
 @Component("happyBirthdayEventListener")
-public class HappyBirthdayEventListener {
+public class HappyBirthDayEventListener {
 
-	public HappyBirthdayEventListener() {
+	public HappyBirthDayEventListener() {
 
 	}
 
@@ -30,7 +30,7 @@ public class HappyBirthdayEventListener {
 				if((int)(requestStatus[0]) >= 0) {
 					if((int)(requestStatus[0]) == 0) {
 						// store BirthdayBonusSubscriber
-						(new BirthdayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber((new BirthdayBonusSubscriber(0, msisdn, name, language, new Date())));
+						(new BirthdayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber((new BirthDayBonusSubscriber(0, msisdn, name, language, new Date())));
 					}
 					else ;
 				}

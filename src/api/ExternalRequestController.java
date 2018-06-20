@@ -33,7 +33,7 @@ import util.AccountDetails;
 public class ExternalRequestController {
 
 	@Autowired
-	private HappyBirthdayEventListener happyBirthdayEventListener;
+	private HappyBirthDayEventListener happyBirthdayEventListener;
 
 	@Autowired
 	private MessageSource i18n;
