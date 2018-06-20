@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import dao.DAO;
-import dao.queries.BirthdayBonusSubscriberDAOJdbc;
+import dao.queries.BirthDayBonusSubscriberDAOJdbc;
 import domain.models.BirthDayBonusSubscriber;
 import filter.MSISDNValidator;
 import product.PricePlanCurrent;
@@ -30,7 +30,7 @@ public class HappyBirthDayEventListener {
 				if((int)(requestStatus[0]) >= 0) {
 					if((int)(requestStatus[0]) == 0) {
 						// store BirthdayBonusSubscriber
-						(new BirthdayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber((new BirthDayBonusSubscriber(0, msisdn, name, language, new Date())));
+						(new BirthDayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber((new BirthDayBonusSubscriber(0, msisdn, name, language, new Date())));
 					}
 					else ;
 				}

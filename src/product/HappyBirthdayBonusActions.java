@@ -5,7 +5,7 @@ import java.util.HashSet;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.BirthdayBonusSubscriberDAOJdbc;
+import dao.queries.BirthDayBonusSubscriberDAOJdbc;
 import dao.queries.RollBackDAOJdbc;
 import domain.models.BirthDayBonusSubscriber;
 import domain.models.RollBack;
@@ -47,7 +47,7 @@ public class HappyBirthdayBonusActions {
 				// set bonus expiry date
 				birthdayBonusSubscriber.setBonus_expires_in(expires);
 
-				if((new BirthdayBonusSubscriberDAOJdbc(dao)).locking(birthdayBonusSubscriber, true) > 0) {
+				if((new BirthDayBonusSubscriberDAOJdbc(dao)).locking(birthdayBonusSubscriber, true) > 0) {
 					responseCode = 1;
 
 					HashSet<BalanceAndDate> balances = new HashSet<BalanceAndDate>();
@@ -66,7 +66,7 @@ public class HappyBirthdayBonusActions {
 					if((balances.isEmpty()) || (request.updateBalanceAndDate(birthdayBonusSubscriber.getValue(), balances, productProperties.getSms_notifications_header(), "HappyBirthdayBonus", "eBA"))) {
 						// update Anumber Offer
 						if((productProperties.getHappy_birthday_bonus_offer_id() == 0) || (request.updateOffer(birthdayBonusSubscriber.getValue(), productProperties.getHappy_birthday_bonus_offer_id(), null, expires, null, "eBA"))) {
-							if((new BirthdayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber) > 0) {
+							if((new BirthDayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber) > 0) {
 								responseCode = 0;
 							}
 						}
@@ -103,7 +103,7 @@ public class HappyBirthdayBonusActions {
 			} finally {
 				if(responseCode >= 0) {
 					// unlock
-					((new BirthdayBonusSubscriberDAOJdbc(dao))).locking(birthdayBonusSubscriber, false);
+					((new BirthDayBonusSubscriberDAOJdbc(dao))).locking(birthdayBonusSubscriber, false);
 
 					if(request.isWaitingForResponse()) {
 						if(request.isSuccessfully());

@@ -13,12 +13,15 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
 
+import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.BirthdayBonusSubscriberDAOJdbc;
+import dao.queries.BirthDayBonusSubscriberDAOJdbc;
+import dao.queries.SubscriberDAOJdbc;
 import dao.queries.USSDServiceDAOJdbc;
 import domain.models.BirthDayBonusSubscriber;
+import domain.models.Subscriber;
 import domain.models.USSDService;
-import product.PricePlanCurrent;
+import product.PricePlanCurrentActions;
 import product.ProductProperties;
 
 public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExecutionListener {
@@ -68,7 +71,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 		        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 				stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE OUT OF RANGE", "Job should not be run right now."));
 			}
-			else if((new BirthdayBonusSubscriberDAOJdbc(dao)).isBirthDayReported()) {
+			else if((new BirthDayBonusSubscriberDAOJdbc(dao)).isBirthDayReported()) {
 				stepExecution.setTerminateOnly(); // Sets stop flag if necessary
 		        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 		        stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE EXCLUDED", "Job should not be run right now."));
@@ -91,7 +94,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 				PreparedStatement ps = null;
 				ResultSet rs = null;
 
-				HashSet <BirthDayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE = new HashSet <BirthDayBonusSubscriber>((new BirthdayBonusSubscriberDAOJdbc(dao)).getOneBirthdayBonusSubscribers());
+				HashSet <BirthDayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE = new HashSet <BirthDayBonusSubscriber>((new BirthDayBonusSubscriberDAOJdbc(dao)).getOneBirthdayBonusSubscribers());
 				HashSet <BirthDayBonusSubscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <BirthDayBonusSubscriber>();
 
 				try {
@@ -131,24 +134,61 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 
 				// croiser today_is_birthday and aspu reached
 				allMSISDN_Today_Is_BIRTHDATE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
+				int count_air_error = 0;
 
 				for(BirthDayBonusSubscriber birthdayBonusSubscriber : allMSISDN_Today_Is_BIRTHDATE) {
 					try {
-						// store birthdayBonusSubscriber : verify again msisdn is mtnkif subscriber
-						Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, null, dao, birthdayBonusSubscriber.getValue(), 0);
-						if((int)(requestStatus[0]) == 0) {
-							(new BirthdayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber);
+						// store birthdayBonusSubscriber : verify again msisdn is still mtnkif subscriber
+						int status = checkPricePlanStatus(productProperties, dao, birthdayBonusSubscriber.getValue());
+
+						if(status == 0) {
+							(new BirthDayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber);
+						}
+
+						if(status == -1) {
+							++count_air_error;
+							if(count_air_error >= 5) break;
 						}
 
 					} catch(Throwable th) {
 
 					}
 				}
+
+				if(count_air_error >= 5) {
+					stepExecution.setTerminateOnly(); // Sets stop flag if necessary
+			        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
+			        stepExecution.setExitStatus(new ExitStatus("STOPPED WITH AIR UNAVAILABILITY", "Job should not be run right now."));
+				}
 			}
 
 		} catch(Throwable th) {
 
 		}
+	}
+
+	public int checkPricePlanStatus(ProductProperties productProperties, DAO dao, String msisdn) {
+		// attempts
+		int retry = 0;
+
+		while(productProperties.getAir_preferred_host() == -1) {
+			if(retry >= 3) return -1;
+
+			productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+			retry++;
+		}
+
+		Subscriber subscriber = new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn);
+
+		 if((subscriber != null) && ((subscriber.isLocked()) || (!subscriber.isFlag()))) return 1;
+		 else {
+			 int status = (new PricePlanCurrentActions()).isActivated(productProperties, dao, msisdn);
+
+			// re-check air connection
+			if(status == -1) productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+
+			return status;
+		 }
 	}
 
 }

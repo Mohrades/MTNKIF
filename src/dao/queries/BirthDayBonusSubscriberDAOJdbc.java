@@ -12,11 +12,11 @@ import dao.DAO;
 import dao.mapping.BirthDayBonusSubscriberRowMapper;
 import domain.models.BirthDayBonusSubscriber;
 
-public class BirthdayBonusSubscriberDAOJdbc {
+public class BirthDayBonusSubscriberDAOJdbc {
 
 	private DAO dao;
 
-	public BirthdayBonusSubscriberDAOJdbc(DAO dao) {
+	public BirthDayBonusSubscriberDAOJdbc(DAO dao) {
 		this.dao = dao;
 	}
 
