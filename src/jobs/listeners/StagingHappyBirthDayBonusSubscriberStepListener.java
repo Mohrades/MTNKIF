@@ -58,6 +58,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 		// return null;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	// action avant l'exécution de l'étape
 	public void beforeStep(StepExecution stepExecution) {
@@ -105,7 +106,8 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 					connexion.setReadOnly(true); // en mode lecture seule
 
 					// Kif+ Subscribers with ASPU >= 3000 XOF
-					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(now)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
+					Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
 					rs = ps.executeQuery();
 					// Liste des elements
 					while (rs.next()) {
@@ -134,20 +136,20 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 
 				// croiser today_is_birthday and aspu reached
 				allMSISDN_Today_Is_BIRTHDATE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
-				int count_air_error = 0;
+				int air_error_count = 0;
 
 				for(BirthDayBonusSubscriber birthdayBonusSubscriber : allMSISDN_Today_Is_BIRTHDATE) {
 					try {
 						// store birthdayBonusSubscriber : verify again msisdn is still mtnkif subscriber
-						int status = checkPricePlanStatus(productProperties, dao, birthdayBonusSubscriber.getValue());
+						// (éviter d'inscrire les numéros en bd) pour gagner du temps : juste vérifier lee statut de chaque subscriber
+						int status = checkPricePlanCurrent(productProperties, dao, birthdayBonusSubscriber.getValue());
 
 						if(status == 0) {
 							(new BirthDayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber);
 						}
-
-						if(status == -1) {
-							++count_air_error;
-							if(count_air_error >= 5) break;
+						else if(status == -1) {
+							++air_error_count;
+							if(air_error_count >= 5) break;
 						}
 
 					} catch(Throwable th) {
@@ -155,7 +157,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 					}
 				}
 
-				if(count_air_error >= 5) {
+				if(air_error_count >= 5) {
 					stepExecution.setTerminateOnly(); // Sets stop flag if necessary
 			        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 			        stepExecution.setExitStatus(new ExitStatus("STOPPED WITH AIR UNAVAILABILITY", "Job should not be run right now."));
@@ -167,7 +169,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 		}
 	}
 
-	public int checkPricePlanStatus(ProductProperties productProperties, DAO dao, String msisdn) {
+	public int checkPricePlanCurrent(ProductProperties productProperties, DAO dao, String msisdn) {
 		// attempts
 		int retry = 0;
 

@@ -22,6 +22,7 @@ import connexions.AIRRequest;
 import dao.DAO;
 import domain.models.Subscriber;
 import filter.MSISDNValidator;
+import product.HappyBirthDayBonusActions;
 import product.PricePlanCurrent;
 import product.PricePlanCurrentActions;
 import product.ProductProperties;
@@ -56,7 +57,7 @@ public class ExternalRequestController {
 	}
 
 	@RequestMapping(value = "/status", params={"authentication=true", "originOperatorID"}, produces = "text/xml;charset=UTF-8")
-	public ModelAndView handlePricePlanStatusRequest(HttpServletRequest request) throws Exception {
+	public ModelAndView handlePricePlanStatusRequest(HttpServletRequest request, @RequestParam(value="bonus", required=false, defaultValue = "true") boolean bonus) throws Exception {
 		String msisdn = request.getParameter("msisdn");
 		String originOperatorID = request.getParameter("originOperatorID");
 
@@ -69,7 +70,7 @@ public class ExternalRequestController {
 
 		originOperatorID = originOperatorID.trim();
 
-		Object[] status = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, msisdn, language);
+		Object[] status = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, msisdn, language, bonus);
 		return callback(msisdn, (int)(status[0]), (String)(status[1]));
 	}
 
@@ -88,7 +89,7 @@ public class ExternalRequestController {
 
 		if((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "A")) {
 			originOperatorID = originOperatorID.trim();
-			Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, msisdn, language);
+			Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, msisdn, language, false);
 
 			if((int)(requestStatus[0]) >= 0) {
 				if(action.equals("deactivation")) {
@@ -136,52 +137,33 @@ public class ExternalRequestController {
 		}
 	}
 
-    @RequestMapping(value="/happyBirthdayEvent/{msisdn}", params={"authentication=true", "originOperatorID", "name"}, method=RequestMethod.POST, produces = "text/xml;charset=UTF-8")
-	public ModelAndView handleHappyBirthdayBonusRequest(HttpServletRequest request, @RequestParam("msisdn") String msisdn, @PathVariable("msisdn") String msisdn_confirmation) throws Exception {
-		String name = request.getParameter("name");
+	@RequestMapping(value = "/happyBirthdayBonus", params={"authentication=true", "originOperatorID"}, produces = "text/xml;charset=UTF-8")
+	public ModelAndView handleHappyBirthdayBonusRequest(HttpServletRequest request) throws Exception {
+		String msisdn = request.getParameter("msisdn");
 		String originOperatorID = request.getParameter("originOperatorID");
 
-		if((productProperties.getAir_preferred_host() == -1) || (originOperatorID == null) || (originOperatorID.trim().length() == 0) || (msisdn == null) || (msisdn_confirmation == null) || (!msisdn.equals(msisdn_confirmation)) || (!(new MSISDNValidator()).onNet(productProperties, msisdn))) {
+		if((productProperties.getAir_preferred_host() == -1) || (originOperatorID == null) || (originOperatorID.trim().length() == 0) || (msisdn == null) || (!(new MSISDNValidator()).onNet(productProperties, msisdn))) {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
 		}
 
-		// AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold())).getAccountDetails(msisdn);
-		// int language = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
-		int language = 1;
-		if(request.getParameter("language") != null) {
-			try {
-				language = Integer.parseInt(request.getParameter("language"));
+		AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).getAccountDetails(msisdn);
+		int language = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
 
-			} catch(NumberFormatException ex) {
+		originOperatorID = originOperatorID.trim();
 
-			} catch(Exception ex) {
+		Object[] status = (new HappyBirthDayBonusActions(productProperties)).getStatus(i18n, dao, msisdn, language);
+		return callback(msisdn, (int)(status[0]), (String)(status[1]));
+	}
 
-			} catch(Throwable th) {
+    @RequestMapping(value="/happyBirthdayEvent/{msisdn}", params={"authentication=true", "originOperatorID", "name"}, method=RequestMethod.POST, produces = "text/xml;charset=UTF-8")
+	public ModelAndView handleHappyBirthdayEventRequest(HttpServletRequest request, @RequestParam("msisdn") String msisdn, @PathVariable("msisdn") String msisdn_confirmation, @RequestParam(value="language", required=false, defaultValue = "1") int language) throws Exception {
+		String name = request.getParameter("name");
+		String originOperatorID = request.getParameter("originOperatorID");
 
-			}
+		/*if((productProperties.getAir_preferred_host() == -1) || (originOperatorID == null) || (originOperatorID.trim().length() == 0) || (msisdn == null) || (msisdn_confirmation == null) || (!msisdn.equals(msisdn_confirmation)) || (!(new MSISDNValidator()).onNet(productProperties, msisdn))) {*/
+		if((happyBirthdayEventListener.getAir_errors_count() >= 5) || (originOperatorID == null) || (originOperatorID.trim().length() == 0) || (msisdn == null) || (msisdn_confirmation == null) || (!msisdn.equals(msisdn_confirmation)) || (!(new MSISDNValidator()).onNet(productProperties, msisdn))) {
+			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
 		}
-
-		/*if((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "A")) {
-			originOperatorID = originOperatorID.trim();
-			Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, msisdn, language);
-
-			// register msisdn to benefit happy birthday bonus
-			if((int)(requestStatus[0]) >= 0) {
-				if((int)(requestStatus[0]) == 0) {
-					// store BirthdayBonusSubscriber
-					(new BirthdayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber((new BirthdayBonusSubscriber(0, msisdn, name, language, null)));
-
-					return callback(msisdn, 0, "HANDLED");
-				}
-				else return callback(msisdn, 1, i18n.getMessage("status.unsuccessful.already", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
-			}
-			else {
-				return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
-			}
-		}
-		else {
-			return callback(msisdn, -1, i18n.getMessage("menu.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
-		}*/
 
 		happyBirthdayEventListener.handle(msisdn, name, language, originOperatorID, productProperties, dao);
 		return callback(msisdn, 0, "HANDLED");

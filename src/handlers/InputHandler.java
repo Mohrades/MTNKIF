@@ -23,6 +23,7 @@ import domain.models.USSDRequest;
 import domain.models.USSDService;
 import exceptions.AirAvailabilityException;
 import filter.MSISDNValidator;
+import product.HappyBirthDayBonusActions;
 import product.PricePlanCurrent;
 import product.PricePlanCurrentActions;
 import product.ProductProperties;
@@ -84,18 +85,22 @@ public class InputHandler {
 
 				if(ussd.getInput().equals(short_code + "*2")) {
 					// statut
-					statut(i18n, language, productProperties, dao, ussd, modele);
+					pricePlanCurrentStatus(i18n, language, productProperties, dao, ussd, modele);
 				}
 				else if(ussd.getInput().equals(short_code + "*3")) {
 					// infos
 					endStep(dao, ussd, modele, productProperties, (new PricePlanCurrentActions()).getInfo(i18n, productProperties, ussd.getMsisdn()), null, null, null, null);
+				}
+				else if(ussd.getInput().equals(short_code + "*4")) {
+					// happy birthday bonus
+					birthdayBonus(i18n, language, productProperties, dao, ussd, modele);
 				}
 				else if(((ussd.getInput().startsWith(short_code + "*1")) || (ussd.getInput().startsWith(short_code + "*0"))) && (ussd.getInput().endsWith("*1"))) {
 					if((new MSISDNValidator()).isFiltered(dao, productProperties, ussd.getMsisdn(), "A")) {
 						List<String> inputs = Splitter.onPattern("[*]").trimResults().omitEmptyStrings().splitToList(ussd.getInput());
 
 						if(inputs.size() == 3) {
-							Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language);
+							Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language, false);
 
 							if((int)(requestStatus[0]) >= 0) {
 								if(ussd.getInput().endsWith("*0*1")) {
@@ -154,8 +159,12 @@ public class InputHandler {
 		}
 	}
 
-	public void statut(MessageSource i18n, int language, ProductProperties productProperties, DAO dao, USSDRequest ussd, Map<String, Object> modele) {
-		endStep(dao, ussd, modele, productProperties, (String)(((new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language))[1]), null, null, null, null);
+	public void pricePlanCurrentStatus(MessageSource i18n, int language, ProductProperties productProperties, DAO dao, USSDRequest ussd, Map<String, Object> modele) {
+		endStep(dao, ussd, modele, productProperties, (String)(((new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language, true))[1]), null, null, null, null);
+	}
+
+	public void birthdayBonus(MessageSource i18n, int language, ProductProperties productProperties, DAO dao, USSDRequest ussd, Map<String, Object> modele) {
+		endStep(dao, ussd, modele, productProperties, (String)(((new HappyBirthDayBonusActions(productProperties)).getStatus(i18n, dao, ussd.getMsisdn(), language))[1]), null, null, null, null);
 	}
 
 	public void endStep(DAO dao, USSDRequest ussd, Map<String, Object> modele, ProductProperties productProperties, String messageA, String Anumber, String messageB, String Bnumber, String senderName) {

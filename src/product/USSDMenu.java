@@ -27,10 +27,11 @@ public class USSDMenu {
 		Element body = new Element("menu");
 		racine.addContent(body);
 
-		body.addContent(new Element("choice-0").addContent(new Element("choice-1")).addContent(new Element("choice-2")));
 		body.addContent(new Element("choice-1").addContent(new Element("choice-1")).addContent(new Element("choice-2")));
 		body.addContent(new Element("choice-2"));
-		body.addContent(new Element("choice-3"));
+		body.addContent(new Element("choice-3").addContent(new Element("choice-1")).addContent(new Element("choice-2")));
+		body.addContent(new Element("choice-4"));
+		body.addContent(new Element("choice-5"));
 
 	    return document;
 	}

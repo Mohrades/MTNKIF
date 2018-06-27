@@ -9,15 +9,18 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
+import org.springframework.context.MessageSource;
+import connexions.AIRRequest;
 import crbt.AddToneBox;
 import crbt.DelInboxTone;
 import crbt.OrderTone;
@@ -31,15 +34,48 @@ import domain.models.CRBTReporting;
 import domain.models.Subscriber;
 import domain.models.USSDService;
 import product.ProductProperties;
+import tools.SMPPConnector;
+import util.AccountDetails;
 
-@Component("crbtRenewalTasklet")
+/*@Component("crbtRenewalTasklet")*/
 public class CRBTRenewalTasklet implements Tasklet {
 
-	@Autowired
+	/*@Autowired*/
 	private DAO dao;
 
-	@Autowired
+	/*@Autowired*/
 	private ProductProperties productProperties;
+
+	/*@Autowired*/
+	private MessageSource i18n;
+
+	public CRBTRenewalTasklet() {
+		
+	}
+
+	public DAO getDao() {
+		return dao;
+	}
+
+	public void setDao(DAO dao) {
+		this.dao = dao;
+	}
+
+	public ProductProperties getProductProperties() {
+		return productProperties;
+	}
+
+	public void setProductProperties(ProductProperties productProperties) {
+		this.productProperties = productProperties;
+	}
+
+	public MessageSource getI18n() {
+		return i18n;
+	}
+
+	public void setI18n(MessageSource i18n) {
+		this.i18n = i18n;
+	}
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -75,7 +111,8 @@ public class CRBTRenewalTasklet implements Tasklet {
 
 					// on lit la table PRICEPLAN.VALUE_BAND_LIST [MSISDN, CUSTOMER_SEGMENT]
 					// ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter());
-					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(now)).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + ""));
+					Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(previous_month)).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + ""));
 					rs = ps.executeQuery();
 					// Liste des elements
 					while (rs.next()) {
@@ -146,7 +183,8 @@ public class CRBTRenewalTasklet implements Tasklet {
 							HashMap<String, String> multiRef = new Subscribe(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, true);
 							if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("301009"))) {
 								 // step two : order  tone
-								multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null, true);
+								// multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null, true);
+								multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", null, null, true);
 								/*if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302011"))) {*/
 								if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000"))) { // when tone already exists, do nothing
 									// step three : add tone
@@ -167,8 +205,15 @@ public class CRBTRenewalTasklet implements Tasklet {
 											reporting.setAuto(true);
 											reporting.setToneBoxID(toneBoxID);
 											new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(reporting);
+
+											// send notification sms
+											requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());
 										}
 									}
+								}
+								else if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("302011"))) {
+									// send notification sms
+									requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());
 								}
 							}
 						}
@@ -187,6 +232,26 @@ public class CRBTRenewalTasklet implements Tasklet {
 		}
 
 		return null;
+	}
+
+	public void requestSubmitSmToSmppConnector(String messageA, String Anumber, String messageB, String Bnumber, String senderName) {
+		if(senderName != null) {
+			Logger logger = LogManager.getLogger("logging.log4j.SubmitSMLogger");
+
+			AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).getAccountDetails(Anumber);
+			messageA = i18n.getMessage("crbt.renewal.successful", null, null, (accountDetails == null) ? Locale.FRENCH : (accountDetails.getLanguageIDCurrent() == 2) ? Locale.ENGLISH : Locale.FRENCH);
+
+			if(Anumber != null) {
+				// if(Anumber.startsWith(productProperties.getMcc() + "")) Anumber = Anumber.substring((productProperties.getMcc() + "").length());
+				new SMPPConnector().submitSm(senderName, Anumber, messageA);
+				logger.log(Level.TRACE, "[" + Anumber + "] " + messageA);
+			}
+			if(Bnumber != null) {
+				// if(Bnumber.startsWith(productProperties.getMcc() + "")) Bnumber = Bnumber.substring((productProperties.getMcc() + "").length());
+				new SMPPConnector().submitSm(senderName, Bnumber, messageB);
+				logger.trace("[" + Bnumber + "] " + messageB);
+			}
+		}
 	}
 
 }

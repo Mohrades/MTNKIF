@@ -19,7 +19,7 @@ public class QueryUser {
 
 	public HashMap<String, String> execute(String portalType, String moduleCode, String role, String roleCode, String phoneNumber, String startRecordNum, String endRecordNum, String queryType, String merchantID, String serviceID, String subCosID, String brand, String type, String status, String orderType, String orderBy, String moodModeID, boolean waitingForResponse) {
 		SocketConnection connection;
-		String portalAccount = "admin"; String portalPwd = "Mtn123#$";
+		String portalAccount = "admin"; String portalPwd = "Mtn123#$"; portalPwd = "admin";
 
 		try {
 			connection = new SocketConnection(ip, port, waitingForResponse ? sleep : 0, timeout);

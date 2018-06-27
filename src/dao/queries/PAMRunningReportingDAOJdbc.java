@@ -34,4 +34,16 @@ public class PAMRunningReportingDAOJdbc {
 		return getJdbcTemplate().query("SELECT ID,SUBSCRIBER,FLAG,CREATED_DATE_TIME FROM " + tableName + " WHERE (SUBSCRIBER = " + subscriber + ") ORDER BY CREATED_DATE_TIME DESC", new PAMRunningReportingRowMapper());
 	}
 
+	public void notifyNightAdvantages(int pamrunningId, int subscriberId) {
+		Date now = new Date();
+		String tableName = "MTN_KIF_PAM_RUN_REPORT_E_" + ((new SimpleDateFormat("MMMyy")).format(now)).toUpperCase();
+
+		if(pamrunningId > 0) {
+			getJdbcTemplate().update("UPDATE " + tableName + " SET SMS = 1 WHERE (ID = " + pamrunningId + ")");
+		}
+		else if (subscriberId > 0) {
+			getJdbcTemplate().update("UPDATE " + tableName + " SET SMS = 1 WHERE ((CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (SUBSCRIBER = " + subscriberId + ") AND (FLAG = 1) AND (SMS IS NULL))");
+		}
+	}
+
 }

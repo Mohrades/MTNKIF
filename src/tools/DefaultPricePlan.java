@@ -121,6 +121,7 @@ public class DefaultPricePlan {
 			// A normal POST coming from a http form has a well defined format. We need to convert our input to this format
 			Map<String,String> arguments = new HashMap<>();
 			arguments.put("msisdn", msisdn);
+			arguments.put("bonus", "false");
 			arguments.put("authentication", "true");
 			arguments.put("originOperatorID", originOperatorID);
 

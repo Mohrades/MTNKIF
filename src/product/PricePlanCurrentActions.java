@@ -1,9 +1,14 @@
 package product;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+
 import org.springframework.context.MessageSource;
 
 import connexions.AIRRequest;
@@ -119,120 +124,168 @@ public class PricePlanCurrentActions {
 			if((serviceOfferings == null) || (request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA"))) {
 				// update Anumber Offer
 				if((productProperties.getOffer_id() == 0) || (request.updateOffer(msisdn, productProperties.getOffer_id(), null, null, null, "eBA"))) {
-					// set PAM
-					PamInformationList pamInformationList = new PamInformationList();
-					pamInformationList.add(new PamInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
-					if((productProperties.getPamServiceID() > 99) || (productProperties.getPamServiceID() < 0) || (request.addPeriodicAccountManagementData(msisdn, pamInformationList, true, "eBA"))) {
-						// set Product id to subscriber through EMA interface
-						HashSet<Integer> allResp = new HashSet<Integer>(); allResp.add(0);
-						HashSet<Integer> successResp = new HashSet<Integer>(); successResp.add(0);
-						CAI_For_HLR_EMARequest cai = new CAI_For_HLR_EMARequest(productProperties.getEma_hosts(), productProperties.getEma_io_sleep(), productProperties.getEma_io_timeout());
+					// community
+					int[] communityInformationCurrent = null;
+					int[] communityInformationNew = null;
 
-						if((productProperties.getProductID() == 0) || (cai.execute("SET:PCRFSUB:MSISDN," + msisdn + ":ACTIONTYPE,SUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", allResp, successResp))) {
-							// ADVANTAGES
-							if(advantages) {
-								Date expires = new Date();
-								expires.setSeconds(59);expires.setMinutes(59);expires.setHours(23);
+					try {
+						communityInformationCurrent = (productProperties.getCommunity_id() == 0) ? null : request.getAccountDetails(msisdn).getCommunityInformationCurrent();
+						if(productProperties.getCommunity_id() == 0);
+						else {
+							if(communityInformationCurrent == null) communityInformationCurrent = new int[]{};
 
-								balances = new HashSet<BalanceAndDate>();
-								// sms advantages
-								if(productProperties.getAdvantages_sms_value() != 0) {
-									if(productProperties.getAdvantages_sms_da() == 0) balances.add(new BalanceAndDate(0, productProperties.getAdvantages_sms_value(), expires));
-									else balances.add(new DedicatedAccount(productProperties.getAdvantages_sms_da(), productProperties.getAdvantages_sms_value(), expires));
-								}
+							// Java 8, convert array to List, primitive int[] to List<Integer>
+							// List<Integer> list21 =  Arrays.asList(integers); // Cannot modify returned list
+							List<Integer> communityInformationCurrentasList = new ArrayList<>(Arrays.stream(communityInformationCurrent).boxed().collect(Collectors.toList()));  // good : can modify returned list
+							if(communityInformationCurrentasList.contains(new Integer(productProperties.getCommunity_id())));
+							else {
+								communityInformationCurrentasList.add(new Integer(productProperties.getCommunity_id()));
+								communityInformationNew = communityInformationCurrentasList.stream().mapToInt(Integer::intValue).toArray();
+							}
+						}
 
-								// data advantages
-								if(productProperties.getAdvantages_data_value() != 0) {
-									if(productProperties.getAdvantages_data_da() == 0) balances.add(new BalanceAndDate(0, productProperties.getAdvantages_data_value(), expires));
-									else balances.add(new DedicatedAccount(productProperties.getAdvantages_data_da(), productProperties.getAdvantages_data_value(), expires));
-								}
+					} catch(Throwable th) {
+						if(productProperties.getCommunity_id() != 0) {
+							// save rollback
+							new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -4, 1, msisdn, msisdn, null));
 
-								// update Anumber Balance
-								if((balances.isEmpty()) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "ACTIVATIONADVANTAGES", "eBA"))) ;
-								else {
-									// save rollback
-									new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 5 : -5, 1, msisdn, msisdn, null));
-								}
+							if(request.isSuccessfully()) ;
+							else {
+								// re-test connection
+								productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
 							}
 
-							// crbt advantages
-							/*if((true || advantages) && (productProperties.getSong_rbt_code() != null)) {*/
-							if(productProperties.getSong_rbt_code() != null) {
-								// set mtnkif+ crbt song
-								String national = msisdn.substring((productProperties.getMcc() + "").length());
+							return -1;
+						}
+					}
 
-								// first step : subscribe
-								HashMap<String, String> multiRef = new Subscribe(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, true);
-								if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("301009"))) {
-									 // step two : order  tone
-									multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null, true);
-									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302011"))) {
-										// step three : add tone
-										multiRef = new AddToneBox(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, "2", "mtnkif", null, new String[] {productProperties.getSong_rbt_code()}, null, null, "2", "1", "000000000", national, true);
-										if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") && multiRef.containsKey("toneBoxID"))) {
-											// set tone
-											String toneBoxID = multiRef.get("toneBoxID");
-											multiRef = new SetTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, null, null, null, null, "1", "1", "2", null, null, toneBoxID, "1", true);
-											// reporting
-											if((multiRef != null) && (multiRef.containsKey("returnCode")) && multiRef.get("returnCode").equals("000000")) {
-												subscriber.setCrbt(true); // update status
-												CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), true, new Date(), originOperatorID);
-												CRBTReporting.setToneBoxID(toneBoxID);
-												new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(CRBTReporting);										
+					if((productProperties.getCommunity_id() == 0) || (communityInformationNew == null) || (communityInformationNew.length == 0) || (request.updateCommunityList(msisdn, communityInformationCurrent, communityInformationNew, "eBA"))) {
+						// set PAM
+						PamInformationList pamInformationList = new PamInformationList();
+						pamInformationList.add(new PamInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
+						if((productProperties.getPamServiceID() > 99) || (productProperties.getPamServiceID() < 0) || (request.addPeriodicAccountManagementData(msisdn, pamInformationList, true, "eBA"))) {
+							// set Product id to subscriber through EMA interface
+							HashSet<Integer> allResp = new HashSet<Integer>(); allResp.add(0);
+							HashSet<Integer> successResp = new HashSet<Integer>(); successResp.add(0);
+							CAI_For_HLR_EMARequest cai = new CAI_For_HLR_EMARequest(productProperties.getEma_hosts(), productProperties.getEma_io_sleep(), productProperties.getEma_io_timeout());
+
+							if((productProperties.getProductID() == 0) || (cai.execute("SET:PCRFSUB:MSISDN," + msisdn + ":ACTIONTYPE,SUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", allResp, successResp))) {
+								// ADVANTAGES
+								if(advantages) {
+									Date expires = new Date();
+									expires.setSeconds(59);expires.setMinutes(59);expires.setHours(23);
+
+									balances = new HashSet<BalanceAndDate>();
+									// sms advantages
+									if(productProperties.getAdvantages_sms_value() != 0) {
+										if(productProperties.getAdvantages_sms_da() == 0) balances.add(new BalanceAndDate(0, productProperties.getAdvantages_sms_value(), expires));
+										else balances.add(new DedicatedAccount(productProperties.getAdvantages_sms_da(), productProperties.getAdvantages_sms_value(), expires));
+									}
+
+									// data advantages
+									if(productProperties.getAdvantages_data_value() != 0) {
+										if(productProperties.getAdvantages_data_da() == 0) balances.add(new BalanceAndDate(0, productProperties.getAdvantages_data_value(), expires));
+										else balances.add(new DedicatedAccount(productProperties.getAdvantages_data_da(), productProperties.getAdvantages_data_value(), expires));
+									}
+
+									// update Anumber Balance
+									if((balances.isEmpty()) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "ACTIVATIONADVANTAGES", "eBA"))) ;
+									else {
+										// save rollback
+										new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 6 : -6, 1, msisdn, msisdn, null));
+									}
+								}
+
+								// crbt advantages
+								/*if((true || advantages) && (productProperties.getSong_rbt_code() != null)) {*/
+								if(productProperties.getSong_rbt_code() != null) {
+									// set mtnkif+ crbt song
+									String national = msisdn.substring((productProperties.getMcc() + "").length());
+
+									// first step : subscribe
+									HashMap<String, String> multiRef = new Subscribe(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, true);
+									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("301009"))) {
+										 // step two : order  tone
+										// multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null, true);
+										multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", null, null, true);
+										if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302011"))) {
+											// step three : add tone
+											multiRef = new AddToneBox(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, "2", "mtnkif", null, new String[] {productProperties.getSong_rbt_code()}, null, null, "2", "1", "000000000", national, true);
+											if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") && multiRef.containsKey("toneBoxID"))) {
+												// set tone
+												String toneBoxID = multiRef.get("toneBoxID");
+												multiRef = new SetTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, null, null, null, null, "1", "1", "2", null, null, toneBoxID, "1", true);
+												// reporting
+												if((multiRef != null) && (multiRef.containsKey("returnCode")) && multiRef.get("returnCode").equals("000000")) {
+													subscriber.setCrbt(true); // update status
+													CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), true, new Date(), originOperatorID);
+													CRBTReporting.setToneBoxID(toneBoxID);
+													new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(CRBTReporting);										
+												}
 											}
 										}
 									}
 								}
-							}
 
-							// delete others settings
-							// delete serviceOfferings
-							if(productProperties.getXtra_serviceOfferings_IDs() != null) {
-								serviceOfferings = new ServiceOfferings();
-								int size = productProperties.getXtra_serviceOfferings_IDs().size();
+								// delete others settings
+								// delete serviceOfferings
+								if(productProperties.getXtra_serviceOfferings_IDs() != null) {
+									serviceOfferings = new ServiceOfferings();
+									int size = productProperties.getXtra_serviceOfferings_IDs().size();
 
-								for(int index = 0; index < size; index++) {
-									int serviceOfferingID = Integer.parseInt(productProperties.getXtra_serviceOfferings_IDs().get(index));
-									boolean activeFlag = (Integer.parseInt(productProperties.getXtra_serviceOfferings_activeFlags().get(index)) == 1) ? true : false;
-									serviceOfferings.SetActiveFlag(serviceOfferingID, activeFlag);
-								}
+									for(int index = 0; index < size; index++) {
+										int serviceOfferingID = Integer.parseInt(productProperties.getXtra_serviceOfferings_IDs().get(index));
+										boolean activeFlag = (Integer.parseInt(productProperties.getXtra_serviceOfferings_activeFlags().get(index)) == 1) ? true : false;
+										serviceOfferings.SetActiveFlag(serviceOfferingID, activeFlag);
+									}
 
-								if(request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA")) ;
-								else {
-									// save rollback
-									new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 6 : -6, 1, msisdn, msisdn, null));
-								}
-							}
-
-							// delete offers
-							if(productProperties.getXtra_removal_offer_IDs() != null) {
-								int[] offerIDs = new int[productProperties.getXtra_removal_offer_IDs().size()];
-
-								for(int index = 0; index < offerIDs.length; index++) {
-									offerIDs[index] = Integer.parseInt(productProperties.getXtra_removal_offer_IDs().get(index));
-								}
-
-								for(int offerID : offerIDs) {
-									if(request.deleteOffer(msisdn, offerID, "eBA", true));
+									if(request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA")) ;
 									else {
 										// save rollback
 										new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 7 : -7, 1, msisdn, msisdn, null));
-										if(request.isSuccessfully()) ;
-										else break;
 									}
 								}
-							}
 
-							return 0;
+								// delete offers
+								if(productProperties.getXtra_removal_offer_IDs() != null) {
+									int[] offerIDs = new int[productProperties.getXtra_removal_offer_IDs().size()];
+
+									for(int index = 0; index < offerIDs.length; index++) {
+										offerIDs[index] = Integer.parseInt(productProperties.getXtra_removal_offer_IDs().get(index));
+									}
+
+									for(int offerID : offerIDs) {
+										if(request.deleteOffer(msisdn, offerID, "eBA", true));
+										else {
+											// save rollback
+											new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 8 : -8, 1, msisdn, msisdn, null));
+											if(request.isSuccessfully()) ;
+											else break;
+										}
+									}
+								}
+
+								return 0;
+							}
+							else {
+								// do rollback for AIR ACTIONS
+								int rollbackStatus = new PricePlanCurrentRollBackActions().activation(5, productProperties, dao, msisdn, charged);
+
+								if(cai.isSuccessfully()) return rollbackStatus;
+								else {
+									// save rollback
+									new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, cai.isSuccessfully() ? 9 : -9, 1, msisdn, msisdn, null));
+									return -1;
+								}
+							}
 						}
 						else {
-							// do rollback for AIR ACTIONS
-							int rollbackStatus = new PricePlanCurrentRollBackActions().activation(4, productProperties, dao, msisdn, charged);
-
-							if(cai.isSuccessfully()) return rollbackStatus;
+							if(request.isSuccessfully()) {
+								return new PricePlanCurrentRollBackActions().activation(4, productProperties, dao, msisdn, charged);
+							}
 							else {
 								// save rollback
-								new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, cai.isSuccessfully() ? 8 : -8, 1, msisdn, msisdn, null));
+								new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -5, 1, msisdn, msisdn, null));
 								return -1;
 							}
 						}
@@ -280,6 +333,7 @@ public class PricePlanCurrentActions {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public int deactivation(ProductProperties productProperties, DAO dao, Subscriber subscriber, boolean charged, String originOperatorID) {
 		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 		String msisdn =subscriber.getValue();
@@ -307,40 +361,84 @@ public class PricePlanCurrentActions {
 			if((serviceOfferings == null) || (request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA"))) {
 				// update Anumber Offer
 				if((productProperties.getOffer_id() == 0) || (request.deleteOffer(msisdn, productProperties.getOffer_id(), "eBA", true))) {
-					// remove PAM
-					PamInformationList pamInformationList = new PamInformationList();
-					pamInformationList.add(new PamInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
-					if((productProperties.getPamServiceID() > 99) || (productProperties.getPamServiceID() < 0) || (request.deletePeriodicAccountManagementData(msisdn, pamInformationList, "eBA", true))) {
+					// community
+					int[] communityInformationCurrent = null;
+					int[] communityInformationNew = null;
 
-						// remove Product id from subscriber through EMA interface
-						HashSet<Integer> allResp = new HashSet<Integer>(); allResp.add(0);
-						HashSet<Integer> successResp = new HashSet<Integer>(); successResp.add(0);
-						CAI_For_HLR_EMARequest cai = new CAI_For_HLR_EMARequest(productProperties.getEma_hosts(), productProperties.getEma_io_sleep(), productProperties.getEma_io_timeout());
+					try {
+						communityInformationCurrent = (productProperties.getCommunity_id() == 0) ? null : request.getAccountDetails(msisdn).getCommunityInformationCurrent();
+						if((productProperties.getCommunity_id() == 0) || (communityInformationCurrent == null) || (communityInformationCurrent.length == 0)) ;
+						else {
+							// Java 8, convert array to List, primitive int[] to List<Integer>
+							// List<Integer> list21 =  Arrays.asList(integers); // Cannot modify returned list
+							List<Integer> communityInformationCurrentasList = new ArrayList<>(Arrays.stream(communityInformationCurrent).boxed().collect(Collectors.toList()));  // good : can modify returned list
+							if(communityInformationCurrentasList.contains(new Integer(productProperties.getCommunity_id()))) {
+								communityInformationCurrentasList.remove(new Integer(productProperties.getCommunity_id()));
+								communityInformationNew = communityInformationCurrentasList.stream().mapToInt(Integer::intValue).toArray();
+							}
+						}
 
-						if((productProperties.getProductID() == 0) || (cai.execute("SET:PCRFSUB:MSISDN," + msisdn + ":ACTIONTYPE,UNSUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", allResp, successResp))) {
-							// remove mtnkif+ crbt song
-							if(productProperties.getSong_rbt_code() != null) {
-								String national = msisdn.substring((productProperties.getMcc() + "").length());
+					} catch(Throwable th) {
+						if(productProperties.getCommunity_id() != 0) {
+							// save rollback
+							new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -4, 2, msisdn, msisdn, null));
 
-								HashMap<String, String> multiRef = new DelInboxTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, null, null, null, productProperties.getSong_rbt_code(), null, "1", true);
-								// reporting
-								if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
-									subscriber.setCrbt(false); // update status
-									CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), originOperatorID);
-									new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(CRBTReporting);
-								}
+							if(request.isSuccessfully()) ;
+							else {
+								// re-test connection
+								productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
 							}
 
-							return 0;
+							return -1;
+						}
+					}
+
+					if((productProperties.getCommunity_id() == 0) || (communityInformationNew == null) || (communityInformationCurrent == null) || (communityInformationCurrent.length == 0) ||  (request.updateCommunityList(msisdn, communityInformationCurrent, communityInformationNew, "eBA"))) {
+						// remove PAM
+						PamInformationList pamInformationList = new PamInformationList();
+						pamInformationList.add(new PamInformation(productProperties.getPamServiceID(), productProperties.getPamClassID(), productProperties.getScheduleID()));
+						if((productProperties.getPamServiceID() > 99) || (productProperties.getPamServiceID() < 0) || (request.deletePeriodicAccountManagementData(msisdn, pamInformationList, "eBA", true))) {
+
+							// remove Product id from subscriber through EMA interface
+							HashSet<Integer> allResp = new HashSet<Integer>(); allResp.add(0);
+							HashSet<Integer> successResp = new HashSet<Integer>(); successResp.add(0);
+							CAI_For_HLR_EMARequest cai = new CAI_For_HLR_EMARequest(productProperties.getEma_hosts(), productProperties.getEma_io_sleep(), productProperties.getEma_io_timeout());
+
+							if((productProperties.getProductID() == 0) || (cai.execute("SET:PCRFSUB:MSISDN," + msisdn + ":ACTIONTYPE,UNSUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", allResp, successResp))) {
+								// remove mtnkif+ crbt song
+								if(productProperties.getSong_rbt_code() != null) {
+									String national = msisdn.substring((productProperties.getMcc() + "").length());
+
+									HashMap<String, String> multiRef = new DelInboxTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, null, null, null, productProperties.getSong_rbt_code(), null, "1", true);
+									// reporting
+									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
+										subscriber.setCrbt(false); // update status
+										CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), originOperatorID);
+										new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(CRBTReporting);
+									}
+								}
+
+								return 0;
+							}
+							else {
+								// do rollback for AIR ACTIONS
+								int rollbackStatus = new PricePlanCurrentRollBackActions().deactivation(5, productProperties, dao, msisdn, charged);
+
+								if(cai.isSuccessfully()) return rollbackStatus;
+								else {
+									// save rollback
+									new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, cai.isSuccessfully() ? 6 : -6, 2, msisdn, msisdn, null));
+									return -1;
+								}
+							}
 						}
 						else {
-							// do rollback for AIR ACTIONS
-							int rollbackStatus = new PricePlanCurrentRollBackActions().deactivation(4, productProperties, dao, msisdn, charged);
-
-							if(cai.isSuccessfully()) return rollbackStatus;
+							if(request.isSuccessfully()) {
+								return new PricePlanCurrentRollBackActions().deactivation(4, productProperties, dao, msisdn, charged);
+							}
 							else {
 								// save rollback
-								new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, cai.isSuccessfully() ? 5 : -5, 2, msisdn, msisdn, null));
+								new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -5, 2, msisdn, msisdn, null));
 								return -1;
 							}
 						}

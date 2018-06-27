@@ -12,7 +12,7 @@
 
 	<task:annotation-driven executor="batchTaskExecutor" scheduler="scheduling" exception-handler="myAsyncUncaughtExceptionHandler" />
 
-	<bean id="myAsyncUncaughtExceptionHandler" class="jobs.MyAsyncUncaughtExceptionHandler" />
+	<bean id="myAsyncUncaughtExceptionHandler" class="exceptions.MyAsyncUncaughtExceptionHandler" />
 
 	<!-- By default when specifying @Async on a method, the executor that will be used is the one supplied to the 'annotation-driven' -->
 	<!-- the value attribute of the @Async annotation can be used when needing to indicate that an executor other than the default should be used -->
@@ -34,7 +34,8 @@
 
 		<task:scheduled ref="jobs" method="setHappyBirthdayBonus" cron="0 30 07 ? * *" />
 
-  		<task:scheduled ref="jobs" method="clear_ussd" fixed-delay="900000" />
+  		<!-- <task:scheduled ref="jobs" method="clear_ussd" fixed-delay="900000" /> -->
+  		<task:scheduled ref="jobs" method="clear_ussd" fixed-delay="720000" />
 	</task:scheduled-tasks>
 
     <bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
@@ -48,27 +49,35 @@
 
 	<batch:job id="cleanExpiredUssdRequestJob">
 	  <batch:step id="cleanUssdRequest">
-	  	<batch:tasklet ref="cleanExpiredUssdRequestTasklet" transaction-manager="transactionManager" />
+	  	<!-- <batch:tasklet ref="cleanExpiredUssdRequestTasklet" transaction-manager="transactionManager" /> -->
+	  	<batch:tasklet transaction-manager="transactionManager">
+          <bean class="jobs.CleanExpiredUssdRequestTasklet">
+     		<property name="productProperties" ref="productProperties" />
+     		<property name="dao" ref="dao" />
+     	  </bean>
+	  	</batch:tasklet>
 	  </batch:step>
 	</batch:job>
 
 	<batch:job id="runningPAMJob">
 	  <batch:listeners>
-      	<batch:listener>
-          <bean class="jobs.listeners.RunningPAMJobListener" />
-        </batch:listener>
+      	<!-- <batch:listener>
+          <bean class="jobs.listeners.JobPhaseEventListener" />
+        </batch:listener> -->
+        <batch:listener ref="jobPhaseEventListener" />
   	  </batch:listeners>
 
 	  <batch:step id="runningPAM">
 	  	<!-- throttle-limit, this attribute configures the level of thread concurrency and has a default value of 4 -->
 	  	<!-- Ensure the core pool size is larger than this limit. -->
-	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="5">
+	  	<!-- <batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="5"> -->
+	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="4">
 	  	<!-- <batch:tasklet> -->
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="100" /> -->
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="50" /> -->
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="100" skip-limit="10" retry-limit="3"> -->
 	      <!-- <batch:chunk reader="subscribers" commit-interval="100" skip-limit="25" retry-limit="3"> -->
-	      <batch:chunk reader="subscribers" commit-interval="20" skip-limit="20" retry-limit="3">
+	      <batch:chunk reader="runnablePAMSubscribers" commit-interval="20" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
 	          <bean class="jobs.RunningPAMProcessor">
@@ -144,12 +153,97 @@
 		<!-- Defines a transition from this step to the next one depending on the value of the exit status. ExitStatus represents the status of a Step after it finishes execution. More specifically, the 'next' element above references the exit code of the ExitStatus -->
     	<!-- <batch:next on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
     	<!-- <batch:next on="*" to="step2" /> -->
+    	<batch:next on="COMPLETED" to="nightAdvantagesNotificationThroughSms" />
+	  </batch:step>
+
+	  <batch:step id="nightAdvantagesNotificationThroughSms">
+	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="4">
+	      <!-- <batch:chunk commit-interval="100" skip-limit="20" retry-limit="3"> -->
+	      <batch:chunk commit-interval="50" skip-limit="20" retry-limit="3">
+	        <batch:reader>
+				<bean class="jobs.SynchronizingNightAdvantagesSubscriberReader">
+				  <property name="delegate">
+			  		<!-- reader must be evaluated for every scheduled execution of the given job. -->
+			  		<!-- If you set the scope of the bean to step, then a new bean will be created every time the step is executed. -->
+					<!-- <bean class="org.springframework.batch.item.database.JdbcCursorItemReader" scope="step"> -->
+					<bean class="jobs.NightAdvantagesSubscriberReader" scope="step">
+					  	<property name="dataSource" ref="db_connection" />
+					  	<!-- <property name="sql">
+					  		<value>
+					    		SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((FLAG = 1) AND (LOCKED = 0))
+					    		SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE FLAG = 1
+					  		</value>
+					  	</property> -->
+					  	<property name="saveState" value="false" />
+					  	<property name="rowMapper">
+					    	<bean class="dao.mapping.PAMRunningReportingRowMapper" />
+					  	</property>
+					</bean>
+				  </property>
+				</bean>
+	        </batch:reader>
+
+	        <batch:processor>
+	          <bean class="jobs.NightAdvantagesNotificationProcessor">
+	          	<property name="dao" ref="dao" />
+	          	<property name="productProperties" ref="productProperties" />
+	          </bean>
+	        </batch:processor>
+
+	        <batch:writer>
+	          <bean class="jobs.NightAdvantagesNotificationWriter">
+	          	<property name="i18n" ref="messageSource" />
+	          	<property name="productProperties" ref="productProperties" />
+	          </bean>
+	        </batch:writer>
+
+			<!-- The Step allows a limit for the number of times an exception can be skipped, and a list of exceptions that are 'skippable'. -->
+         	<batch:skippable-exception-classes>
+            	<batch:include class="exceptions.AirAvailabilityException" />
+
+            	<!-- <batch:include class="org.springframework.batch.item.file.FlatFileParseException" />
+            	<batch:exclude class="java.lang.Exception" />
+            	<batch:exclude class="java.io.FileNotFoundException" /> -->
+         	</batch:skippable-exception-classes>
+
+			<!-- The Step allows a limit for the number of times an individual item can be retried, and a list of exceptions that are 'retryable'. -->
+	        <batch:retryable-exception-classes>
+	          	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
+	        </batch:retryable-exception-classes>
+	      </batch:chunk>
+
+		  <!-- the Step can be configured with a list of exceptions that should not cause rollback. -->
+	      <batch:no-rollback-exception-classes>
+	         <batch:include class="java.lang.Throwable" />
+	      </batch:no-rollback-exception-classes>
+
+		  <!-- Intercepting Step Execution -->
+		  <!-- Just as with the Job, there are many events during the execution of a Step where a user may need to perform some functionality.
+		  This can be accomplished with one of many Step scoped listeners. -->
+    	  <batch:listeners>
+    	  	<batch:listener ref="jobRunListener" />
+			<batch:listener ref="itemProcessingSkipListener" />
+    	  </batch:listeners>
+	    </batch:tasklet>
 	  </batch:step>
 	</batch:job>
 
 	<batch:job id="crbtRenewalJob">
 	  <batch:step id="crbtRenewal">
-	  	<batch:tasklet ref="crbtRenewalTasklet" transaction-manager="transactionManager" />
+	  	<!-- <batch:tasklet ref="crbtRenewalTasklet" transaction-manager="transactionManager" /> -->
+	  	<batch:tasklet transaction-manager="transactionManager">
+          <bean class="jobs.CRBTRenewalTasklet">
+          	<property name="i18n" ref="messageSource" />
+     		<property name="productProperties" ref="productProperties" />
+     		<property name="dao" ref="dao" />
+     	  </bean>
+		  <!-- Intercepting Step Execution -->
+		  <!-- Just as with the Job, there are many events during the execution of a Step where a user may need to perform some functionality.
+		  This can be accomplished with one of many Step scoped listeners. -->
+    	  <batch:listeners>
+    	  	<batch:listener ref="jobRunListener" />
+    	  </batch:listeners>
+	    </batch:tasklet>
 	  </batch:step>
 	</batch:job>
 
@@ -157,15 +251,17 @@
 	Remember that jobs are restartable by default. If you’re worried that you’ll forget that, set the restartable flag explicitly on all your jobs. -->
 	<batch:job id="happyBirthdayBonusJob">
 	  <batch:listeners>
-      	<batch:listener>
-          <bean class="jobs.listeners.HappyBirthdayBonusJobListener" />
-        </batch:listener>
+      	<!-- <batch:listener>
+          <bean class="jobs.listeners.JobPhaseEventListener" />
+        </batch:listener> -->
+        <batch:listener ref="jobPhaseEventListener" />
   	  </batch:listeners>
 
 	  <!-- A single step cannot have both a "next" attribute and a transition element. -->
 	  <!-- <batch:step id="stepA" next="stepB" /> -->
 	  <batch:step id="happyBirthdayBonus">
-	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="5">
+	  	<!-- <batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="5"> -->
+	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="4">
 	      <!-- <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" processor="happyBirthdayBonusProcessor" writer="happyBirthdayBonusWriter" commit-interval="10" skip-limit="20" retry-limit="3"> -->
 	      <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" commit-interval="10" skip-limit="20" retry-limit="3">
 
@@ -254,9 +350,26 @@
 	  </batch:step>
 	</batch:job>
 
+	<!-- Job scope, introduced in Spring Batch 3.0 is similar to Step scope in configuration but is a Scope for the Job context so there is only one instance of such a bean per executing job.
+	Additionally, support is provided for late binding of references accessible from the JobContext using #{..} placeholders. Using this feature, bean properties can be pulled from the job or job execution context and the job parameters. -->
+	<!-- Because it is not part of the Spring container by default, the scope must be added explicitly, either by using the batch namespace:
+	Or by including a bean definition explicitly for the JobScope <bean class="org.springframework.batch.core.scope.JobScope" /> (but not both): -->
+	<bean id="jobPhaseEventListener" class="jobs.listeners.JobPhaseEventListener" scope="job">
+		<property name="productProperties" ref="productProperties" />
+		
+    	<!-- <property name="name" value="#{jobParameters[input]}" /> -->
+    	<!-- <property name="name" value="#{jobExecutionContext['input.name']}.txt" /> -->
+	</bean>
+
+	<!-- Using a scope of Step is required in order to use late binding since the bean cannot actually be instantiated until the Step starts, which allows the attributes to be found.
+	Because it is not part of the Spring container by default, the scope must be added explicitly, either by using the batch namespace:
+	or by including a bean definition explicitly for the StepScope <bean class="org.springframework.batch.core.scope.StepScope" /> (but not both): -->
     <bean id="jobRunListener" class="jobs.listeners.JobRunListener" scope="step">
-      <property name="dao" ref="dao" />
-      <property name="productProperties" ref="productProperties" />
+      	<property name="dao" ref="dao" />
+      	<property name="productProperties" ref="productProperties" />
+	  	
+      	<!-- <property name="resource" value="#{stepExecutionContext['input.file.name']}" />
+      	<property name="resource" value="#{jobExecutionContext['input.file.name']}" /> -->
     </bean>
 
 	<bean id="itemProcessingSkipListener" class="jobs.listeners.ItemProcessingSkipListener" scope="step" />
@@ -295,12 +408,12 @@
 	Finally, you  disable Spring Batch state management. This is the other requirement to make the item reader thread-safe (with the synchronization of the read method).
 	But by doing that, you lose the reader’s restartability feature, because the item reader won’t know where it left off after a failure.
 	Luckily, the process indicator is there to enable restartability: the reader reads only unprocessed items. The item writer then needs to flag the product as handled using the processed column and then write the item, as described in the following listing. -->
-	<bean id="subscribers" class="jobs.SynchronizingSubscriberReader">
+	<bean id="runnablePAMSubscribers" class="jobs.SynchronizingSubscriberReader">
 	  <property name="delegate">
   		<!-- reader must be evaluated for every scheduled execution of the given job. -->
   		<!-- If you set the scope of the bean to step, then a new bean will be created every time the step is executed. -->
 		<!-- <bean class="org.springframework.batch.item.database.JdbcCursorItemReader" scope="step"> -->
-		<bean class="jobs.RunnablePAMSubscribers" scope="step">
+		<bean class="jobs.RunnablePAMSubscriberReader" scope="step">
 			<constructor-arg index="0" type="int" value="0" />
 			<!-- <constructor-arg index="0" type="int" value="1" /> -->
 
@@ -320,16 +433,19 @@
 	</bean>
 
 	<!-- The configurable "task-executor" attribute is used to specify which TaskExecutor implementation should be used to execute the individual flows. The default is SyncTaskExecutor, but an asynchronous TaskExecutor is required to run the steps in parallel. Note that the job will ensure that every flow in the split completes before aggregating the exit statuses and transitioning. -->
-	<bean id="ParallelStepsTaskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor">
-	  <!-- Spring creates a threadpool of 10 threads, executing each chunk in a different thread or 10 chunks in parallel -->
-	  <!-- <property name="concurrencyLimit" value="10" /> -->
+	<!-- <bean id="ParallelStepsTaskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor">
+	  Spring creates a threadpool of 10 threads, executing each chunk in a different thread or 10 chunks in parallel
+	  <property name="concurrencyLimit" value="10" />
 	  <property name="concurrencyLimit" value="3" />
-	</bean>
+	</bean> -->
 
 	<!-- <task:executor id="executorWithCallerRunsPolicy" pool-size="5-25" queue-capacity="100" rejection-policy="CALLER_RUNS" /> -->
 	<!-- <task:executor id="MultithreadedStepsTaskExecutor" pool-size="10" queue-capacity="25" rejection-policy="CALLER_RUNS" keep-alive="1800" /> -->
 	<!-- <task:executor id="MultithreadedStepsTaskExecutor" pool-size="5-10" queue-capacity="25" rejection-policy="CALLER_RUNS" keep-alive="3600" /> -->
-	<task:executor id="MultithreadedStepsTaskExecutor" pool-size="5-10" queue-capacity="25" rejection-policy="CALLER_RUNS" keep-alive="1800" />
+
+	<!-- <task:executor id="MultithreadedStepsTaskExecutor" pool-size="5-10" queue-capacity="25" rejection-policy="CALLER_RUNS" keep-alive="1800" /> -->
+	<task:executor id="MultithreadedStepsTaskExecutor" pool-size="4-7" queue-capacity="20" rejection-policy="CALLER_RUNS" keep-alive="1800" />
+
 	<!-- <bean id="MultithreadedStepsTaskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
 	    <property name="corePoolSize" value="5" />
 	    <property name="maxPoolSize" value="10" />

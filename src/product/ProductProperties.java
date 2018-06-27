@@ -24,6 +24,9 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	@Value("#{appConfig['sms.notifications.header']}")
 	private String sms_notifications_header;
 
+	@Value("#{appConfig['happy.birthday.sms.notifications.header']}")
+	private String happy_birthday_sms_notifications_header;
+
 	private List<String> mnc;
 
 	@Value("#{appConfig['msisdn.length']}")
@@ -86,6 +89,9 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	private List<String> serviceOfferings_IDs;
 	private List<String> serviceOfferings_activeFlags;
+
+	@Value("#{appConfig['community.id']}")
+	private int community_id;
 
 	@Value("#{appConfig['offer.id']}")
 	private int offer_id;
@@ -153,6 +159,17 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	private int crbt_server_io_sleep;
 	@Value("#{appConfig['crbt.server.io.timeout']}")
 	private int crbt_server_io_timeout;
+
+	@Value("#{appConfig['bonus.sms.onNet.accumulator']}")
+	private int bonus_sms_onNet_accumulator;
+	@Value("#{appConfig['bonus.sms.offNet.accumulator']}")
+	private int bonus_sms_offNet_accumulator;
+	@Value("#{appConfig['bonus.sms.remaining.accumulator']}")
+	private int bonus_sms_remaining_accumulator;
+	@Value("#{appConfig['night.advantages.call.da']}")
+	private int night_advantages_call_da;
+	@Value("#{appConfig['night.advantages.data.da']}")
+	private int night_advantages_data_da;
 
 	@Value("#{appConfig['gsm.mnc']}")
 	public void setMnc(final String gsmmnc) {
@@ -317,6 +334,10 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 		return default_price_plan_url;
 	}
 
+	public String getHappy_birthday_sms_notifications_header() {
+		return happy_birthday_sms_notifications_header;
+	}
+
 	public long getHappy_birthday_bonus_aspu_minimum() {
 		return happy_birthday_bonus_aspu_minimum;
 	}
@@ -339,6 +360,26 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	public long getHappy_birthday_bonus_voice_volume() {
 		return happy_birthday_bonus_voice_volume;
+	}
+
+	public int getBonus_sms_onNet_accumulator() {
+		return bonus_sms_onNet_accumulator;
+	}
+
+	public int getBonus_sms_offNet_accumulator() {
+		return bonus_sms_offNet_accumulator;
+	}
+
+	public int getBonus_sms_remaining_accumulator() {
+		return bonus_sms_remaining_accumulator;
+	}
+
+	public int getNight_advantages_call_da() {
+		return night_advantages_call_da;
+	}
+
+	public int getNight_advantages_data_da() {
+		return night_advantages_data_da;
 	}
 
 	public boolean isAdvantages_always() {
@@ -399,6 +440,10 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	public List<String> getServiceOfferings_activeFlags() {
 		return serviceOfferings_activeFlags;
+	}
+
+	public int getCommunity_id() {
+		return community_id;
 	}
 
 	public int getOffer_id() {

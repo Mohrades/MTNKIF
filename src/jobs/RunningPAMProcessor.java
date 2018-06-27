@@ -56,7 +56,7 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 			retry = 0;
 
 			if(!request.isWaitingForResponse()) {
-				if((itemProcessedCount % 500) == 0) {
+				if((itemProcessedCount % 600) == 0) {
 					itemProcessedCount = 0;
 
 					// attempts
@@ -98,8 +98,14 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 
 			return subscriber;
 
-		} catch(Throwable th) {
+		} catch(AirAvailabilityException ex) {
+			throw ex;
 
+		} catch(Exception ex) {
+			if(ex instanceof AirAvailabilityException) throw ex;
+
+		} catch(Throwable th) {
+			if(th instanceof AirAvailabilityException) throw th;
 		}
 
 		return null;

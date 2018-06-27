@@ -13,6 +13,7 @@ import product.ProductProperties;
 public class JobRunListener implements StepExecutionListener {
 
 	private DAO dao;
+
 	private ProductProperties productProperties;
 
 	public JobRunListener() {

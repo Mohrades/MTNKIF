@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-
 import dao.DAO;
 import dao.mapping.BirthDayBonusSubscriberRowMapper;
 import domain.models.BirthDayBonusSubscriber;
@@ -90,8 +89,8 @@ public class BirthDayBonusSubscriberDAOJdbc {
 
 	public boolean isBirthDayReported() {
 		try {
-			Map<String, Object> result = getJdbcTemplate().queryForMap("SELECT ID,BIRTH_DATE,REPORTED_TO FROM HVC_BIRTHDAY_BONUS_DATES_EBA WHERE ((BIRTH_DATE = '" + (new SimpleDateFormat("dd-MMM-yy")).format(new Date()) + "') AND ((REPORTED_TO IS NULL) OR (REPORTED_TO != BIRTH_DATE)))");
-			return result.isEmpty() ? false : true;
+			List<Map<String, Object>> result = getJdbcTemplate().queryForList("SELECT BIRTH_DATE FROM HVC_BIRTHDAY_BONUS_DATES_EBA Aa WHERE (Aa.BIRTH_DATE = TO_DATE('" + (new SimpleDateFormat("dd-MMM-yy")).format(new Date()) + "', 'DD-MON-YY')) AND ((Aa.REPORTED_TO IS NULL) OR (Aa.REPORTED_TO != Aa.BIRTH_DATE))");
+			return result.isEmpty() ? false : true ;
 
 		} catch(EmptyResultDataAccessException empty) {
 			
@@ -101,7 +100,7 @@ public class BirthDayBonusSubscriberDAOJdbc {
 			
 		}
 
-		return false;
+		return true;
 	}
 
 }

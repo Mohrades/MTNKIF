@@ -1,4 +1,4 @@
-package jobs;
+package exceptions;
 
 import java.lang.reflect.Method;
 
@@ -6,7 +6,7 @@ import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 
 public class MyAsyncUncaughtExceptionHandler implements AsyncUncaughtExceptionHandler {
 
-	public MyAsyncUncaughtExceptionHandler(){
+	public MyAsyncUncaughtExceptionHandler() {
 
 	}
 

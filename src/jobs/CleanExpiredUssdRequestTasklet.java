@@ -8,21 +8,38 @@ import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import connexions.AIRRequest;
 import dao.DAO;
 import product.ProductProperties;
 
-@Component("cleanExpiredUssdRequestTasklet")
+/*@Component("cleanExpiredUssdRequestTasklet")*/
 public class CleanExpiredUssdRequestTasklet implements Tasklet {
 
-	@Autowired
+	/*@Autowired*/
 	private DAO dao;
 
-	@Autowired
+	/*@Autowired*/
 	private ProductProperties productProperties;
+
+	public CleanExpiredUssdRequestTasklet() {
+		
+	}
+
+	public DAO getDao() {
+		return dao;
+	}
+
+	public void setDao(DAO dao) {
+		this.dao = dao;
+	}
+
+	public ProductProperties getProductProperties() {
+		return productProperties;
+	}
+
+	public void setProductProperties(ProductProperties productProperties) {
+		this.productProperties = productProperties;
+	}
 
 	@SuppressWarnings("deprecation")
 	@Override

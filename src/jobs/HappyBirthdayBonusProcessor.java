@@ -4,7 +4,7 @@ import org.springframework.batch.item.ItemProcessor;
 import dao.DAO;
 import domain.models.BirthDayBonusSubscriber;
 import exceptions.AirAvailabilityException;
-import product.HappyBirthdayBonusActions;
+import product.HappyBirthDayBonusActions;
 import product.ProductProperties;
 
 public class HappyBirthdayBonusProcessor implements ItemProcessor<BirthDayBonusSubscriber, BirthDayBonusSubscriber> {
@@ -41,15 +41,18 @@ public class HappyBirthdayBonusProcessor implements ItemProcessor<BirthDayBonusS
 			// set bonus choice (data and voice)
 			birthdayBonusSubscriber.setBonus(1);
 
-			if((new HappyBirthdayBonusActions(productProperties)).doActions(dao, birthdayBonusSubscriber) == 0) {
+			if((new HappyBirthDayBonusActions(productProperties)).doActions(dao, birthdayBonusSubscriber) == 0) {
 				return birthdayBonusSubscriber;
 			}
 
 		} catch(AirAvailabilityException ex) {
 			throw ex;
 
-		} catch(Throwable th) {
+		} catch(Exception ex) {
+			if(ex instanceof AirAvailabilityException) throw ex;
 
+		} catch(Throwable th) {
+			if(th instanceof AirAvailabilityException) throw th;
 		}
 
 		return null;

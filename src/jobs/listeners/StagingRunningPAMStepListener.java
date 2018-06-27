@@ -10,6 +10,7 @@ import product.ProductProperties;
 public class StagingRunningPAMStepListener implements StepExecutionListener {
 
 	private DAO dao;
+
 	private ProductProperties productProperties;
 
 	public StagingRunningPAMStepListener() {
