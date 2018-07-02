@@ -3,7 +3,7 @@ package jobs;
 import java.util.List;
 import org.springframework.batch.item.ItemWriter;
 import dao.DAO;
-import dao.queries.PAMRunningReportingDAOJdbc;
+import dao.queries.JdbcPAMRunningReportingDao;
 import domain.models.PAMRunningReporting;
 import domain.models.Subscriber;
 
@@ -32,7 +32,7 @@ public class RunningPAMWriter implements ItemWriter<Subscriber> {
 				if(subscriber != null) {
 					try {
 						// save reporting
-						(new PAMRunningReportingDAOJdbc(dao)).saveOnePAMRunningReporting(new PAMRunningReporting(0, subscriber.getId(), subscriber.isFlag(), null, "eBA"));
+						(new JdbcPAMRunningReportingDao(dao)).saveOnePAMRunningReporting(new PAMRunningReporting(0, subscriber.getId(), subscriber.isFlag(), null, "eBA"));
 
 					} catch(NullPointerException ex) {
 

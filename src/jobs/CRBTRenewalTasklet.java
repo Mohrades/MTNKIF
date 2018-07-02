@@ -27,9 +27,9 @@ import crbt.OrderTone;
 import crbt.SetTone;
 import crbt.Subscribe;
 import dao.DAO;
-import dao.queries.CRBTReportingDAOJdbc;
-import dao.queries.SubscriberDAOJdbc;
-import dao.queries.USSDServiceDAOJdbc;
+import dao.queries.JdbcCRBTReportingDao;
+import dao.queries.JdbcSubscriberDao;
+import dao.queries.JdbcUSSDServiceDao;
 import domain.models.CRBTReporting;
 import domain.models.Subscriber;
 import domain.models.USSDService;
@@ -83,7 +83,7 @@ public class CRBTRenewalTasklet implements Tasklet {
 		// TODO Auto-generated method stub
 
 		try {
-			USSDService service = new USSDServiceDAOJdbc(dao).getOneUSSDService(productProperties.getSc());
+			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 			Date now = new Date();
 
 			/*The first way to stop execution is to throw an exception. This works all the time, unless you configured the job to skip some exceptions in a chunk-oriented step!*/
@@ -99,7 +99,7 @@ public class CRBTRenewalTasklet implements Tasklet {
 				PreparedStatement ps = null;
 				ResultSet rs = null;
 
-				HashSet <Subscriber> allMSISDN_Today_Is_CRBTRENEWABLE = new HashSet <Subscriber>((new SubscriberDAOJdbc(dao)).getAllRenewableCRBTSubscribers(now));
+				HashSet <Subscriber> allMSISDN_Today_Is_CRBTRENEWABLE = new HashSet <Subscriber>((new JdbcSubscriberDao(dao)).getAllRenewableCRBTSubscribers());
 				HashSet <Subscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <Subscriber>();
 
 				try {
@@ -112,7 +112,7 @@ public class CRBTRenewalTasklet implements Tasklet {
 					// on lit la table PRICEPLAN.VALUE_BAND_LIST [MSISDN, CUSTOMER_SEGMENT]
 					// ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter());
 					Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
-					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(previous_month)).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + ""));
+					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(previous_month)).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + ""));
 					rs = ps.executeQuery();
 					// Liste des elements
 					while (rs.next()) {
@@ -159,11 +159,11 @@ public class CRBTRenewalTasklet implements Tasklet {
 								subscriber.setCrbt(false); // update status
 								subscriber.setCrbtNextRenewalDate(now);
 								// store subscriber
-								new SubscriberDAOJdbc(dao).setCRBTFlag(subscriber);
+								new JdbcSubscriberDao(dao).setCRBTFlag(subscriber);
 								// store reporting
 								CRBTReporting reporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), "eBA");
 								reporting.setAuto(true);
-								new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(reporting);
+								new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(reporting);
 							}
 						}
 
@@ -198,13 +198,13 @@ public class CRBTRenewalTasklet implements Tasklet {
 											subscriber.setCrbt(true); // update status
 											subscriber.setCrbtNextRenewalDate(now);
 											// store subscriber
-											new SubscriberDAOJdbc(dao).setCRBTFlag(subscriber);
+											new JdbcSubscriberDao(dao).setCRBTFlag(subscriber);
 
 											// store reporting
 											CRBTReporting reporting = new CRBTReporting(0, subscriber.getId(), true, new Date(), "eBA");
 											reporting.setAuto(true);
 											reporting.setToneBoxID(toneBoxID);
-											new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(reporting);
+											new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(reporting);
 
 											// send notification sms
 											requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());

@@ -10,11 +10,11 @@ import dao.DAO;
 import dao.mapping.PAMRunningReportingRowMapper;
 import domain.models.PAMRunningReporting;
 
-public class PAMRunningReportingDAOJdbc {
+public class JdbcPAMRunningReportingDao {
 
 	private DAO dao;
 
-	public PAMRunningReportingDAOJdbc(DAO dao) {
+	public JdbcPAMRunningReportingDao(DAO dao) {
 		this.dao = dao;
 	}
 
@@ -45,5 +45,4 @@ public class PAMRunningReportingDAOJdbc {
 			getJdbcTemplate().update("UPDATE " + tableName + " SET SMS = 1 WHERE ((CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (SUBSCRIBER = " + subscriberId + ") AND (FLAG = 1) AND (SMS IS NULL))");
 		}
 	}
-
 }

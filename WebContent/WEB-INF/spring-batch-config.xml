@@ -27,6 +27,7 @@
 		<!-- java.lang.IllegalArgumentException: Cron expression must consist of 6 fields (found 7 in "0 00 0 1 APR,MAY,JUN ? 2018") -->
 
 		<!-- <task:scheduled ref="jobs" method="run_database_maintenance" cron="0 30 01 ? * *"  /> -->
+  		<!-- <task:scheduled ref="jobs" method="run_pam" cron="0 41 11 ? * *" /> -->
   		<task:scheduled ref="jobs" method="run_pam" cron="30 01 00 ? * *" />
 
   		<task:scheduled ref="jobs" method="renew_crbt" cron="0 30 02 ? * *" />
@@ -77,7 +78,7 @@
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="50" /> -->
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="100" skip-limit="10" retry-limit="3"> -->
 	      <!-- <batch:chunk reader="subscribers" commit-interval="100" skip-limit="25" retry-limit="3"> -->
-	      <batch:chunk reader="runnablePAMSubscribers" commit-interval="20" skip-limit="20" retry-limit="3">
+	      <batch:chunk reader="runningPAMSubscribers" commit-interval="20" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
 	          <bean class="jobs.RunningPAMProcessor">
@@ -356,7 +357,7 @@
 	Or by including a bean definition explicitly for the JobScope <bean class="org.springframework.batch.core.scope.JobScope" /> (but not both): -->
 	<bean id="jobPhaseEventListener" class="jobs.listeners.JobPhaseEventListener" scope="job">
 		<property name="productProperties" ref="productProperties" />
-		
+
     	<!-- <property name="name" value="#{jobParameters[input]}" /> -->
     	<!-- <property name="name" value="#{jobExecutionContext['input.name']}.txt" /> -->
 	</bean>
@@ -367,7 +368,7 @@
     <bean id="jobRunListener" class="jobs.listeners.JobRunListener" scope="step">
       	<property name="dao" ref="dao" />
       	<property name="productProperties" ref="productProperties" />
-	  	
+
       	<!-- <property name="resource" value="#{stepExecutionContext['input.file.name']}" />
       	<property name="resource" value="#{jobExecutionContext['input.file.name']}" /> -->
     </bean>
@@ -408,12 +409,12 @@
 	Finally, you  disable Spring Batch state management. This is the other requirement to make the item reader thread-safe (with the synchronization of the read method).
 	But by doing that, you lose the reader’s restartability feature, because the item reader won’t know where it left off after a failure.
 	Luckily, the process indicator is there to enable restartability: the reader reads only unprocessed items. The item writer then needs to flag the product as handled using the processed column and then write the item, as described in the following listing. -->
-	<bean id="runnablePAMSubscribers" class="jobs.SynchronizingSubscriberReader">
+	<bean id="runningPAMSubscribers" class="jobs.SynchronizingSubscriberReader">
 	  <property name="delegate">
   		<!-- reader must be evaluated for every scheduled execution of the given job. -->
   		<!-- If you set the scope of the bean to step, then a new bean will be created every time the step is executed. -->
 		<!-- <bean class="org.springframework.batch.item.database.JdbcCursorItemReader" scope="step"> -->
-		<bean class="jobs.RunnablePAMSubscriberReader" scope="step">
+		<bean class="jobs.RunningPAMSubscriberReader" scope="step">
 			<constructor-arg index="0" type="int" value="0" />
 			<!-- <constructor-arg index="0" type="int" value="1" /> -->
 

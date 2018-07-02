@@ -18,8 +18,8 @@ import crbt.OrderTone;
 import crbt.SetTone;
 import crbt.Subscribe;
 import dao.DAO;
-import dao.queries.CRBTReportingDAOJdbc;
-import dao.queries.RollBackDAOJdbc;
+import dao.queries.JdbcCRBTReportingDao;
+import dao.queries.JdbcRollBackDao;
 import domain.models.CRBTReporting;
 import domain.models.RollBack;
 import domain.models.Subscriber;
@@ -147,7 +147,7 @@ public class PricePlanCurrentActions {
 					} catch(Throwable th) {
 						if(productProperties.getCommunity_id() != 0) {
 							// save rollback
-							new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -4, 1, msisdn, msisdn, null));
+							new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -4, 1, msisdn, msisdn, null));
 
 							if(request.isSuccessfully()) ;
 							else {
@@ -192,7 +192,7 @@ public class PricePlanCurrentActions {
 									if((balances.isEmpty()) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "ACTIVATIONADVANTAGES", "eBA"))) ;
 									else {
 										// save rollback
-										new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 6 : -6, 1, msisdn, msisdn, null));
+										new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 6 : -6, 1, msisdn, msisdn, null));
 									}
 								}
 
@@ -220,7 +220,7 @@ public class PricePlanCurrentActions {
 													subscriber.setCrbt(true); // update status
 													CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), true, new Date(), originOperatorID);
 													CRBTReporting.setToneBoxID(toneBoxID);
-													new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(CRBTReporting);										
+													new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(CRBTReporting);										
 												}
 											}
 										}
@@ -242,7 +242,7 @@ public class PricePlanCurrentActions {
 									if(request.updateSubscriberSegmentation(msisdn, null, serviceOfferings, "eBA")) ;
 									else {
 										// save rollback
-										new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 7 : -7, 1, msisdn, msisdn, null));
+										new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 7 : -7, 1, msisdn, msisdn, null));
 									}
 								}
 
@@ -258,7 +258,7 @@ public class PricePlanCurrentActions {
 										if(request.deleteOffer(msisdn, offerID, "eBA", true));
 										else {
 											// save rollback
-											new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 8 : -8, 1, msisdn, msisdn, null));
+											new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, request.isSuccessfully() ? 8 : -8, 1, msisdn, msisdn, null));
 											if(request.isSuccessfully()) ;
 											else break;
 										}
@@ -274,7 +274,7 @@ public class PricePlanCurrentActions {
 								if(cai.isSuccessfully()) return rollbackStatus;
 								else {
 									// save rollback
-									new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, cai.isSuccessfully() ? 9 : -9, 1, msisdn, msisdn, null));
+									new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, cai.isSuccessfully() ? 9 : -9, 1, msisdn, msisdn, null));
 									return -1;
 								}
 							}
@@ -285,7 +285,7 @@ public class PricePlanCurrentActions {
 							}
 							else {
 								// save rollback
-								new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -5, 1, msisdn, msisdn, null));
+								new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -5, 1, msisdn, msisdn, null));
 								return -1;
 							}
 						}
@@ -296,7 +296,7 @@ public class PricePlanCurrentActions {
 						}
 						else {
 							// save rollback
-							new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -4, 1, msisdn, msisdn, null));
+							new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -4, 1, msisdn, msisdn, null));
 							return -1;
 						}
 					}
@@ -306,7 +306,7 @@ public class PricePlanCurrentActions {
 						return new PricePlanCurrentRollBackActions().activation(2, productProperties, dao, msisdn, charged);
 					}
 					else {
-						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -3, 1, msisdn, msisdn, null));
+						new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -3, 1, msisdn, msisdn, null));
 						return -1;
 					}
 				}
@@ -316,7 +316,7 @@ public class PricePlanCurrentActions {
 					return new PricePlanCurrentRollBackActions().activation(1, productProperties, dao, msisdn, charged);
 				}
 				else {
-					new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -2, 1, msisdn, msisdn, null));
+					new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -2, 1, msisdn, msisdn, null));
 					return -1;
 				}
 
@@ -327,13 +327,12 @@ public class PricePlanCurrentActions {
 				return 1;
 			}
 			else {
-				new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -1, 1, msisdn, msisdn, null));
+				new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -1, 1, msisdn, msisdn, null));
 				return -1;
 			}
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public int deactivation(ProductProperties productProperties, DAO dao, Subscriber subscriber, boolean charged, String originOperatorID) {
 		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 		String msisdn =subscriber.getValue();
@@ -381,7 +380,7 @@ public class PricePlanCurrentActions {
 					} catch(Throwable th) {
 						if(productProperties.getCommunity_id() != 0) {
 							// save rollback
-							new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -4, 2, msisdn, msisdn, null));
+							new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -4, 2, msisdn, msisdn, null));
 
 							if(request.isSuccessfully()) ;
 							else {
@@ -414,7 +413,7 @@ public class PricePlanCurrentActions {
 									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
 										subscriber.setCrbt(false); // update status
 										CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), originOperatorID);
-										new CRBTReportingDAOJdbc(dao).saveOneCRBTReporting(CRBTReporting);
+										new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(CRBTReporting);
 									}
 								}
 
@@ -427,7 +426,7 @@ public class PricePlanCurrentActions {
 								if(cai.isSuccessfully()) return rollbackStatus;
 								else {
 									// save rollback
-									new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, cai.isSuccessfully() ? 6 : -6, 2, msisdn, msisdn, null));
+									new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, cai.isSuccessfully() ? 6 : -6, 2, msisdn, msisdn, null));
 									return -1;
 								}
 							}
@@ -438,7 +437,7 @@ public class PricePlanCurrentActions {
 							}
 							else {
 								// save rollback
-								new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -5, 2, msisdn, msisdn, null));
+								new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -5, 2, msisdn, msisdn, null));
 								return -1;
 							}
 						}
@@ -449,7 +448,7 @@ public class PricePlanCurrentActions {
 						}
 						else {
 							// save rollback
-							new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -4, 2, msisdn, msisdn, null));
+							new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -4, 2, msisdn, msisdn, null));
 							return -1;
 						}
 					}
@@ -459,7 +458,7 @@ public class PricePlanCurrentActions {
 						return new PricePlanCurrentRollBackActions().deactivation(2, productProperties, dao, msisdn, charged);
 					}
 					else {
-						new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -3, 2, msisdn, msisdn, null));
+						new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -3, 2, msisdn, msisdn, null));
 						return -1;
 					}
 				}
@@ -469,7 +468,7 @@ public class PricePlanCurrentActions {
 					return new PricePlanCurrentRollBackActions().deactivation(1, productProperties, dao, msisdn, charged);
 				}
 				else {
-					new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -2, 2, msisdn, msisdn, null));
+					new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -2, 2, msisdn, msisdn, null));
 					return -1;
 				}
 
@@ -480,7 +479,7 @@ public class PricePlanCurrentActions {
 				return 1;
 			}
 			else {
-				new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -1, 2, msisdn, msisdn, null));
+				new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -1, 2, msisdn, msisdn, null));
 				return -1;
 			}
 		}

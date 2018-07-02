@@ -11,11 +11,11 @@ import dao.DAO;
 import dao.mapping.USSDRequestRowMapper;
 import domain.models.USSDRequest;
 
-public class USSDRequestDAOJdbc {
+public class JdbcUSSDRequestDao {
 
 	private DAO dao;
 
-	public USSDRequestDAOJdbc(DAO dao) {
+	public JdbcUSSDRequestDao(DAO dao) {
 		this.dao = dao;
 	}
 

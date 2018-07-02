@@ -29,9 +29,9 @@ public class USSDMenu {
 
 		body.addContent(new Element("choice-1").addContent(new Element("choice-1")).addContent(new Element("choice-2")));
 		body.addContent(new Element("choice-2"));
-		body.addContent(new Element("choice-3").addContent(new Element("choice-1")).addContent(new Element("choice-2")));
+		body.addContent(new Element("choice-3"));
 		body.addContent(new Element("choice-4"));
-		body.addContent(new Element("choice-5"));
+		body.addContent(new Element("choice-0").addContent(new Element("choice-1")).addContent(new Element("choice-2")));
 
 	    return document;
 	}

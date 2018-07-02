@@ -1,11 +1,13 @@
 package jobs;
 
+import java.util.HashSet;
+
 import org.springframework.batch.item.ItemProcessor;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.PAMRunningReportingDAOJdbc;
-import dao.queries.SubscriberDAOJdbc;
+import dao.queries.JdbcPAMRunningReportingDao;
+import dao.queries.JdbcSubscriberDao;
 import domain.models.PAMRunningReporting;
 import domain.models.Subscriber;
 import exceptions.AirAvailabilityException;
@@ -43,15 +45,17 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 		// TODO Auto-generated method stub
 
 		try {
-			Subscriber subscriber = (new SubscriberDAOJdbc(dao)).getOneSubscriber(pamRunningReporting.getSubscriber(), true);
+			Subscriber subscriber = (new JdbcSubscriberDao(dao)).getOneSubscriber(pamRunningReporting.getSubscriber(), true);
 
 			// check night advantages
 			if(getNightAdvantages(productProperties, subscriber.getValue())) {
 				// save notification
-				(new PAMRunningReportingDAOJdbc(dao)).notifyNightAdvantages(pamRunningReporting.getId(), subscriber.getId());
+				(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting.getId(), subscriber.getId());
 
 				return subscriber;
 			}
+			(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting.getId(), subscriber.getId());
+			return subscriber;
 
 		} catch(AirAvailabilityException ex) {
 			throw ex;
@@ -67,6 +71,8 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 	}
 
 	public boolean getNightAdvantages(ProductProperties productProperties, String msisdn) throws AirAvailabilityException {
+		if(((productProperties.getNight_advantages_call_da() == 0) && (productProperties.getNight_advantages_data_da() == 0))) return false;
+
 		try {
 			// attempts
 			int retry = 0;
@@ -81,23 +87,29 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 			retry = 0;
 
 			AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
+			HashSet<BalanceAndDate> balancesBonus = null;
 
-			BalanceAndDate balanceBonusCall = (productProperties.getNight_advantages_call_da() > 0) ? request.getBalanceAndDate(msisdn, productProperties.getNight_advantages_call_da()) : null;
-			BalanceAndDate balanceBonusData = (productProperties.getNight_advantages_data_da() > 0) ? request.getBalanceAndDate(msisdn, productProperties.getNight_advantages_data_da()) : null;
+			if((productProperties.getNight_advantages_call_da() > 0) && (productProperties.getNight_advantages_data_da() > 0)) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_call_da(), productProperties.getNight_advantages_call_da()}, {productProperties.getNight_advantages_data_da(), productProperties.getNight_advantages_data_da()}});
+			else if(productProperties.getNight_advantages_call_da() > 0) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_call_da(), productProperties.getNight_advantages_call_da()}});
+			else if(productProperties.getNight_advantages_data_da() > 0) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_data_da(), productProperties.getNight_advantages_data_da()}});
 
 			if(((productProperties.getNight_advantages_call_da() > 0) || (productProperties.getNight_advantages_data_da() > 0)) && (!request.isSuccessfully())) {
 				productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host())) ;
 				throw new AirAvailabilityException() ;
 			}
 
-			if((balanceBonusCall != null) && (balanceBonusData != null)) {
-				return true;
-			}
-			else if(balanceBonusCall != null) {
-				return true;
-			}
-			else if(balanceBonusData != null) {
-				return true;
+			if((balancesBonus != null) && (!balancesBonus.isEmpty())) {
+				BalanceAndDate balanceBonusCall = null;
+				BalanceAndDate balanceBonusData = null;
+
+				for(BalanceAndDate balanceAndDate : balancesBonus) {
+					if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_call_da())) balanceBonusCall = balanceAndDate;
+					else if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_data_da())) balanceBonusData = balanceAndDate;
+				}
+
+				if((balanceBonusCall != null) || (balanceBonusData != null)) {
+					return true;
+				}
 			}
 
 		} catch(Throwable th) {
@@ -106,5 +118,4 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 
 		return false;
 	}
-
 }

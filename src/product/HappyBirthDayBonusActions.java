@@ -9,8 +9,8 @@ import org.springframework.context.MessageSource;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.BirthDayBonusSubscriberDAOJdbc;
-import dao.queries.BirthDayBonusRollBackDAOJdbc;
+import dao.queries.JdbcBirthDayBonusSubscriberDao;
+import dao.queries.JdbcBirthDayBonusRollBackDao;
 import domain.models.BirthDayBonusSubscriber;
 import domain.models.RollBack;
 import exceptions.AirAvailabilityException;
@@ -51,7 +51,7 @@ public class HappyBirthDayBonusActions {
 			// set bonus expiry date
 			birthdayBonusSubscriber.setBonus_expires_in(expires);
 
-			if((new BirthDayBonusSubscriberDAOJdbc(dao)).locking(birthdayBonusSubscriber, true) > 0) {
+			if((new JdbcBirthDayBonusSubscriberDao(dao)).locking(birthdayBonusSubscriber, true) > 0) {
 				responseCode = 1;
 
 				HashSet<BalanceAndDate> balances = new HashSet<BalanceAndDate>();
@@ -70,12 +70,12 @@ public class HappyBirthDayBonusActions {
 				if((balances.isEmpty()) || (request.updateBalanceAndDate(birthdayBonusSubscriber.getValue(), balances, productProperties.getSms_notifications_header(), "HappyBirthdayBonus", "eBA"))) {
 					// update Anumber Offer
 					if((productProperties.getHappy_birthday_bonus_offer_id() == 0) || (request.updateOffer(birthdayBonusSubscriber.getValue(), productProperties.getHappy_birthday_bonus_offer_id(), null, expires, null, "eBA"))) {
-						if((new BirthDayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber) > 0) {
+						if((new JdbcBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber) > 0) {
 							responseCode = 0;
 						}
 						else {
 							responseCode = -1;
-							new BirthDayBonusRollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 3, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
+							new JdbcBirthDayBonusRollBackDao(dao).saveOneRollBack(new RollBack(0, 3, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
 						}
 					}
 					// rollback
@@ -95,19 +95,19 @@ public class HappyBirthDayBonusActions {
 
 							if((balances.isEmpty()) || (request.updateBalanceAndDate(birthdayBonusSubscriber.getValue(), balances, productProperties.getSms_notifications_header(), "HappyBirthdayBonus", "eBA")));
 							else {
-								if(request.isSuccessfully()) new BirthDayBonusRollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 1, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
-								else new BirthDayBonusRollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -1, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
+								if(request.isSuccessfully()) new JdbcBirthDayBonusRollBackDao(dao).saveOneRollBack(new RollBack(0, 1, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
+								else new JdbcBirthDayBonusRollBackDao(dao).saveOneRollBack(new RollBack(0, -1, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
 							}
 						}
 						else {
-							new BirthDayBonusRollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -2, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
+							new JdbcBirthDayBonusRollBackDao(dao).saveOneRollBack(new RollBack(0, -2, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
 						}
 					}
 				}
 				// rollback
 				else {
-					if(request.isSuccessfully()) new BirthDayBonusRollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 1, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
-					else new BirthDayBonusRollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -1, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
+					if(request.isSuccessfully()) new JdbcBirthDayBonusRollBackDao(dao).saveOneRollBack(new RollBack(0, 1, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
+					else new JdbcBirthDayBonusRollBackDao(dao).saveOneRollBack(new RollBack(0, -1, 0, birthdayBonusSubscriber.getValue(), birthdayBonusSubscriber.getValue(), null));
 				}
 			}
 
@@ -116,7 +116,7 @@ public class HappyBirthDayBonusActions {
 		} finally {
 			if(responseCode >= 0) {
 				// unlock
-				((new BirthDayBonusSubscriberDAOJdbc(dao))).locking(birthdayBonusSubscriber, false);
+				((new JdbcBirthDayBonusSubscriberDao(dao))).locking(birthdayBonusSubscriber, false);
 
 				if(request.isWaitingForResponse()) {
 					if(request.isSuccessfully()) ;

@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import dao.DAO;
-import dao.queries.MSISDNRedirectionDAOJdbc;
-import dao.queries.USSDServiceDAOJdbc;
+import dao.queries.JdbcMSISDNRedirectionDao;
+import dao.queries.JdbcUSSDServiceDao;
 import domain.models.MSISDNRedirection;
 import environment.Development;
 import environment.Production;
@@ -67,7 +67,7 @@ public class USSDRequestHandler {
 				(new Production()).execute(i18n, productProperties, parameters, modele, dao, request, response);
 			}
 			else {
-				MSISDNRedirection redirection = new MSISDNRedirectionDAOJdbc(dao).getOneMSISDNRedirection(productProperties.getSc(), parameters.get("msisdn"), 0);
+				MSISDNRedirection redirection = new JdbcMSISDNRedirectionDao(dao).getOneMSISDNRedirection(productProperties.getSc(), parameters.get("msisdn"), 0);
 
 				if((redirection == null) || (redirection.getRedirection_url() == null)) {
 					(new Production()).execute(i18n, productProperties, parameters, modele, dao, request, response);

@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.BirthDayBonusSubscriberDAOJdbc;
-import dao.queries.SubscriberDAOJdbc;
+import dao.queries.JdbcBirthDayBonusSubscriberDao;
+import dao.queries.JdbcSubscriberDao;
 import domain.models.BirthDayBonusSubscriber;
 import domain.models.Subscriber;
 import filter.MSISDNValidator;
@@ -48,7 +48,7 @@ public class HappyBirthDayEventListener {
 				// register msisdn to benefit happy birthday bonus
 				if(status == 0) {
 					// store BirthdayBonusSubscriber
-					(new BirthDayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber((new BirthDayBonusSubscriber(0, msisdn, name, language, new Date())));
+					(new JdbcBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber((new BirthDayBonusSubscriber(0, msisdn, name, language, new Date())));
 				}
 				else if(status == -1) {
 					++air_errors_count;
@@ -83,7 +83,7 @@ public class HappyBirthDayEventListener {
 			retry++;
 		}
 
-		Subscriber subscriber = new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn);
+		Subscriber subscriber = new JdbcSubscriberDao(dao).getOneSubscriber(msisdn);
 
 		 if((subscriber != null) && ((subscriber.isLocked()) || (!subscriber.isFlag()))) return 1;
 		 else {

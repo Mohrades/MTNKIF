@@ -8,9 +8,9 @@ import org.springframework.context.MessageSource;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.RollBackDAOJdbc;
-import dao.queries.SubscriberDAOJdbc;
-import dao.queries.SubscriptionReportingDAOJdbc;
+import dao.queries.JdbcRollBackDao;
+import dao.queries.JdbcSubscriberDao;
+import dao.queries.JdbcSubscriptionReportingDao;
 import domain.models.RollBack;
 import domain.models.Subscriber;
 import domain.models.SubscriptionReporting;
@@ -34,11 +34,11 @@ public class PricePlanCurrentDeactivation {
 
 			if(subscriber == null) {
 				subscriber = new Subscriber(0, msisdn, false, false, null, null, true);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
+				registered = (new JdbcSubscriberDao(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
 			}
 			else {
 				subscriber.setFlag(false);
-				registered = (new SubscriberDAOJdbc(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
+				registered = (new JdbcSubscriberDao(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
 			}
 
 			if(registered) {
@@ -70,8 +70,8 @@ public class PricePlanCurrentDeactivation {
 						if(statusCode == 0) { // change done successfully
 							subscriber.setLocked(false); // synchronisation database and object
 
-							new SubscriptionReportingDAOJdbc(dao).saveOneSubscriptionReporting(new SubscriptionReporting(0, (subscriber.getId() > 0) ? subscriber.getId() : (new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn).getId()), false, (subscriber.getId() == 0) ? 0 : (subscriber.getLast_update_time() == null) ? 0 : (subscriber.getLast_update_time().before(now)) ? 0 : productProperties.getDeactivation_chargingAmount(), new Date(), originOperatorID)); // reporting
-							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_days()); // release Lock
+							new JdbcSubscriptionReportingDao(dao).saveOneSubscriptionReporting(new SubscriptionReporting(0, (subscriber.getId() > 0) ? subscriber.getId() : (new JdbcSubscriberDao(dao).getOneSubscriber(msisdn).getId()), false, (subscriber.getId() == 0) ? 0 : (subscriber.getLast_update_time() == null) ? 0 : (subscriber.getLast_update_time().before(now)) ? 0 : productProperties.getDeactivation_chargingAmount(), new Date(), originOperatorID)); // reporting
+							new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_days()); // release Lock
 
 							return new Object [] {0, i18n.getMessage("deactivation.change.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
@@ -80,18 +80,18 @@ public class PricePlanCurrentDeactivation {
 							if((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null) || ((subscriber.getLast_update_time().before(now)) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "DEACTIVATIONREFUNDING", "eBA"))));
 							else {
 								if(request.isSuccessfully()) {
-									if(statusCode == 1) new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 101, 2, msisdn, msisdn, null));
-									else new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 102, 2, msisdn, msisdn, null));
+									if(statusCode == 1) new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, 101, 2, msisdn, msisdn, null));
+									else new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, 102, 2, msisdn, msisdn, null));
 								}
 								else {
-									if(statusCode == 1) new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -101, 2, msisdn, msisdn, null));
-									else new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -102, 2, msisdn, msisdn, null));
+									if(statusCode == 1) new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -101, 2, msisdn, msisdn, null));
+									else new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -102, 2, msisdn, msisdn, null));
 								}
 							}
 
 							// statusCode = 1, change not done
 							// statusCode = -1, change done unreliable (errors should occur) : subscriber may 
-							new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
+							new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 							return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("deactivation.change.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
 					}
@@ -100,24 +100,24 @@ public class PricePlanCurrentDeactivation {
 						if((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null) || ((subscriber.getLast_update_time().before(now)) || (request.updateBalanceAndDate(msisdn, balances, productProperties.getSms_notifications_header(), "RELEASE", "eBA"))));
 						else {
 							if(request.isSuccessfully()) {
-								if(statusCode == 1) new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 99, 2, msisdn, msisdn, null));
-								else new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, 98, 2, msisdn, msisdn, null));
+								if(statusCode == 1) new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, 99, 2, msisdn, msisdn, null));
+								else new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, 98, 2, msisdn, msisdn, null));
 							}
 							else {
-								if(statusCode == 1) new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -99, 2, msisdn, msisdn, null));
-								else new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -98, 2, msisdn, msisdn, null));
+								if(statusCode == 1) new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -99, 2, msisdn, msisdn, null));
+								else new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -98, 2, msisdn, msisdn, null));
 							}
 						}
 
-						new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
+						new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 						return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 					}
 				}
 				else {
 					if(request.isSuccessfully());
-					else new RollBackDAOJdbc(dao).saveOneRollBack(new RollBack(0, -100, 2, msisdn, msisdn, null));
+					else new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -100, 2, msisdn, msisdn, null));
 
-					new SubscriberDAOJdbc(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
+					new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
 					return new Object [] {request.isSuccessfully() ? 1 : -1, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 				}
 			}

@@ -7,11 +7,11 @@ import dao.DAO;
 import dao.mapping.USSDServiceRowMapper;
 import domain.models.USSDService;
 
-public class USSDServiceDAOJdbc {
+public class JdbcUSSDServiceDao {
 
 	private DAO dao;
 
-	public USSDServiceDAOJdbc(DAO dao) {
+	public JdbcUSSDServiceDao(DAO dao) {
 		this.dao = dao;
 	}
 

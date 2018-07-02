@@ -15,9 +15,9 @@ import org.springframework.batch.core.StepExecutionListener;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.BirthDayBonusSubscriberDAOJdbc;
-import dao.queries.SubscriberDAOJdbc;
-import dao.queries.USSDServiceDAOJdbc;
+import dao.queries.JdbcBirthDayBonusSubscriberDao;
+import dao.queries.JdbcSubscriberDao;
+import dao.queries.JdbcUSSDServiceDao;
 import domain.models.BirthDayBonusSubscriber;
 import domain.models.Subscriber;
 import domain.models.USSDService;
@@ -63,7 +63,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 	// action avant l'exécution de l'étape
 	public void beforeStep(StepExecution stepExecution) {
 		try {
-			USSDService service = new USSDServiceDAOJdbc(dao).getOneUSSDService(productProperties.getSc());
+			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 			Date now = new Date();
 
 			// Stopping a job from a tasklet : Setting the stop flag in a tasklet is straightforward;
@@ -72,7 +72,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 		        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 				stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE OUT OF RANGE", "Job should not be run right now."));
 			}
-			else if((new BirthDayBonusSubscriberDAOJdbc(dao)).isBirthDayReported()) {
+			else if((new JdbcBirthDayBonusSubscriberDao(dao)).isBirthDayReported()) {
 				stepExecution.setTerminateOnly(); // Sets stop flag if necessary
 		        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 		        stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE EXCLUDED", "Job should not be run right now."));
@@ -95,7 +95,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 				PreparedStatement ps = null;
 				ResultSet rs = null;
 
-				HashSet <BirthDayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE = new HashSet <BirthDayBonusSubscriber>((new BirthDayBonusSubscriberDAOJdbc(dao)).getOneBirthdayBonusSubscribers());
+				HashSet <BirthDayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE = new HashSet <BirthDayBonusSubscriber>((new JdbcBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscribers());
 				HashSet <BirthDayBonusSubscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <BirthDayBonusSubscriber>();
 
 				try {
@@ -107,7 +107,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 
 					// Kif+ Subscribers with ASPU >= 3000 XOF
 					Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
-					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
+					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
 					rs = ps.executeQuery();
 					// Liste des elements
 					while (rs.next()) {
@@ -145,7 +145,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 						int status = checkPricePlanCurrent(productProperties, dao, birthdayBonusSubscriber.getValue());
 
 						if(status == 0) {
-							(new BirthDayBonusSubscriberDAOJdbc(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber);
+							(new JdbcBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber);
 						}
 						else if(status == -1) {
 							++air_error_count;
@@ -180,7 +180,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 			retry++;
 		}
 
-		Subscriber subscriber = new SubscriberDAOJdbc(dao).getOneSubscriber(msisdn);
+		Subscriber subscriber = new JdbcSubscriberDao(dao).getOneSubscriber(msisdn);
 
 		 if((subscriber != null) && ((subscriber.isLocked()) || (!subscriber.isFlag()))) return 1;
 		 else {

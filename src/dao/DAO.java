@@ -4,7 +4,7 @@ import java.io.Serializable;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
-public class DAO  extends JdbcDaoSupport implements Serializable {
+public class DAO extends JdbcDaoSupport implements Serializable {
 
 	/**
 	 * 

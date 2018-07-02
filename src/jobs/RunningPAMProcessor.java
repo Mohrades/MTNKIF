@@ -11,6 +11,7 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 	private ProductProperties productProperties;
 
 	private int itemProcessedCount;
+
 	private boolean waitingForResponse;
 
 	public RunningPAMProcessor() {
@@ -41,8 +42,6 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 
 		try {
-			// do action
-
 			// attempts
 			int retry = 0;
 
@@ -55,30 +54,16 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 
 			retry = 0;
 
-			if(!request.isWaitingForResponse()) {
-				if((itemProcessedCount % 600) == 0) {
-					itemProcessedCount = 0;
-
-					// attempts
-					retry = 0;
-					productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
-
-					while(productProperties.getAir_preferred_host() == -1) {
-						if(retry >= 2) throw new AirAvailabilityException();
-
-						productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
-						retry++;
-					}
-
-					retry = 0;
-				}
-
-				itemProcessedCount++;
-			}
+			if(!request.isWaitingForResponse()) itemProcessedCount++;
 
 			// don't waiting for the response : set waitingForResponse false
-			request.setWaitingForResponse(isWaitingForResponse());
+			if((!request.isWaitingForResponse()) && ((itemProcessedCount % 600) == 0)) {
+				itemProcessedCount = 0;
+				request.setWaitingForResponse(true);
+			}
+			else request.setWaitingForResponse(isWaitingForResponse());
 
+			// do action
 			if(request.runPeriodicAccountManagement(subscriber.getValue(), productProperties.getPamServiceID(), "eBA")) {
 				subscriber.setFlag(true);
 			}
@@ -88,7 +73,6 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 					else {
 						productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
 						throw new AirAvailabilityException();
-						// return null;
 					}
 				}
 				else {

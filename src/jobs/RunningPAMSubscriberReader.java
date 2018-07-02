@@ -6,10 +6,10 @@ import java.util.Date;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 
 @SuppressWarnings("rawtypes")
-public class RunnablePAMSubscriberReader extends JdbcCursorItemReader {
+public class RunningPAMSubscriberReader extends JdbcCursorItemReader {
 
 	@SuppressWarnings("deprecation")
-	public RunnablePAMSubscriberReader(int type) {
+	public RunningPAMSubscriberReader(int type) {
 		if(type == 0) {
 			Date now = new Date();
 

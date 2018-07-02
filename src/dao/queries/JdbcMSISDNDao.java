@@ -9,11 +9,11 @@ import dao.DAO;
 import dao.mapping.MSISDNRowMapper;
 import domain.models.MSISDN;
 
-public class MSISDNDAOJdbc {
+public class JdbcMSISDNDao {
 
 	private DAO dao;
 
-	public MSISDNDAOJdbc(DAO dao) {
+	public JdbcMSISDNDao(DAO dao) {
 		this.dao = dao;
 	}
 

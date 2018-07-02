@@ -16,8 +16,8 @@ import com.google.common.base.Splitter;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.USSDRequestDAOJdbc;
-import dao.queries.USSDServiceDAOJdbc;
+import dao.queries.JdbcUSSDRequestDao;
+import dao.queries.JdbcUSSDServiceDao;
 import domain.models.Subscriber;
 import domain.models.USSDRequest;
 import domain.models.USSDService;
@@ -52,10 +52,10 @@ public class InputHandler {
 			}
 
 			long sessionId = Long.parseLong(parameters.get("sessionid"));
-			ussd = new USSDRequestDAOJdbc(dao).getOneUSSD(sessionId, parameters.get("msisdn"));
+			ussd = new JdbcUSSDRequestDao(dao).getOneUSSD(sessionId, parameters.get("msisdn"));
 
 			if(ussd == null) {
-				USSDService service = new USSDServiceDAOJdbc(dao).getOneUSSDService(productProperties.getSc());
+				USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 				Date now = new Date();
 
 				if((service == null) || (((service.getStart_date() != null) && (now.before(service.getStart_date()))) || ((service.getStop_date() != null) && (now.after(service.getStop_date()))))) {
@@ -169,7 +169,7 @@ public class InputHandler {
 
 	public void endStep(DAO dao, USSDRequest ussd, Map<String, Object> modele, ProductProperties productProperties, String messageA, String Anumber, String messageB, String Bnumber, String senderName) {
 		if((ussd != null) && (ussd.getId() > 0)) {
-			new USSDRequestDAOJdbc(dao).deleteOneUSSD(ussd.getId());
+			new JdbcUSSDRequestDao(dao).deleteOneUSSD(ussd.getId());
 		}
 
 		modele.put("next", false);
@@ -201,7 +201,7 @@ public class InputHandler {
 			//
 		}
 
-		new USSDRequestDAOJdbc(dao).saveOneUSSD(ussd);
+		new JdbcUSSDRequestDao(dao).saveOneUSSD(ussd);
 
 		modele.put("next", true);
 		modele.put("message", message);

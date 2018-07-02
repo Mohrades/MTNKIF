@@ -7,11 +7,11 @@ import dao.DAO;
 import dao.mapping.ServiceAccessRowMapper;
 import domain.models.ServiceAccess;
 
-public class ServiceAccessDAOJdbc {
+public class JdbcServiceAccessDao {
 
 	private DAO dao;
 
-	public ServiceAccessDAOJdbc(DAO dao) {
+	public JdbcServiceAccessDao(DAO dao) {
 		this.dao = dao;
 	}
 

@@ -8,11 +8,11 @@ import dao.DAO;
 import dao.mapping.MSISDNRedirectionRowMapper;
 import domain.models.MSISDNRedirection;
 
-public class MSISDNRedirectionDAOJdbc {
+public class JdbcMSISDNRedirectionDao {
 
 	private DAO dao;
 
-	public MSISDNRedirectionDAOJdbc(DAO dao) {
+	public JdbcMSISDNRedirectionDao(DAO dao) {
 		this.dao = dao;
 	}
 

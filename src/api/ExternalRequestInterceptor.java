@@ -8,8 +8,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
 import dao.DAO;
-import dao.queries.ServiceAccessDAOJdbc;
-import dao.queries.USSDServiceDAOJdbc;
+import dao.queries.JdbcServiceAccessDao;
+import dao.queries.JdbcUSSDServiceDao;
 import domain.models.ServiceAccess;
 import domain.models.USSDService;
 import product.ProductProperties;
@@ -53,7 +53,7 @@ public class ExternalRequestInterceptor implements HandlerInterceptor {
 		// TODO Auto-generated method stub
 
 		try {
-			USSDService service = new USSDServiceDAOJdbc(dao).getOneUSSDService(productProperties.getSc());
+			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 			Date now = new Date();
 
 			if((service == null) || (((service.getStart_date() != null) && (now.before(service.getStart_date()))) || ((service.getStop_date() != null) && (now.after(service.getStop_date()))))) {
@@ -91,7 +91,7 @@ public class ExternalRequestInterceptor implements HandlerInterceptor {
 
 				if(logon) ;
 				else {
-					ServiceAccess access = (new ServiceAccessDAOJdbc(dao)).getOneServiceAccess(productProperties.getSc(), originOperatorID);
+					ServiceAccess access = (new JdbcServiceAccessDao(dao)).getOneServiceAccess(productProperties.getSc(), originOperatorID);
 
 					if(access == null) {
 						response.setStatus(401); // 401 - Access denied.

@@ -4,7 +4,7 @@ import java.util.List;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.MSISDNDAOJdbc;
+import dao.queries.JdbcMSISDNDao;
 import product.ProductProperties;
 import util.AccountDetails;
 
@@ -103,7 +103,7 @@ public class MSISDNValidator {
 		try {
 			for(String tableName : number_db_filter) {
 				try {
-					if(new MSISDNDAOJdbc(dao).getOneMSISDN(msisdn, tableName) != null) {
+					if(new JdbcMSISDNDao(dao).getOneMSISDN(msisdn, tableName) != null) {
 						return true;
 					}
 
