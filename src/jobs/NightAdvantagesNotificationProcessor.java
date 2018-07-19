@@ -1,5 +1,7 @@
 package jobs;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 
 import org.springframework.batch.item.ItemProcessor;
@@ -45,7 +47,7 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 		// TODO Auto-generated method stub
 
 		try {
-			Subscriber subscriber = (new JdbcSubscriberDao(dao)).getOneSubscriber(pamRunningReporting.getSubscriber(), true);
+			Subscriber subscriber = (new JdbcSubscriberDao(dao)).getOneSubscriber(pamRunningReporting.getSubscriber(), false);
 
 			// check night advantages
 			if(getNightAdvantages(productProperties, subscriber.getValue())) {
@@ -54,8 +56,6 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 
 				return subscriber;
 			}
-			(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting.getId(), subscriber.getId());
-			return subscriber;
 
 		} catch(AirAvailabilityException ex) {
 			throw ex;
@@ -103,8 +103,17 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 				BalanceAndDate balanceBonusData = null;
 
 				for(BalanceAndDate balanceAndDate : balancesBonus) {
-					if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_call_da())) balanceBonusCall = balanceAndDate;
-					else if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_data_da())) balanceBonusData = balanceAndDate;
+					if(balanceAndDate.getExpiryDate() != null) {
+						Date expiryDate = (Date)balanceAndDate.getExpiryDate();
+
+						if((expiryDate == null) || ((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(expiryDate).equals("9999-12-30 13:00:00")));
+						else {
+							if(((Date)balanceAndDate.getExpiryDate()).after(new Date())) {
+								if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_call_da())) balanceBonusCall = balanceAndDate;
+								else if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_data_da())) balanceBonusData = balanceAndDate;
+							}
+						}
+					}
 				}
 
 				if((balanceBonusCall != null) || (balanceBonusData != null)) {

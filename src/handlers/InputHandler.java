@@ -93,6 +93,7 @@ public class InputHandler {
 				}
 				else if(ussd.getInput().equals(short_code + "*4")) {
 					// happy birthday bonus
+					// endStep(dao, ussd, modele, productProperties, i18n.getMessage("request.unavailable", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 					birthdayBonus(i18n, language, productProperties, dao, ussd, modele);
 				}
 				else if(((ussd.getInput().startsWith(short_code + "*1")) || (ussd.getInput().startsWith(short_code + "*0"))) && (ussd.getInput().endsWith("*1"))) {

@@ -136,9 +136,9 @@ public class HappyBirthDayBonusActions {
 		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 
 		int offer = productProperties.getHappy_birthday_bonus_offer_id();
-		HashSet<OfferInformation> offers = request.getOffers(msisdn, new int[][]{{offer,offer}}, false, null, false);
+		HashSet<OfferInformation> offers = (offer > 0) ? request.getOffers(msisdn, new int[][]{{offer,offer}}, false, null, false) : null;
 
-		if((offers == null) || offers.size() == 0) {
+		if((offer > 0) && ((offers == null) || offers.size() == 0)) {
 			Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, msisdn, language, false);
 			statusCode = ((int)(requestStatus[0]) == 0) ? 1 : ((int)(requestStatus[0]) == 1) ? 1 : -1;
 

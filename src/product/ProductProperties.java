@@ -166,6 +166,10 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 	private int bonus_sms_offNet_accumulator;
 	@Value("#{appConfig['bonus.sms.remaining.accumulator']}")
 	private int bonus_sms_remaining_accumulator;
+	@Value("#{appConfig['bonus.sms.offNet.threshold']}")
+	private int bonus_sms_offNet_threshold;
+	@Value("#{appConfig['bonus.sms.threshold']}")
+	private int bonus_sms_threshold;
 	@Value("#{appConfig['night.advantages.call.da']}")
 	private int night_advantages_call_da;
 	@Value("#{appConfig['night.advantages.data.da']}")
@@ -372,6 +376,14 @@ public class ProductProperties implements InitializingBean, DisposableBean {
 
 	public int getBonus_sms_remaining_accumulator() {
 		return bonus_sms_remaining_accumulator;
+	}
+
+	public int getBonus_sms_offNet_threshold() {
+		return bonus_sms_offNet_threshold;
+	}
+
+	public int getBonus_sms_threshold() {
+		return bonus_sms_threshold;
 	}
 
 	public int getNight_advantages_call_da() {

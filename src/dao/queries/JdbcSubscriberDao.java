@@ -29,6 +29,9 @@ public class JdbcSubscriberDao {
 				getJdbcTemplate().update("INSERT INTO MTN_KIF_MSISDN_EBA (MSISDN,FLAG,CRBT,LAST_UPDATE_TIME_INDEX,CRBT_NEXT_RENEWAL_DATE_INDEX,LOCKED) VALUES('" + subscriber.getValue() + "'," + (subscriber.isFlag() ? 1 : 0) + "," + (subscriber.isCrbt() ? 1 : 0) + ",0,0," + (subscriber.isLocked() ? 1 : 0) + ")");
 				return 1;
 			}
+			else if(subscriber.getId() < 0) {
+				return getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET FLAG = " + (subscriber.isFlag() ? 1 : 0) + " WHERE ((ID = " + (-subscriber.getId()) + ") AND (FLAG = " + (subscriber.isFlag() ? 0 : 1) + ") AND (LOCKED = 0))");
+			}
 			else if(subscriber.getId() > 0) {
 				return getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET FLAG = " + (subscriber.isFlag() ? 1 : 0) + ", LOCKED = 1 WHERE ((ID = " + subscriber.getId() + ") AND (FLAG = " + (subscriber.isFlag() ? 0 : 1) + ") AND (LOCKED = 0))");
 			}

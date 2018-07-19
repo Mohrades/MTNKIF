@@ -18,6 +18,8 @@ import org.springframework.context.MessageSource;
 import com.google.common.base.Splitter;
 
 import dao.DAO;
+import dao.queries.JdbcBirthDayBonusSubscriberDao;
+import domain.models.BirthDayBonusSubscriber;
 import domain.models.Subscriber;
 import domain.models.USSDRequest;
 import filter.MSISDNValidator;
@@ -265,7 +267,20 @@ public class USSDFlow {
 					}
 				}
 				else {
-					modele.put("message", i18n.getMessage("menu" + transitions, null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+					if(transitions.isEmpty() || transitions.equals("")) {
+						BirthDayBonusSubscriber birthDayBonusSubscriber = (new JdbcBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscriber(ussd.getMsisdn(), true);
+
+						if(birthDayBonusSubscriber == null) {
+							modele.put("message", i18n.getMessage("menu" + transitions, null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+						}
+						else {
+							Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language, false);
+							modele.put("message", i18n.getMessage(((int)(requestStatus[0]) == 0) ? "menu_with_hbd" : "menu", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+						}
+					}
+					else {
+						modele.put("message", i18n.getMessage("menu" + transitions, null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+					}
 				}
 			}
 			// on-end : end-state

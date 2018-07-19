@@ -10,7 +10,9 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
 import dao.DAO;
+import dao.queries.JdbcScheduledTaskDao;
 import dao.queries.JdbcUSSDServiceDao;
+import domain.models.ScheduledTask;
 import domain.models.USSDService;
 import product.ProductProperties;
 import tools.SMPPConnector;
@@ -50,8 +52,8 @@ public class JobRunListener implements StepExecutionListener {
 			/*The above code is a StepExecutionListener that first checks to make sure the Step was successful, and next if the skip count on the StepExecution is higher than 0.
 			If both conditions are met, a new ExitStatus with an exit code of "COMPLETED WITH SKIPS" is returned.*/
 
-	        /*String exitCode = stepExecution.getExitStatus().getExitCode();
-	        if (!exitCode.equals(ExitStatus.FAILED.getExitCode()) && (stepExecution.getSkipCount() > 0)) {
+	        String exitCode = stepExecution.getExitStatus().getExitCode();
+	        /*if (!exitCode.equals(ExitStatus.FAILED.getExitCode()) && (stepExecution.getSkipCount() > 0)) {
 	            return new ExitStatus("COMPLETED WITH SKIPS");
 	        }
 	        else {
@@ -61,20 +63,19 @@ public class JobRunListener implements StepExecutionListener {
 			// StepExecution: id=2, version=1, name=runningPAM, status=FAILED, exitStatus=FAILED, readCount=0, filterCount=0, writeCount=0 readSkipCount=0, writeSkipCount=0, processSkipCount=0, commitCount=0, rollbackCount=0, exitDescription=org.springframework.jdbc.CannotGetJdbcConnectionException: Could not get JDBC Connection; nested exception is java.sql.SQLException: Connections could not be acquired from the underlying database!
 			// System.out.println(stepExecution);
 			String StepExecutionDescription = stepExecution.toString();
+			String stepName = "Step=[" + StepExecutionDescription.substring(StepExecutionDescription.indexOf("name=") + 5, StepExecutionDescription.indexOf(", status=", StepExecutionDescription.indexOf("name="))).trim() + "]";
+			String stepStatus = StepExecutionDescription.substring(StepExecutionDescription.indexOf("status="), StepExecutionDescription.indexOf(", readCount", StepExecutionDescription.indexOf("status="))).trim();
 
-			if(StepExecutionDescription.contains("name=runningPAM")) {
-				String stepName = "Step=[" + StepExecutionDescription.substring(StepExecutionDescription.indexOf("name=") + 5, StepExecutionDescription.indexOf(", status=", StepExecutionDescription.indexOf("name="))).trim() + "]";
-				String stepStatus = StepExecutionDescription.substring(StepExecutionDescription.indexOf("status="), StepExecutionDescription.indexOf(", readCount", StepExecutionDescription.indexOf("status="))).trim();
+			String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(stepExecution.getEndTime()).toUpperCase() + stepName + " completed with the following status: [" + stepStatus + "]";
 
-				String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(stepExecution.getEndTime()).toUpperCase() + stepName + " completed with the following status: [" + stepStatus + "]";
-				new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
+			if (exitCode.equals(ExitStatus.STOPPED.getExitCode())) ;
+			else new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
 
-				Logger logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");
-				logger.log(Level.INFO, log);
-			}
+			Logger logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");
+			logger.log(Level.INFO, log);
 
 		} catch(Throwable th) {
-			
+
 		}
 
         return stepExecution.getExitStatus();
@@ -105,8 +106,9 @@ public class JobRunListener implements StepExecutionListener {
 			Not dealing with stopping a job in item readers, processors, and writers is a good thing. These components should focus on their processing to enforce separation of concerns.*/
 	        // listeners will still work, but any other step logic (reader, processor, writer) will not happen
 
-			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 			Date now = new Date();
+			now = stepExecution.getStartTime();
+			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 
 			// Stopping a job from a tasklet : Setting the stop flag in a tasklet is straightforward;
 			if((service == null) || (((service.getStart_date() != null) && (now.before(service.getStart_date()))) || ((service.getStop_date() != null) && (now.after(service.getStop_date()))))) {
@@ -117,6 +119,29 @@ public class JobRunListener implements StepExecutionListener {
 			else {
 				// StepExecution: id=2, version=1, name=runningPAM, status=STARTED, exitStatus=EXECUTING, readCount=0, filterCount=0, writeCount=0 readSkipCount=0, writeSkipCount=0, processSkipCount=0, commitCount=0, rollbackCount=0, exitDescription=
 				// System.out.println(stepExecution);
+				String StepExecutionDescription = stepExecution.toString();
+
+				if(StepExecutionDescription.contains("name=nightAdvantagesNotificationThroughSms")) ;
+				else {
+					String stepName = StepExecutionDescription.substring(StepExecutionDescription.indexOf("name=") + 5, StepExecutionDescription.indexOf(", status=", StepExecutionDescription.indexOf("name="))).trim();
+					@SuppressWarnings("deprecation")
+					ScheduledTask task = (new JdbcScheduledTaskDao(dao)).getOneScheduledTask(productProperties.getSc(), stepName, now.getHours(), now.getMinutes());
+
+					if(task == null) {
+						stepExecution.setTerminateOnly(); // Sets stop flag if necessary
+				        stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
+					}
+					else {
+						stepName = "Step=[" + stepName + "]";
+						String stepStatus = StepExecutionDescription.substring(StepExecutionDescription.indexOf("status="), StepExecutionDescription.indexOf(", readCount", StepExecutionDescription.indexOf("status="))).trim();
+
+						String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(stepExecution.getStartTime()).toUpperCase() + stepName + " launched with the following status: [" + stepStatus + "]";
+						new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
+
+						Logger logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");
+						logger.log(Level.INFO, log);
+					}
+				}
 			}
 
 		} catch(Throwable th) {

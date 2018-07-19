@@ -75,8 +75,26 @@ public class JdbcBirthDayBonusSubscriberDao {
 		return birthdayBonusSubscribers.isEmpty() ? null : birthdayBonusSubscribers.get(0);
 	}
 
-	public List<BirthDayBonusSubscriber> getOneBirthdayBonusSubscribers() {
-		return getJdbcTemplate().query("SELECT ID,MSISDN,NAME,LANGUAGE,BIRTH_DATE,ASPU,BONUS,BONUS_EXPIRES_IN,LAST_UPDATE_TIME FROM MTN_KIF_BIRTHDAY_BONUS_EBA WHERE (BIRTH_DATE = '" + (new SimpleDateFormat("dd-MMM-yy")).format(new Date()) + "')", new BirthDayBonusSubscriberRowMapper());
+	public BirthDayBonusSubscriber getOneBirthdayBonusSubscriber(String msisdn, boolean bonusRequired) {
+		List<BirthDayBonusSubscriber> birthdayBonusSubscribers = null;
+
+		if(bonusRequired) {
+			birthdayBonusSubscribers = getJdbcTemplate().query("SELECT ID,MSISDN,NAME,LANGUAGE,BIRTH_DATE,ASPU,BONUS,BONUS_EXPIRES_IN,LAST_UPDATE_TIME FROM MTN_KIF_BIRTHDAY_BONUS_EBA WHERE ((BIRTH_DATE = '" + (new SimpleDateFormat("dd-MMM-yy")).format(new Date()) + "') AND (BONUS IS NOT NULL) AND (ASPU IS NOT NULL) AND (MSISDN = '" + msisdn + "'))", new BirthDayBonusSubscriberRowMapper());
+		}
+		else {
+			birthdayBonusSubscribers = getJdbcTemplate().query("SELECT ID,MSISDN,NAME,LANGUAGE,BIRTH_DATE,ASPU,BONUS,BONUS_EXPIRES_IN,LAST_UPDATE_TIME FROM MTN_KIF_BIRTHDAY_BONUS_EBA WHERE ((BIRTH_DATE = '" + (new SimpleDateFormat("dd-MMM-yy")).format(new Date()) + "') AND (ASPU IS NOT NULL) AND (MSISDN = '" + msisdn + "'))", new BirthDayBonusSubscriberRowMapper());
+		}
+
+		return birthdayBonusSubscribers.isEmpty() ? null : birthdayBonusSubscribers.get(0);
+	}
+
+	public List<BirthDayBonusSubscriber> getOneBirthdayBonusSubscribers(boolean unStaged) {
+		if(unStaged) {
+			return getJdbcTemplate().query("SELECT ID,MSISDN,NAME,LANGUAGE,BIRTH_DATE,ASPU,BONUS,BONUS_EXPIRES_IN,LAST_UPDATE_TIME FROM MTN_KIF_BIRTHDAY_BONUS_EBA WHERE ((BIRTH_DATE = '" + (new SimpleDateFormat("dd-MMM-yy")).format(new Date()) + "') AND (ASPU IS NULL))", new BirthDayBonusSubscriberRowMapper());
+		}
+		else {
+			return getJdbcTemplate().query("SELECT ID,MSISDN,NAME,LANGUAGE,BIRTH_DATE,ASPU,BONUS,BONUS_EXPIRES_IN,LAST_UPDATE_TIME FROM MTN_KIF_BIRTHDAY_BONUS_EBA WHERE (BIRTH_DATE = '" + (new SimpleDateFormat("dd-MMM-yy")).format(new Date()) + "')", new BirthDayBonusSubscriberRowMapper());
+		}
 	}
 
 	public void deleteOneBirthdayBonusSubscriber(int id) {

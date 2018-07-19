@@ -49,7 +49,10 @@ public class JobPhaseEventListener implements JobExecutionListener {
 
 			// String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(jobExecution.getEndTime()).toUpperCase() + "Job: [FlowJob: [name=" + jobExecution.getJobConfigurationName() + "]] completed with the following status: [" + jobExecution.getStatus() + "]";
 			String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(jobExecution.getEndTime()).toUpperCase() + jobName + " completed with the following status: [" + jobExecution.getStatus() + "]";
-			new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
+
+			// SEND SMS
+			if (jobExecution.getStatus() == BatchStatus.STOPPED) ;
+			else new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
 
 			Logger logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");
 			logger.log(Level.INFO, log);
@@ -72,7 +75,9 @@ public class JobPhaseEventListener implements JobExecutionListener {
 
 			// String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(jobExecution.getStartTime()).toUpperCase() + "Job: [FlowJob: [name=" + jobExecution.getJobConfigurationName() + "]] launched with the following parameters: [{date.lancement=" + jobExecution.getJobParameters().getString("date.lancement") + "}]";
 			String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(jobExecution.getStartTime()).toUpperCase() + jobName + " launched with the following parameters: [{date.lancement=" + jobExecution.getJobParameters().getString("date.lancement") + "}]";
-			new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
+
+			// SEND SMS
+			/*new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);*/
 
 			Logger logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");
 			logger.info(log);

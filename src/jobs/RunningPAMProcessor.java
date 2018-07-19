@@ -56,9 +56,16 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 
 			if(!request.isWaitingForResponse()) itemProcessedCount++;
 
-			// don't waiting for the response : set waitingForResponse false
+			// don't waiting for the response : waitingForResponse is false
 			if((!request.isWaitingForResponse()) && ((itemProcessedCount % 600) == 0)) {
 				itemProcessedCount = 0;
+
+				// change AIR HOST : to release current host and not to overload it
+				int current_preferred_host = productProperties.getAir_preferred_host();
+				current_preferred_host = (current_preferred_host + 1)  % (productProperties.getAir_hosts().size());
+				productProperties.setAir_preferred_host((byte) current_preferred_host);
+
+				// waiting for the response to test connection
 				request.setWaitingForResponse(true);
 			}
 			else request.setWaitingForResponse(isWaitingForResponse());
