@@ -49,6 +49,12 @@ public class ExternalRequestController {
 	public ModelAndView handlePricePlanInfoRequest(HttpServletRequest request, @RequestParam(value="msisdn", required=false, defaultValue = "") String msisdn) throws Exception {
 		String originOperatorID = request.getParameter("originOperatorID");
 
+
+		// logging
+		Logger logger = LogManager.getLogger("logging.log4j.ProcessingLogger");
+		logger.trace("[" + productProperties.getSc() + "] " + "[" + originOperatorID + "] " + "[" + msisdn + "] " + "[" + productProperties.getSc() + "*3]");
+
+
 		if((productProperties.getAir_preferred_host() == -1) || (originOperatorID == null) || (originOperatorID.trim().length() == 0) || (msisdn == null) || (!(new MSISDNValidator()).onNet(productProperties, msisdn))) {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
 		}
@@ -60,6 +66,12 @@ public class ExternalRequestController {
 	public ModelAndView handlePricePlanStatusRequest(HttpServletRequest request, @RequestParam(value="bonus", required=false, defaultValue = "true") boolean bonus) throws Exception {
 		String msisdn = request.getParameter("msisdn");
 		String originOperatorID = request.getParameter("originOperatorID");
+
+
+		// logging
+		Logger logger = LogManager.getLogger("logging.log4j.ProcessingLogger");
+		logger.trace("[" + productProperties.getSc() + "] " + "[" + originOperatorID + "] " + "[" + msisdn + "] " + "[" + productProperties.getSc() + "*2]");
+
 
 		if((productProperties.getAir_preferred_host() == -1) || (originOperatorID == null) || (originOperatorID.trim().length() == 0) || (msisdn == null) || (!(new MSISDNValidator()).onNet(productProperties, msisdn))) {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
@@ -79,6 +91,12 @@ public class ExternalRequestController {
 	public ModelAndView handlePricePlanSubscriptionRequest(HttpServletRequest request, @RequestParam("msisdn") String msisdn, @PathVariable("msisdn") String msisdn_confirmation) throws Exception {
 		String action = request.getParameter("msisdn");
 		String originOperatorID = request.getParameter("originOperatorID");
+
+
+		// logging
+		Logger logger = LogManager.getLogger("logging.log4j.ProcessingLogger");
+		logger.trace("[" + productProperties.getSc() + "] " + "[" + originOperatorID + "] " + "[" + msisdn + "] " + "[" + productProperties.getSc() + "*" + (action.equals("activation") ? "1" : action.equals("deactivation") ? "0" : action) + "]");
+
 
 		if((productProperties.getAir_preferred_host() == -1) || (originOperatorID == null) || (originOperatorID.trim().length() == 0) || (action == null) || (!(action.equals("activation") || action.equals("deactivation"))) || (msisdn == null) || (msisdn_confirmation == null) || (!msisdn.equals(msisdn_confirmation)) || (!(new MSISDNValidator()).onNet(productProperties, msisdn))) {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
@@ -141,6 +159,12 @@ public class ExternalRequestController {
 	public ModelAndView handleHappyBirthdayBonusRequest(HttpServletRequest request) throws Exception {
 		String msisdn = request.getParameter("msisdn");
 		String originOperatorID = request.getParameter("originOperatorID");
+
+
+		// logging
+		Logger logger = LogManager.getLogger("logging.log4j.ProcessingLogger");
+		logger.trace("[" + productProperties.getSc() + "] " + "[" + originOperatorID + "] " + "[" + msisdn + "] " + "[" + productProperties.getSc() + "*4]");
+
 
 		if((productProperties.getAir_preferred_host() == -1) || (originOperatorID == null) || (originOperatorID.trim().length() == 0) || (msisdn == null) || (!(new MSISDNValidator()).onNet(productProperties, msisdn))) {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
