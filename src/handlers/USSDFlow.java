@@ -18,8 +18,8 @@ import org.springframework.context.MessageSource;
 import com.google.common.base.Splitter;
 
 import dao.DAO;
-import dao.queries.JdbcBirthDayBonusSubscriberDao;
-import domain.models.BirthDayBonusSubscriber;
+import dao.queries.JdbcHappyBirthDayBonusSubscriberDao;
+import domain.models.HappyBirthDayBonusSubscriber;
 import domain.models.Subscriber;
 import domain.models.USSDRequest;
 import filter.MSISDNValidator;
@@ -268,7 +268,7 @@ public class USSDFlow {
 				}
 				else {
 					if(transitions.isEmpty() || transitions.equals("")) {
-						BirthDayBonusSubscriber birthDayBonusSubscriber = (new JdbcBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscriber(ussd.getMsisdn(), true);
+						HappyBirthDayBonusSubscriber birthDayBonusSubscriber = (new JdbcHappyBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscriber(ussd.getMsisdn(), true);
 
 						if(birthDayBonusSubscriber == null) {
 							modele.put("message", i18n.getMessage("menu" + transitions, null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));

@@ -61,7 +61,7 @@ public class NightAdvantagesNotificationWriter implements ItemWriter<Subscriber>
 
 					} catch(Throwable th) {
 
-					}					
+					}
 				}
 			}
 

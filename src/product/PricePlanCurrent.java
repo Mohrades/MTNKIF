@@ -119,8 +119,10 @@ public class PricePlanCurrent {
 		off net
 		ACC 212  1  Wed Jul 04 23:59:59 WAT 2018  null
 		ACC 1  0  Sun Jul 01 23:59:59 WAT 2018  Wed Aug 01 23:59:59 WAT 2018
-		ACC 211  57  Wed Jul 04 23:59:59 WAT 2018  null*/
+		ACC 211  57  Wed Jul 04 23:59:59 WAT 2018  null
 
+		CYCLE ACCUMULATEUR 211 : 50-149,0,1,2,3(50) : begin 50,....,149,last 0(150); 3 billed : 1,2 and 3(50) */
+		
 		try {
 			AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 			HashSet<AccumulatorInformation> balanceBonusSms = (productProperties.getBonus_sms_remaining_accumulator() > 0) ? request.getAccumulators(msisdn, new int[][] {{productProperties.getBonus_sms_remaining_accumulator(), productProperties.getBonus_sms_remaining_accumulator()}}) : null;
@@ -144,7 +146,11 @@ public class PricePlanCurrent {
 						}
 
 						if(expires_in.after(new Date())) {
-							bonusSms = new Object[] {(productProperties.getBonus_sms_threshold() - accumulator.getAccumulatorValue() + 50), (language == 2) ? (new SimpleDateFormat("HH'H'mm")).format(expires_in) : (new SimpleDateFormat("HH'H'mm")).format(expires_in)};
+							if((accumulator.getAccumulatorValue() >= 50) && (accumulator.getAccumulatorValue() <= 150)) {
+								bonusSms = new Object[] {(productProperties.getBonus_sms_threshold() - accumulator.getAccumulatorValue() + 50), (language == 2) ? (new SimpleDateFormat("HH'H'mm")).format(expires_in) : (new SimpleDateFormat("HH'H'mm")).format(expires_in)};
+							}
+							else bonusSms = new Object[] {0, (language == 2) ? (new SimpleDateFormat("HH'H'mm")).format(expires_in) : (new SimpleDateFormat("HH'H'mm")).format(expires_in)};
+
 							break;
 						}
 					}

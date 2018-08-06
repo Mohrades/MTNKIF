@@ -81,6 +81,12 @@ public class InputHandler {
 
 			// 0  : successful (delete state from ussd table; actions and message)
 			else if(((Integer)flowStatus.get("status")) == 0) {
+				// logging
+				Logger logger = LogManager.getLogger("logging.log4j.ProcessingLogger");
+				logger.trace("[" + productProperties.getSc() + "] " + "[USSD] " + "[" + parameters.get("msisdn") + "] " + "[" + ussd.getInput() + "]");
+
+
+				// short code
 				String short_code = productProperties.getSc() + "";
 
 				if(ussd.getInput().equals(short_code + "*2")) {

@@ -22,8 +22,10 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 
 	private ProductProperties productProperties;
 
+	private boolean waitingForResponse;
+
 	public NightAdvantagesNotificationProcessor() {
-		
+
 	}
 
 	public DAO getDao() {
@@ -42,6 +44,14 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 		this.productProperties = productProperties;
 	}
 
+	public boolean isWaitingForResponse() {
+		return waitingForResponse;
+	}
+
+	public void setWaitingForResponse(boolean waitingForResponse) {
+		this.waitingForResponse = waitingForResponse;
+	}
+
 	@Override
 	public Subscriber process(PAMRunningReporting pamRunningReporting) throws AirAvailabilityException {
 		// TODO Auto-generated method stub
@@ -52,9 +62,14 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 			// check night advantages
 			if(getNightAdvantages(productProperties, subscriber.getValue())) {
 				// save notification
-				(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting.getId(), subscriber.getId());
+				if(!waitingForResponse) pamRunningReporting.setFlag(true);
+				(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !waitingForResponse, true);
 
 				return subscriber;
+			}
+			else {
+				if(!waitingForResponse) pamRunningReporting.setFlag(false);
+				(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !waitingForResponse, false);
 			}
 
 		} catch(AirAvailabilityException ex) {

@@ -3,6 +3,7 @@ package dao.queries;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -141,14 +142,15 @@ public class JdbcSubscriberDao {
 	public List<Subscriber> getAllRunnablePAMSubscribers(Date now) {
 		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((FLAG = 1) AND (TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "' >= LAST_UPDATE_TIME))", new SubscriberRowMapper());
 		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((LAST_UPDATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (FLAG = 1) AND (LOCKED = 0))", new SubscriberRowMapper());
-		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((LAST_UPDATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (FLAG = 1))", new SubscriberRowMapper());
+		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((LAST_UPDATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (FLAG = 1) AND (LOCKED = 0))", new SubscriberRowMapper());
 	}
 
 	public List<Subscriber> getAllRenewableCRBTSubscribers() {
 		Date now = new Date();
-		String tableName = "MTN_KIF_CRBT_REPORT_EBA_" + ((new SimpleDateFormat("MMMyy")).format(now)).toUpperCase();
+		String tableName = "MTN_KIF_CRBT_REPORT_EBA_" + ((new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(now)).toUpperCase();
 
-		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA Aa WHERE ((Aa.CRBT_NEXT_RENEWAL_DATE_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (Aa.FLAG = 1) AND (NOT EXISTS (SELECT B.CREATED_DATE_TIME FROM " + tableName + " B WHERE ((B.CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (B.SUBSCRIBER = Aa.ID)))))", new SubscriberRowMapper());
+		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA Aa WHERE ((Aa.CRBT_NEXT_RENEWAL_DATE_INDEX <= " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (Aa.FLAG = 1) AND (NOT EXISTS (SELECT B.CREATED_DATE_TIME FROM " + tableName + " B WHERE ((B.CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (B.SUBSCRIBER = Aa.ID)))))", new SubscriberRowMapper());
+		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA Aa WHERE ((Aa.CRBT_NEXT_RENEWAL_DATE_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (Aa.FLAG = 1) AND (NOT EXISTS (SELECT B.CREATED_DATE_TIME FROM " + tableName + " B WHERE ((B.CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (B.SUBSCRIBER = Aa.ID)))))", new SubscriberRowMapper());
 		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((CRBT_NEXT_RENEWAL_DATE_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (FLAG = 1) AND (LOCKED = 0))", new SubscriberRowMapper());
 		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((FLAG = 1) AND (TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "' >= CRBT_NEXT_RENEWAL_DATE))", new SubscriberRowMapper());
 	}

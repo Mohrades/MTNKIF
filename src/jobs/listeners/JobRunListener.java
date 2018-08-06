@@ -61,12 +61,11 @@ public class JobRunListener implements StepExecutionListener {
 	        }*/
 
 			// StepExecution: id=2, version=1, name=runningPAM, status=FAILED, exitStatus=FAILED, readCount=0, filterCount=0, writeCount=0 readSkipCount=0, writeSkipCount=0, processSkipCount=0, commitCount=0, rollbackCount=0, exitDescription=org.springframework.jdbc.CannotGetJdbcConnectionException: Could not get JDBC Connection; nested exception is java.sql.SQLException: Connections could not be acquired from the underlying database!
-			// System.out.println(stepExecution);
 			String StepExecutionDescription = stepExecution.toString();
 			String stepName = "Step=[" + StepExecutionDescription.substring(StepExecutionDescription.indexOf("name=") + 5, StepExecutionDescription.indexOf(", status=", StepExecutionDescription.indexOf("name="))).trim() + "]";
 			String stepStatus = StepExecutionDescription.substring(StepExecutionDescription.indexOf("status="), StepExecutionDescription.indexOf(", readCount", StepExecutionDescription.indexOf("status="))).trim();
 
-			String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(stepExecution.getEndTime()).toUpperCase() + stepName + " completed with the following status: [" + stepStatus + "]";
+			String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format((stepExecution.getEndTime() == null) ? new Date() : stepExecution.getEndTime()).toUpperCase() + stepName + " completed with the following status: [" + stepStatus + "]";
 
 			if (exitCode.equals(ExitStatus.STOPPED.getExitCode())) ;
 			else new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
@@ -106,8 +105,8 @@ public class JobRunListener implements StepExecutionListener {
 			Not dealing with stopping a job in item readers, processors, and writers is a good thing. These components should focus on their processing to enforce separation of concerns.*/
 	        // listeners will still work, but any other step logic (reader, processor, writer) will not happen
 
-			Date now = new Date();
-			now = stepExecution.getStartTime();
+			Date now = stepExecution.getStartTime();
+			if(now == null) now = new Date();
 			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 
 			// Stopping a job from a tasklet : Setting the stop flag in a tasklet is straightforward;
@@ -118,7 +117,6 @@ public class JobRunListener implements StepExecutionListener {
 			}
 			else {
 				// StepExecution: id=2, version=1, name=runningPAM, status=STARTED, exitStatus=EXECUTING, readCount=0, filterCount=0, writeCount=0 readSkipCount=0, writeSkipCount=0, processSkipCount=0, commitCount=0, rollbackCount=0, exitDescription=
-				// System.out.println(stepExecution);
 				String StepExecutionDescription = stepExecution.toString();
 
 				if(StepExecutionDescription.contains("name=nightAdvantagesNotificationThroughSms")) ;
@@ -148,5 +146,4 @@ public class JobRunListener implements StepExecutionListener {
 
 		}
 	}
-
 }

@@ -2,18 +2,19 @@ package domain.models;
 
 import java.util.Date;
 
-public class BirthDayBonusSubscriber extends MSISDN {
+public class HappyBirthDayBonusSubscriber extends MSISDN {
 
 	private String name;
 	private int language, bonus;
-	private long aspu;
+	// private long aspu;
+	private double aspu;
 	private Date birth_date, last_update_time, bonus_expires_in;
 
-	public BirthDayBonusSubscriber() {
+	public HappyBirthDayBonusSubscriber() {
 		super();
 	}
 
-	public BirthDayBonusSubscriber(int id, String msisdn, String name, int language, Date birth_date) {
+	public HappyBirthDayBonusSubscriber(int id, String msisdn, String name, int language, Date birth_date) {
 		super(id, msisdn);
 		this.name = name;
 		this.language = language;
@@ -44,11 +45,11 @@ public class BirthDayBonusSubscriber extends MSISDN {
 		this.birth_date = birth_date;
 	}
 
-	public long getAspu() {
+	public double getAspu() {
 		return aspu;
 	}
 
-	public void setAspu(long aspu) {
+	public void setAspu(double aspu) {
 		this.aspu = aspu;
 	}
 
@@ -82,7 +83,7 @@ public class BirthDayBonusSubscriber extends MSISDN {
 
 	public boolean equals (Object pp) {
 		try {
-			BirthDayBonusSubscriber p = (BirthDayBonusSubscriber) pp;
+			HappyBirthDayBonusSubscriber p = (HappyBirthDayBonusSubscriber) pp;
 
 			if(this.getValue().equals(p.getValue())) {
 				/*if(p.last_update_time != null) {
@@ -93,6 +94,13 @@ public class BirthDayBonusSubscriber extends MSISDN {
 						this.language = p.language;
 					}
 				}*/
+
+				if((p.getId() > this.getId()) && (this.getId() > 0)) {
+					this.setId(p.getId());
+					this.name = p.name;
+					this.language = p.language;
+					this.birth_date = p.birth_date;
+				}
 
 				if(p.aspu > 0) {
 					this.aspu = Math.max(this.aspu, p.aspu);

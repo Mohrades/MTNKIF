@@ -28,12 +28,14 @@
 
 		<!-- <task:scheduled ref="jobs" method="run_database_maintenance" cron="0 30 01 ? * *"  /> -->
   		<!-- <task:scheduled ref="jobs" method="run_pam" cron="0 41 11 ? * *" /> -->
-  		<task:scheduled ref="jobs" method="run_pam" cron="30 01 00 ? * *" />
+  		<!-- <task:scheduled ref="jobs" method="run_pam" cron="30 01 00 ? * *" /> -->
+  		<task:scheduled ref="jobs" method="run_pam" cron="30 01/12 * ? * *" />
 
-  		<task:scheduled ref="jobs" method="renew_crbt" cron="0 30 02 ? * *" />
-  		<!-- <task:scheduled ref="jobs" method="run_pam" cron="00 30 01 ? * *" /> -->
+  		<!-- <task:scheduled ref="jobs" method="renew_crbt" cron="0 30 02 ? * *" /> -->
+  		<task:scheduled ref="jobs" method="renew_crbt" cron="0 5/12 * 5/1 * ?" />
 
-		<task:scheduled ref="jobs" method="setHappyBirthdayBonus" cron="0 30 07 ? * *" />
+		<!-- <task:scheduled ref="jobs" method="setHappyBirthDayBonus" cron="0 30 07 ? * *" /> -->
+		<task:scheduled ref="jobs" method="setHappyBirthDayBonus" cron="0 03/12 * 5/1 * ?" />
 
   		<!-- <task:scheduled ref="jobs" method="clear_ussd" fixed-delay="900000" /> -->
   		<task:scheduled ref="jobs" method="clear_ussd" fixed-delay="720000" />
@@ -89,6 +91,7 @@
 
 	        <batch:writer>
 	          <bean class="jobs.RunningPAMWriter">
+	          	<property name="waitingForResponse" value="false" />
 	          	<property name="dao" ref="dao" />
 	          </bean>
 	        </batch:writer>
@@ -188,6 +191,7 @@
 	          <bean class="jobs.NightAdvantagesNotificationProcessor">
 	          	<property name="dao" ref="dao" />
 	          	<property name="productProperties" ref="productProperties" />
+	          	<property name="waitingForResponse" value="false" />
 	          </bean>
 	        </batch:processor>
 
@@ -230,6 +234,13 @@
 	</batch:job>
 
 	<batch:job id="crbtRenewalJob">
+	  <batch:listeners>
+      	<!-- <batch:listener>
+          <bean class="jobs.listeners.JobPhaseEventListener" />
+        </batch:listener> -->
+        <batch:listener ref="jobPhaseEventListener" />
+  	  </batch:listeners>
+
 	  <batch:step id="crbtRenewal">
 	  	<!-- <batch:tasklet ref="crbtRenewalTasklet" transaction-manager="transactionManager" /> -->
 	  	<batch:tasklet transaction-manager="transactionManager">
@@ -250,7 +261,7 @@
 
 	<!-- To disable restart, set the attribute restartable to false on the job element:
 	Remember that jobs are restartable by default. If you’re worried that you’ll forget that, set the restartable flag explicitly on all your jobs. -->
-	<batch:job id="happyBirthdayBonusJob">
+	<batch:job id="happyBirthDayBonusJob">
 	  <batch:listeners>
       	<!-- <batch:listener>
           <bean class="jobs.listeners.JobPhaseEventListener" />
@@ -260,21 +271,21 @@
 
 	  <!-- A single step cannot have both a "next" attribute and a transition element. -->
 	  <!-- <batch:step id="stepA" next="stepB" /> -->
-	  <batch:step id="happyBirthdayBonus">
+	  <batch:step id="happyBirthDayBonus">
 	  	<!-- <batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="5"> -->
 	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="4">
 	      <!-- <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" processor="happyBirthdayBonusProcessor" writer="happyBirthdayBonusWriter" commit-interval="10" skip-limit="20" retry-limit="3"> -->
 	      <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" commit-interval="10" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
-	          <bean class="jobs.HappyBirthdayBonusProcessor">
+	          <bean class="jobs.HappyBirthDayBonusProcessor">
 	          	<property name="dao" ref="dao" />
 	          	<property name="productProperties" ref="productProperties" />
 	          </bean>
 	        </batch:processor>
 
 	        <batch:writer>
-	          <bean class="jobs.HappyBirthdayBonusWriter">
+	          <bean class="jobs.HappyBirthDayBonusWriter">
 	          	<property name="i18n" ref="messageSource" />
 	          	<property name="productProperties" ref="productProperties" />
 	          </bean>
@@ -381,18 +392,18 @@
 	Finally, you  disable Spring Batch state management. This is the other requirement to make the item reader thread-safe (with the synchronization of the read method).
 	But by doing that, you lose the reader’s restartability feature, because the item reader won’t know where it left off after a failure.
 	Luckily, the process indicator is there to enable restartability: the reader reads only unprocessed items. The item writer then needs to flag the product as handled using the processed column and then write the item, as described in the following listing. -->
-	<bean id="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" class="jobs.SynchronizingBirthDayBonusSubscriberReader">
+	<bean id="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" class="jobs.SynchronizingHappyBirthDayBonusSubscriberReader">
 	  	<property name="delegate">
 	  		<!-- reader must be evaluated for every scheduled execution of the given job. -->
 	  		<!-- If you set the scope of the bean to step, then a new bean will be created every time the step is executed. -->
-			<bean class="jobs.BirthDayBonusSubscribersReader" scope="step">
+			<bean class="jobs.HappyBirthDayBonusSubscriberReader" scope="step">
 				<constructor-arg index="0" type="int" value="2" />
 		   		<!-- <constructor-arg index="1" type="java.lang.String" value="${AWS_SECRET_ACCESS_KEY}" /> -->
 
 			  	<property name="dataSource" ref="db_connection" />
 			  	<property name="saveState" value="false" />
 			  	<property name="rowMapper">
-			    	<bean class="dao.mapping.BirthDayBonusSubscriberRowMapper" />
+			    	<bean class="dao.mapping.HappyBirthDayBonusSubscriberRowMapper" />
 			  	</property>
 			  	<!-- <property name="sql">
 			  		<value>

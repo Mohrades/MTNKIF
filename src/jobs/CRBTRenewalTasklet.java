@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -100,136 +101,160 @@ public class CRBTRenewalTasklet implements Tasklet {
 				ResultSet rs = null;
 
 				HashSet <Subscriber> allMSISDN_Today_Is_CRBTRENEWABLE = new HashSet <Subscriber>((new JdbcSubscriberDao(dao)).getAllRenewableCRBTSubscribers());
-				HashSet <Subscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <Subscriber>();
 
-				try {
-					Class.forName("oracle.jdbc.driver.OracleDriver"); // chargement du pilote JDBC
-					// connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/vmdg", "abutu", "kT60#bTh03#18"); // ouverture connexion
-					connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/itbidg2", "ebauser", "bBt0518#taBut"); // ouverture connexion
-					connexion.setAutoCommit(false); // début transaction
-					connexion.setReadOnly(true); // en mode lecture seule
-
-					// on lit la table PRICEPLAN.VALUE_BAND_LIST [MSISDN, CUSTOMER_SEGMENT]
-					// ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter());
-					Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
-					ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(previous_month)).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + ""));
-					rs = ps.executeQuery();
-					// Liste des elements
-					while (rs.next()) {
-						String msisdn = rs.getString("MSISDN").trim();
-						allMSISDN_With_ASPU_ReachedFlag.add(new Subscriber(0, (msisdn.length() == productProperties.getMsisdn_length()) ? productProperties.getMcc() + msisdn : msisdn, false, false, null, null, true));
-					}
-
-					connexion.commit(); // commit transaction
-
-				} catch (ClassNotFoundException|SQLException ex) {
-					// on traite l'exception
-
-				} finally {
-					// fermer la connexion
-					if (connexion != null) {
-						try {
-							connexion.close();
-
-						} catch (SQLException ex) {
-							// traiter l'exception
-						}
-					}
+				if(allMSISDN_Today_Is_CRBTRENEWABLE.isEmpty()) {
+					stepContribution.setExitStatus(ExitStatus.COMPLETED);
+					return RepeatStatus.FINISHED;
 				}
+				else {
+					boolean SQLSyntaxErrorException = false;
+					HashSet <Subscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <Subscriber>();
 
-				// allMSISDN_With_ASPU_ReachedFlag.add(new Subscriber(0, "22961437066", false, false, null, null, true));
-
-				// croiser subscriber with today is crbt renewal date and aspu reached
-				HashSet <Subscriber> allMSISDN_Today_Is_CRBTRENEWABLE_COPY = new HashSet <Subscriber>(allMSISDN_Today_Is_CRBTRENEWABLE);
-				allMSISDN_Today_Is_CRBTRENEWABLE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
-
-				// croiser subscriber with today is crbt renewal date and aspu not reached
-				allMSISDN_Today_Is_CRBTRENEWABLE_COPY.removeAll(allMSISDN_With_ASPU_ReachedFlag);
-
-				now.setDate(now.getDate() + 30);
-
-				// crbt renewal failed
-				for(Subscriber subscriber : allMSISDN_Today_Is_CRBTRENEWABLE_COPY) {
 					try {
-						// remove mtnkif+ crbt song
-						if(productProperties.getSong_rbt_code() != null) {
-							String national = subscriber.getValue().substring((productProperties.getMcc() + "").length());
+						Class.forName("oracle.jdbc.driver.OracleDriver"); // chargement du pilote JDBC
+						// connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/vmdg", "abutu", "kT60#bTh03#18"); // ouverture connexion
+						connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/itbidg2", "ebauser", "bBt0518#taBut"); // ouverture connexion
+						connexion.setAutoCommit(false); // début transaction
+						connexion.setReadOnly(true); // en mode lecture seule
 
-							HashMap<String, String> multiRef = new DelInboxTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, null, null, null, productProperties.getSong_rbt_code(), null, "1", true);
-							// reporting
-							if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
-								subscriber.setCrbt(false); // update status
-								subscriber.setCrbtNextRenewalDate(now);
-								// store subscriber
-								new JdbcSubscriberDao(dao).setCRBTFlag(subscriber);
-								// store reporting
-								CRBTReporting reporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), "eBA");
-								reporting.setAuto(true);
-								new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(reporting);
+						// on lit la table PRICEPLAN.VALUE_BAND_LIST [MSISDN, CUSTOMER_SEGMENT]
+						// ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter());
+						Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+						ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + ""));
+						rs = ps.executeQuery();
+						// Liste des elements
+						while (rs.next()) {
+							String msisdn = rs.getString("MSISDN").trim();
+							allMSISDN_With_ASPU_ReachedFlag.add(new Subscriber(0, (msisdn.length() == productProperties.getMsisdn_length()) ? productProperties.getMcc() + msisdn : msisdn, false, false, null, null, true));
+						}
+
+						connexion.commit(); // commit transaction
+
+					} catch (SQLSyntaxErrorException ex) {
+						// on traite l'exception : ORA-00942: table or view does not exist
+						SQLSyntaxErrorException = true;
+					} catch (ClassNotFoundException|SQLException ex) {
+						// on traite l'exception
+						SQLSyntaxErrorException = true;
+					} catch (Throwable th) {
+						// on traite l'exception
+
+					} finally {
+						// fermer la connexion
+						if (connexion != null) {
+							try {
+								connexion.close();
+
+							} catch (SQLException ex) {
+								// traiter l'exception
+							} catch (Throwable th) {
+								// traiter l'exception
 							}
 						}
-
-					} catch(Throwable th) {
-
 					}
-				}
 
-				// crbt renewal succeeded
-				for(Subscriber subscriber : allMSISDN_Today_Is_CRBTRENEWABLE) {
-					try {
-						// // set mtnkif+ crbt song
-						if(productProperties.getSong_rbt_code() != null) {
-							String national = subscriber.getValue().substring((productProperties.getMcc() + "").length());
+					if(SQLSyntaxErrorException) {
+						String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(new Date()).toUpperCase() + "CRBTRenewalTasklet failed with the following status: [SQLSyntaxErrorException]";
+						new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
 
-							// first step : subscribe
-							HashMap<String, String> multiRef = new Subscribe(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, true);
-							if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("301009"))) {
-								// delete tone first : precaution to avoid crbt system auto renewal and charge subscribers
-								multiRef = new DelInboxTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, null, null, null, productProperties.getSong_rbt_code(), null, "1", true);
+						stepContribution.setExitStatus(ExitStatus.FAILED);
+						return RepeatStatus.FINISHED;
+					}
+
+					// allMSISDN_With_ASPU_ReachedFlag.add(new Subscriber(0, "22961437066", false, false, null, null, true));
+
+					// croiser subscriber with today is crbt renewal date and aspu not reached
+					HashSet <Subscriber> allMSISDN_Today_Is_CRBTRENEWABLE_COPY = new HashSet <Subscriber>(allMSISDN_Today_Is_CRBTRENEWABLE);
+					allMSISDN_Today_Is_CRBTRENEWABLE_COPY.removeAll(allMSISDN_With_ASPU_ReachedFlag);
+
+					// croiser subscriber with today is crbt renewal date and aspu reached
+					allMSISDN_Today_Is_CRBTRENEWABLE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
+
+					now.setDate(now.getDate() + 30);
+
+					// crbt renewal failed
+					for(Subscriber subscriber : allMSISDN_Today_Is_CRBTRENEWABLE_COPY) {
+						try {
+							// remove mtnkif+ crbt song
+							if(productProperties.getSong_rbt_code() != null) {
+								String national = subscriber.getValue().substring((productProperties.getMcc() + "").length());
+
+								HashMap<String, String> multiRef = new DelInboxTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, null, null, null, productProperties.getSong_rbt_code(), null, "1", true);
+								// reporting
 								if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
-									// step two : order  tone
-									// multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null, true);
-									multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", null, null, true);
-									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302011"))) {
-									/*if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000"))) { // when tone already exists, do nothing
-*/										// step three : add tone
-										multiRef = new AddToneBox(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, "2", "mtnkif", null, new String[] {productProperties.getSong_rbt_code()}, null, null, "2", "1", "000000000", national, true);
-										if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") && multiRef.containsKey("toneBoxID"))) {
-											// set tone
-											String toneBoxID = multiRef.get("toneBoxID");
-											multiRef = new SetTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, null, null, null, null, "1", "1", "2", null, null, toneBoxID, "1", true);
-											// reporting
-											if((multiRef != null) && (multiRef.containsKey("returnCode")) && multiRef.get("returnCode").equals("000000")) {
-												subscriber.setCrbt(true); // update status
-												subscriber.setCrbtNextRenewalDate(now);
-												// store subscriber
-												new JdbcSubscriberDao(dao).setCRBTFlag(subscriber);
+									subscriber.setCrbt(false); // update status
+									subscriber.setCrbtNextRenewalDate(now);
+									// store subscriber
+									new JdbcSubscriberDao(dao).setCRBTFlag(subscriber);
+									// store reporting
+									CRBTReporting reporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), "eBA");
+									reporting.setAuto(true);
+									new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(reporting);
+								}
+							}
 
-												// store reporting
-												CRBTReporting reporting = new CRBTReporting(0, subscriber.getId(), true, new Date(), "eBA");
-												reporting.setAuto(true);
-												reporting.setToneBoxID(toneBoxID);
-												new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(reporting);
+						} catch(Throwable th) {
 
-												// send notification sms
-												requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());
+						}
+					}
+
+					// crbt renewal succeeded
+					for(Subscriber subscriber : allMSISDN_Today_Is_CRBTRENEWABLE) {
+						try {
+							// // set mtnkif+ crbt song
+							if(productProperties.getSong_rbt_code() != null) {
+								String national = subscriber.getValue().substring((productProperties.getMcc() + "").length());
+
+								// first step : subscribe
+								HashMap<String, String> multiRef = new Subscribe(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, true);
+								if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("301009"))) {
+									// delete tone first : precaution to avoid crbt system auto renewal and charge subscribers
+									multiRef = new DelInboxTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, null, null, null, productProperties.getSong_rbt_code(), null, "1", true);
+									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
+										// step two : order  tone
+										// multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null, true);
+										multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", null, null, true);
+										if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302011"))) {
+										/*if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000"))) { // when tone already exists, do nothing
+	*/										// step three : add tone
+											multiRef = new AddToneBox(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, "2", "mtnkif", null, new String[] {productProperties.getSong_rbt_code()}, null, null, "2", "1", "000000000", national, true);
+											if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") && multiRef.containsKey("toneBoxID"))) {
+												// set tone
+												String toneBoxID = multiRef.get("toneBoxID");
+												multiRef = new SetTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, null, null, null, null, "1", "1", "2", null, null, toneBoxID, "1", true);
+												// reporting
+												if((multiRef != null) && (multiRef.containsKey("returnCode")) && multiRef.get("returnCode").equals("000000")) {
+													subscriber.setCrbt(true); // update status
+													subscriber.setCrbtNextRenewalDate(now);
+													// store subscriber
+													new JdbcSubscriberDao(dao).setCRBTFlag(subscriber);
+
+													// store reporting
+													CRBTReporting reporting = new CRBTReporting(0, subscriber.getId(), true, new Date(), "eBA");
+													reporting.setAuto(true);
+													reporting.setToneBoxID(toneBoxID);
+													new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(reporting);
+
+													// send notification sms
+													requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());
+												}
 											}
 										}
-									}
-									else if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("302011"))) {
-										// send notification sms
-										requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());
+										else if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("302011"))) {
+											// send notification sms
+											requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());
+										}
 									}
 								}
 							}
+						} catch(Throwable th) {
+
 						}
-					} catch(Throwable th) {
-
 					}
-				}
 
-				stepContribution.setExitStatus(ExitStatus.COMPLETED);
-				return RepeatStatus.FINISHED;
+					stepContribution.setExitStatus(ExitStatus.COMPLETED);
+					return RepeatStatus.FINISHED;
+				}
 			}
 
 		} catch(Throwable th) {

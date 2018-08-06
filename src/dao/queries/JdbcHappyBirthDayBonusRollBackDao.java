@@ -11,11 +11,11 @@ import dao.DAO;
 import dao.mapping.RollBackRowMapper;
 import domain.models.RollBack;
 
-public class JdbcBirthDayBonusRollBackDao {
+public class JdbcHappyBirthDayBonusRollBackDao {
 
 	private DAO dao;
 
-	public JdbcBirthDayBonusRollBackDao(DAO dao) {
+	public JdbcHappyBirthDayBonusRollBackDao(DAO dao) {
 		this.dao = dao;
 	}
 

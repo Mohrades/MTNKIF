@@ -11,8 +11,10 @@ public class RunningPAMWriter implements ItemWriter<Subscriber> {
 
 	private DAO dao;
 
+	private boolean waitingForResponse;
+
 	public RunningPAMWriter() {
-		
+
 	}
 
 	public DAO getDao() {
@@ -21,6 +23,14 @@ public class RunningPAMWriter implements ItemWriter<Subscriber> {
 
 	public void setDao(DAO dao) {
 		this.dao = dao;
+	}
+
+	public boolean isWaitingForResponse() {
+		return waitingForResponse;
+	}
+
+	public void setWaitingForResponse(boolean waitingForResponse) {
+		this.waitingForResponse = waitingForResponse;
 	}
 
 	@Override
@@ -32,7 +42,7 @@ public class RunningPAMWriter implements ItemWriter<Subscriber> {
 				if(subscriber != null) {
 					try {
 						// save reporting
-						(new JdbcPAMRunningReportingDao(dao)).saveOnePAMRunningReporting(new PAMRunningReporting(0, subscriber.getId(), subscriber.isFlag(), null, "eBA"));
+						(new JdbcPAMRunningReportingDao(dao)).saveOnePAMRunningReporting(new PAMRunningReporting(0, subscriber.getId(), subscriber.isFlag(), null, "eBA"), waitingForResponse);
 
 					} catch(NullPointerException ex) {
 

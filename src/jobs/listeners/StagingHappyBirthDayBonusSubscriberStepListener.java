@@ -5,9 +5,12 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -15,14 +18,13 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
-
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.JdbcBirthDayBonusSubscriberDao;
+import dao.queries.JdbcHappyBirthDayBonusSubscriberDao;
 import dao.queries.JdbcScheduledTaskDao;
 import dao.queries.JdbcSubscriberDao;
 import dao.queries.JdbcUSSDServiceDao;
-import domain.models.BirthDayBonusSubscriber;
+import domain.models.HappyBirthDayBonusSubscriber;
 import domain.models.ScheduledTask;
 import domain.models.Subscriber;
 import domain.models.USSDService;
@@ -69,8 +71,8 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 	// action avant l'exécution de l'étape
 	public void beforeStep(StepExecution stepExecution) {
 		try {
-			Date now = new Date();
-			now = stepExecution.getStartTime();
+			Date now = stepExecution.getStartTime();
+			if(now == null) now = new Date();
 			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 
 			// Stopping a job from a tasklet : Setting the stop flag in a tasklet is straightforward;
@@ -79,7 +81,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 		        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 				stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE OUT OF RANGE", "Job should not be run right now."));
 			}
-			else if((new JdbcBirthDayBonusSubscriberDao(dao)).isBirthDayReported()) {
+			else if((new JdbcHappyBirthDayBonusSubscriberDao(dao)).isBirthDayReported()) {
 				stepExecution.setTerminateOnly(); // Sets stop flag if necessary
 		        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
 		        stepExecution.setExitStatus(new ExitStatus("STOPPED WITH DATE EXCLUDED", "Job should not be run right now."));
@@ -122,72 +124,126 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 					PreparedStatement ps = null;
 					ResultSet rs = null;
 
-					HashSet <BirthDayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE = new HashSet <BirthDayBonusSubscriber>((new JdbcBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscribers(true));
-					HashSet <BirthDayBonusSubscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <BirthDayBonusSubscriber>();
+					List<HappyBirthDayBonusSubscriber> allSubscribers = (new JdbcHappyBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscribers(true);
+					HashSet<HappyBirthDayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE = new HashSet <HappyBirthDayBonusSubscriber>(allSubscribers);
 
-					try {
-						Class.forName("oracle.jdbc.driver.OracleDriver"); // chargement du pilote JDBC
-						// connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/vmdg", "abutu", "kT60#bTh03#18"); // ouverture connexion
-						connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/itbidg2", "ebauser", "bBt0518#taBut"); // ouverture connexion
-						connexion.setAutoCommit(false); // début transaction
-						connexion.setReadOnly(true); // en mode lecture seule
+					if(allMSISDN_Today_Is_BIRTHDATE.isEmpty()) {
 
-						// Kif+ Subscribers with ASPU >= 3000 XOF
-						Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
-						ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy")).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
-						rs = ps.executeQuery();
-						// Liste des elements
-						while (rs.next()) {
-							String msisdn = rs.getString("MSISDN").trim();
-							BirthDayBonusSubscriber birthdayBonusSubscriber = new BirthDayBonusSubscriber(0, (msisdn.length() == productProperties.getMsisdn_length()) ? productProperties.getMcc() + msisdn : msisdn, null, 0, null);
-							birthdayBonusSubscriber.setAspu(Long.parseLong(rs.getString("ASPU").trim()));
-							allMSISDN_With_ASPU_ReachedFlag.add(birthdayBonusSubscriber);
-						}
-
-						connexion.commit(); // commit transaction
-
-					} catch (ClassNotFoundException|SQLException ex) {
-						// on traite l'exception
-
-					} finally {
-						// fermer la connexion
-						if (connexion != null) {
-							try {
-								connexion.close();
-
-							} catch (SQLException ex) {
-								// traiter l'exception
-							}
-						}
 					}
+					else {
+						boolean SQLSyntaxErrorException = false;
+						HashSet <HappyBirthDayBonusSubscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <HappyBirthDayBonusSubscriber>();
 
-					// croiser today_is_birthday and aspu reached
-					allMSISDN_Today_Is_BIRTHDATE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
-					int air_error_count = 0;
-
-					for(BirthDayBonusSubscriber birthdayBonusSubscriber : allMSISDN_Today_Is_BIRTHDATE) {
 						try {
-							// store birthdayBonusSubscriber : verify again msisdn is still mtnkif subscriber
-							// (éviter d'inscrire les numéros en bd) pour gagner du temps : juste vérifier lee statut de chaque subscriber
-							int status = checkPricePlanCurrent(productProperties, dao, birthdayBonusSubscriber.getValue());
+							Class.forName("oracle.jdbc.driver.OracleDriver"); // chargement du pilote JDBC
+							// connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/vmdg", "abutu", "kT60#bTh03#18"); // ouverture connexion
+							connexion = DriverManager.getConnection("jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/itbidg2", "ebauser", "bBt0518#taBut"); // ouverture connexion
+							connexion.setAutoCommit(false); // début transaction
+							connexion.setReadOnly(true); // en mode lecture seule
 
-							if(status == 0) {
-								(new JdbcBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber(birthdayBonusSubscriber);
+							// Kif+ Subscribers with ASPU >= 3000 XOF
+							Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+							ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
+							rs = ps.executeQuery();
+							// Liste des elements
+							while (rs.next()) {
+								String msisdn = rs.getString("MSISDN").trim();
+								HappyBirthDayBonusSubscriber birthdayBonusSubscriber = new HappyBirthDayBonusSubscriber(0, (msisdn.length() == productProperties.getMsisdn_length()) ? productProperties.getMcc() + msisdn : msisdn, null, 0, null);
+								// birthdayBonusSubscriber.setAspu(Long.parseLong(rs.getString("ASPU").trim()));
+								// birthdayBonusSubscriber.setAspu(Double.parseDouble(rs.getString("ASPU").trim()));
+								birthdayBonusSubscriber.setAspu(rs.getDouble("ASPU"));
+								allMSISDN_With_ASPU_ReachedFlag.add(birthdayBonusSubscriber);
 							}
-							else if(status == -1) {
-								++air_error_count;
-								if(air_error_count >= 5) break;
+
+							connexion.commit(); // commit transaction
+
+						} catch (SQLSyntaxErrorException ex) {
+							// on traite l'exception : ORA-00942: table or view does not exist
+							SQLSyntaxErrorException = true;
+						} catch (ClassNotFoundException|SQLException ex) {
+							// on traite l'exception
+							SQLSyntaxErrorException = true;
+						} catch (Throwable th) {
+							// on traite l'exception
+
+						} finally {
+							// fermer la connexion
+							if (connexion != null) {
+								try {
+									connexion.close();
+
+								} catch (SQLException ex) {
+									// traiter l'exception
+								} catch (Throwable th) {
+									// traiter l'exception
+								}
 							}
-
-						} catch(Throwable th) {
-
 						}
-					}
 
-					if(air_error_count >= 5) {
-						stepExecution.setTerminateOnly(); // Sets stop flag if necessary
-				        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
-				        stepExecution.setExitStatus(new ExitStatus("STOPPED WITH AIR UNAVAILABILITY", "Job should not be run right now."));
+						if(SQLSyntaxErrorException) {
+							log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(new Date()).toUpperCase() + "MTNKIF happyBirthDayBonusJob failed with the following status: [SQLSyntaxErrorException]";
+							new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
+
+							stepExecution.setTerminateOnly(); // Sets stop flag if necessary
+					        stepExecution.setExitStatus(new ExitStatus("FAILED", "MTNKIF happyBirthDayBonusJob failed with the following status: [SQLSyntaxErrorException]"));
+						}
+						else {
+							// croiser today_is_birthday and duplicated subscribers
+							/*if(allSubscribers.size() != allMSISDN_Today_Is_BIRTHDATE.size()) {*/
+							if(allSubscribers.size() > allMSISDN_Today_Is_BIRTHDATE.size()) {
+								next : for(HappyBirthDayBonusSubscriber happyBirthDayBonusSubscriber : allSubscribers) {
+									for(HappyBirthDayBonusSubscriber duplicatedSubscriber : allMSISDN_Today_Is_BIRTHDATE) {
+										if(duplicatedSubscriber.getId() == happyBirthDayBonusSubscriber.getId()) continue next;
+									}
+
+									// stage duplicated record as already completely processed
+									(new JdbcHappyBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber(happyBirthDayBonusSubscriber, false);
+								}
+							}
+
+							// croiser today_is_birthday and aspu not reached
+							HashSet<HappyBirthDayBonusSubscriber> allMSISDN_Today_Is_BIRTHDATE_COPY = new HashSet<HappyBirthDayBonusSubscriber>(allMSISDN_Today_Is_BIRTHDATE);
+							allMSISDN_Today_Is_BIRTHDATE_COPY.removeAll(allMSISDN_With_ASPU_ReachedFlag);
+							for(HappyBirthDayBonusSubscriber happyBirthDayBonusSubscriber : allMSISDN_Today_Is_BIRTHDATE_COPY) {
+								// stage record as completely processed
+								(new JdbcHappyBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber(happyBirthDayBonusSubscriber, true);
+							}
+
+							// croiser today_is_birthday and aspu reached
+							allMSISDN_Today_Is_BIRTHDATE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
+							int air_error_count = 0;
+
+							for(HappyBirthDayBonusSubscriber happyBirthDayBonusSubscriber : allMSISDN_Today_Is_BIRTHDATE) {
+								try {
+									// store birthdayBonusSubscriber : verify again msisdn is still mtnkif subscriber
+									// (éviter d'inscrire les numéros en bd) pour gagner du temps : juste vérifier lee statut de chaque subscriber
+									int status = checkPricePlanCurrent(productProperties, dao, happyBirthDayBonusSubscriber.getValue());
+
+									if(status == 0) {
+										// stage record as partially processed : batch will complete processing with happy birthday bonus granting
+										(new JdbcHappyBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber(happyBirthDayBonusSubscriber, true);
+									}
+									else if(status == 1) {
+										// stage record as completely processed
+										happyBirthDayBonusSubscriber.setAspu(0);
+										(new JdbcHappyBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber(happyBirthDayBonusSubscriber, true);
+									}
+									else if(status == -1) {
+										++air_error_count;
+										if(air_error_count >= 5) break;
+									}
+
+								} catch(Throwable th) {
+
+								}
+							}
+
+							if(air_error_count >= 5) {
+								stepExecution.setTerminateOnly(); // Sets stop flag if necessary
+						        // stepExecution.setExitStatus(new ExitStatus("STOPPED", "Job should not be run right now."));
+						        stepExecution.setExitStatus(new ExitStatus("STOPPED WITH AIR UNAVAILABILITY", "Job should not be run right now."));
+							}
+						}
 					}
 				}
 			}
@@ -210,7 +266,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 
 		Subscriber subscriber = new JdbcSubscriberDao(dao).getOneSubscriber(msisdn);
 
-		 if((subscriber != null) && ((subscriber.isLocked()) || (!subscriber.isFlag()))) return 1;
+		 if((subscriber != null) && ((subscriber.isLocked()) || ((!subscriber.isFlag()) && (subscriber.getLast_update_time() != null)))) return 1;
 		 else {
 			 int status = (new PricePlanCurrentActions()).isActivated(productProperties, dao, msisdn);
 

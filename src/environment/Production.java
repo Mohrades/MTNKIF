@@ -6,6 +6,9 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.context.MessageSource;
 
 import dao.DAO;
@@ -24,6 +27,10 @@ public class Production {
 			modele.put("message", i18n.getMessage("short.code.live", null, null, Locale.FRENCH));
 		}
 		else {
+			// logging
+			Logger logger = LogManager.getLogger("logging.log4j.TracesLogger");
+			logger.log(Level.TRACE, "[" + productProperties.getSc() + "] " + "[USSD] " + "[" + parameters.get("msisdn") + "] " + "[" + parameters.get("input").trim() + "]");
+
 			new InputHandler().handle(i18n, productProperties, parameters, modele, request, dao);
 		}
 	}

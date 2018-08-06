@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 
 import connexions.AIRRequest;
 import dao.DAO;
-import dao.queries.JdbcBirthDayBonusSubscriberDao;
+import dao.queries.JdbcHappyBirthDayBonusSubscriberDao;
 import dao.queries.JdbcSubscriberDao;
-import domain.models.BirthDayBonusSubscriber;
+import domain.models.HappyBirthDayBonusSubscriber;
 import domain.models.Subscriber;
 import filter.MSISDNValidator;
 import product.PricePlanCurrentActions;
@@ -48,7 +48,7 @@ public class HappyBirthDayEventListener {
 				// register msisdn to benefit happy birthday bonus
 				if(status == 0) {
 					// store BirthdayBonusSubscriber
-					(new JdbcBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber((new BirthDayBonusSubscriber(0, msisdn, name, language, new Date())));
+					(new JdbcHappyBirthDayBonusSubscriberDao(dao)).saveOneBirthdayBonusSubscriber((new HappyBirthDayBonusSubscriber(0, msisdn, name, language, new Date())), false);
 				}
 				else if(status == -1) {
 					++air_errors_count;
@@ -85,7 +85,7 @@ public class HappyBirthDayEventListener {
 
 		Subscriber subscriber = new JdbcSubscriberDao(dao).getOneSubscriber(msisdn);
 
-		 if((subscriber != null) && ((subscriber.isLocked()) || (!subscriber.isFlag()))) return 1;
+		 if((subscriber != null) && ((subscriber.isLocked()) || ((!subscriber.isFlag()) && (subscriber.getLast_update_time() != null)))) return 1;
 		 else {
 			 int status = (new PricePlanCurrentActions()).isActivated(productProperties, dao, msisdn);
 
