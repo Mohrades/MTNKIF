@@ -133,6 +133,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 					else {
 						boolean SQLSyntaxErrorException = false;
 						HashSet <HappyBirthDayBonusSubscriber> allMSISDN_With_ASPU_ReachedFlag = new HashSet <HappyBirthDayBonusSubscriber>();
+						String SQLQuery = null;
 
 						try {
 							Class.forName("oracle.jdbc.driver.OracleDriver"); // chargement du pilote JDBC
@@ -143,6 +144,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 
 							// Kif+ Subscribers with ASPU >= 3000 XOF
 							Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+							SQLQuery = productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + "");
 							ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
 							rs = ps.executeQuery();
 							// Liste des elements
@@ -183,6 +185,9 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 						if(SQLSyntaxErrorException) {
 							log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(new Date()).toUpperCase() + "MTNKIF happyBirthDayBonusJob failed with the following status: [SQLSyntaxErrorException]";
 							new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
+
+							logger = LogManager.getLogger("logging.log4j.DataAvailabilityLogger");
+							logger.error("HOST = ga-exa-scan.mtn.bj,   PORT = 1521,   DATABASE = itbidg2,   SQLSyntaxErrorException = " + SQLQuery);
 
 							stepExecution.setTerminateOnly(); // Sets stop flag if necessary
 					        stepExecution.setExitStatus(new ExitStatus("FAILED", "MTNKIF happyBirthDayBonusJob failed with the following status: [SQLSyntaxErrorException]"));

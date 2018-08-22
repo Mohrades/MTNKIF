@@ -83,7 +83,7 @@
 	      <batch:chunk reader="runningPAMSubscribers" commit-interval="20" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
-	          <bean class="jobs.RunningPAMProcessor">
+	          <bean class="jobs.RunningPAMProcessor" scope="step">
       			<property name="waitingForResponse" value="false" />
       			<property name="productProperties" ref="productProperties" />
       		  </bean>
