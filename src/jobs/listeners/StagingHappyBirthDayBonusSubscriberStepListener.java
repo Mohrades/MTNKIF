@@ -189,6 +189,9 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 							logger = LogManager.getLogger("logging.log4j.DataAvailabilityLogger");
 							logger.error("HOST = ga-exa-scan.mtn.bj,   PORT = 1521,   DATABASE = itbidg2,   SQLSyntaxErrorException = " + SQLQuery);
 
+							logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");
+							logger.log(Level.INFO, "HOST = ga-exa-scan.mtn.bj,   PORT = 1521,   DATABASE = itbidg2,   SQLSyntaxErrorException = " + SQLQuery + ",   JobExecution = MTNKIF happyBirthDayBonusJob failed with the following status: [SQLSyntaxErrorException]");
+
 							stepExecution.setTerminateOnly(); // Sets stop flag if necessary
 					        stepExecution.setExitStatus(new ExitStatus("FAILED", "MTNKIF happyBirthDayBonusJob failed with the following status: [SQLSyntaxErrorException]"));
 						}

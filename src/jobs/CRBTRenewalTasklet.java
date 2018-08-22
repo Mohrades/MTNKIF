@@ -162,6 +162,9 @@ public class CRBTRenewalTasklet implements Tasklet {
 						Logger logger = LogManager.getLogger("logging.log4j.DataAvailabilityLogger");
 						logger.log(Level.ERROR, "HOST = ga-exa-scan.mtn.bj,   PORT = 1521,   DATABASE = itbidg2,   SQLSyntaxErrorException = " + SQLQuery);
 
+						logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");
+						logger.log(Level.INFO, "HOST = ga-exa-scan.mtn.bj,   PORT = 1521,   DATABASE = itbidg2,   SQLSyntaxErrorException = " + SQLQuery + ",   JobExecution = CRBTRenewalTasklet failed with the following status: [SQLSyntaxErrorException]");
+
 						stepContribution.setExitStatus(ExitStatus.FAILED);
 						return RepeatStatus.FINISHED;
 					}
