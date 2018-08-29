@@ -25,6 +25,9 @@ public class Production {
 		if(parameters.isEmpty()) {
 			modele.put("next", false);
 			modele.put("message", i18n.getMessage("short.code.live", null, null, Locale.FRENCH));
+			
+			// You can access these properties directly using @Value annotation or you can call utility method provided along with the custom class com.util.PropertiesUtils.
+			// String config_value = PropertiesUtils.getProperty(config_key);
 		}
 		else {
 			// logging

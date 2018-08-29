@@ -34,15 +34,29 @@ public class HappyBirthDayBonusProcessor implements ItemProcessor<HappyBirthDayB
 	}
 
 	@Override
-	public HappyBirthDayBonusSubscriber process(HappyBirthDayBonusSubscriber birthdayBonusSubscriber) throws AirAvailabilityException {
+	/**
+	 * 
+	Filtering items : It is actually very easy to tell Spring Batch not to continue processing an item.  To do so, instead of the ItemProcessor returning an item, it returns null.
+	
+	let’s look at the filtering rules for item processors:
+		If  the  process  method  returns  null,  Spring  Batch  filters  out  the  item  and  it won’t go to the item writer.
+		Filtering is different from skipping.
+		An exception thrown by an item processor results in a skip (if you configured the skip strategy accordingly).
+	
+	The basic contract for filtering is clear, but we must point out the distinction between filtering and skipping:
+		Filtering means that Spring Batch shouldn’t write a given record. For example, the item writer can’t handle a record.
+		Skipping  means that a given record is invalid. For example, the format of a phone number is invalid.
+	*/
+	/* Filtering items : It is actually very easy to tell Spring Batch not to continue processing an item.  To do so, instead of the ItemProcessor returning an item, it returns null.*/
+	public HappyBirthDayBonusSubscriber process(HappyBirthDayBonusSubscriber happyBirthDayBonusSubscriber) throws AirAvailabilityException {
 		// TODO Auto-generated method stub
 
 		try {
 			// set bonus choice (data and voice)
-			birthdayBonusSubscriber.setBonus(1);
+			happyBirthDayBonusSubscriber.setBonus(1);
 
-			if((new HappyBirthDayBonusActions(productProperties)).doActions(dao, birthdayBonusSubscriber) == 0) {
-				return birthdayBonusSubscriber;
+			if((new HappyBirthDayBonusActions(productProperties)).doActions(dao, happyBirthDayBonusSubscriber) == 0) {
+				return happyBirthDayBonusSubscriber;
 			}
 
 		} catch(AirAvailabilityException ex) {

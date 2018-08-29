@@ -6,6 +6,8 @@ import java.util.Locale;
 
 import org.springframework.context.MessageSource;
 
+import com.tools.DefaultPricePlan;
+
 import connexions.AIRRequest;
 import dao.DAO;
 import dao.queries.JdbcRollBackDao;
@@ -14,7 +16,6 @@ import dao.queries.JdbcSubscriptionReportingDao;
 import domain.models.RollBack;
 import domain.models.Subscriber;
 import domain.models.SubscriptionReporting;
-import tools.DefaultPricePlan;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
 

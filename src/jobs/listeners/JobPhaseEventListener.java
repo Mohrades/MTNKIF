@@ -9,8 +9,9 @@ import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 
+import com.tools.SMPPConnector;
+
 import product.ProductProperties;
-import tools.SMPPConnector;
 
 public class JobPhaseEventListener implements JobExecutionListener {
 	
@@ -46,6 +47,7 @@ public class JobPhaseEventListener implements JobExecutionListener {
 			// System.out.println(jobExecution);
 			String JobExecutionDescription = jobExecution.toString();
 			String jobName = JobExecutionDescription.substring(JobExecutionDescription.indexOf("Job=["), JobExecutionDescription.indexOf("]]", JobExecutionDescription.indexOf("Job=[")) + 1);
+			// String jobName = jobExecution.getJobInstance().getJobName();
 
 			// String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(jobExecution.getEndTime()).toUpperCase() + "Job: [FlowJob: [name=" + jobExecution.getJobConfigurationName() + "]] completed with the following status: [" + jobExecution.getStatus() + "]";
 			String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(jobExecution.getEndTime()).toUpperCase() + jobName + " completed with the following status: [" + jobExecution.getStatus() + "]";
@@ -72,6 +74,7 @@ public class JobPhaseEventListener implements JobExecutionListener {
 			// System.out.println(jobExecution);
 			String JobExecutionDescription = jobExecution.toString();
 			String jobName = JobExecutionDescription.substring(JobExecutionDescription.indexOf("Job=["), JobExecutionDescription.indexOf("]]", JobExecutionDescription.indexOf("Job=[")) + 1);
+			// String jobName = jobExecution.getJobInstance().getJobName();
 
 			// String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(jobExecution.getStartTime()).toUpperCase() + "Job: [FlowJob: [name=" + jobExecution.getJobConfigurationName() + "]] launched with the following parameters: [{date.lancement=" + jobExecution.getJobParameters().getString("date.lancement") + "}]";
 			String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format(jobExecution.getStartTime()).toUpperCase() + jobName + " launched with the following parameters: [{date.lancement=" + jobExecution.getJobParameters().getString("date.lancement") + "}]";

@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.tools.DefaultPricePlan;
+import com.tools.SMPPConnector;
+
 import connexions.AIRRequest;
 import dao.DAO;
 import domain.models.Subscriber;
@@ -26,8 +29,6 @@ import product.HappyBirthDayBonusActions;
 import product.PricePlanCurrent;
 import product.PricePlanCurrentActions;
 import product.ProductProperties;
-import tools.DefaultPricePlan;
-import tools.SMPPConnector;
 import util.AccountDetails;
 
 @RestController("api")

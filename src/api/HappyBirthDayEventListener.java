@@ -6,14 +6,11 @@ import java.util.Date;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import connexions.AIRRequest;
 import dao.DAO;
 import dao.queries.JdbcHappyBirthDayBonusSubscriberDao;
-import dao.queries.JdbcSubscriberDao;
 import domain.models.HappyBirthDayBonusSubscriber;
-import domain.models.Subscriber;
 import filter.MSISDNValidator;
-import product.PricePlanCurrentActions;
+import jobs.HappyBirthDayBonusSubscriberValidator;
 import product.ProductProperties;
 
 @Component("happyBirthdayEventListener")
@@ -43,7 +40,8 @@ public class HappyBirthDayEventListener {
 			// (éviter d'inscrire les numéros en bd) pour gagner du temps : juste vérifier le statut de chaque subscriber
 			if((getAir_errors_count() < 5) && ((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "A"))) {
 				originOperatorID = originOperatorID.trim();
-				int status = checkPricePlanCurrent(productProperties, dao, msisdn);
+				// int status = checkPricePlanCurrent(productProperties, dao, msisdn);
+				int status = (new HappyBirthDayBonusSubscriberValidator(productProperties, dao)).checkPricePlanCurrent(msisdn);
 
 				// register msisdn to benefit happy birthday bonus
 				if(status == 0) {
@@ -72,7 +70,7 @@ public class HappyBirthDayEventListener {
 		}
 	}
 
-	public int checkPricePlanCurrent(ProductProperties productProperties, DAO dao, String msisdn) {
+	/*public int checkPricePlanCurrent(ProductProperties productProperties, DAO dao, String msisdn) {
 		// attempts
 		int retry = 0;
 
@@ -94,6 +92,6 @@ public class HappyBirthDayEventListener {
 
 			return status;
 		 }
-	}
+	}*/
 
 }

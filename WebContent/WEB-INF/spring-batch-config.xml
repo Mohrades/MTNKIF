@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/beans"
 	xmlns:batch="http://www.springframework.org/schema/batch"
 	xmlns:task="http://www.springframework.org/schema/task"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:p="http://www.springframework.org/schema/p"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-3.0.xsd http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.1.xsd">
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.1.xsd http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-3.0.xsd http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.1.xsd">
 
     <context:annotation-config />
     <context:component-scan base-package="jobs" />
@@ -83,6 +84,35 @@
 	      <batch:chunk reader="runningPAMSubscribers" commit-interval="20" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
+	    	  <!-- CompositeItemProcessor -->
+	    	  <!-- You break up a step into three phases (reading, processing, and writing) to divide responsibilities 
+					between components.  However, the business logic that needs to be applied to a given item may not 
+					make sense to couple into a single ItemProcessor.  Spring Batch allows you to maintain that same 
+					division of responsibilities within your business logic by chaining ItemProcessors within a step.  In this 
+					section, you will look at how to chain ItemProcessors within a single step using Spring Batch’s 
+					CompositeItemProcessor.
+
+					The org.springframework.batch.item.support.CompositeItemProcessor is an implementation of the 
+					ItemProcessor interface that delegates processing to each of a list of ItemProcessor implementations in 
+					order.  As each processor returns its result, that result is passed onto the next processor until they all 
+					have been called.  This pattern occurs regardless of the types returned so if the first ItemProcessor takes 
+					a String as input it can return a Product object as output as long as the next ItemProcessor takes a 
+					Product as input.  At the end, the result is passed to the ItemWriter configured for the step.  It is 
+					important to note that just like any other ItemProcessor, if any of the processors this one delegates to 
+					returns null, the item will not be process further.  Figure 8-2 shows how the processing within the 
+					CompositeItemProcessor occurs. 
+
+					<bean id="completeItemProcessor" class="org.springframework.batch.item.support.CompositeItemProcessor"> 
+        				<property name="delegates"> 
+            				<util:list> 
+                				<ref bean="customerIdItemProcessor"/> 
+                				<ref bean="accountExecutiveItemProcessor"/> 
+            				</util:list> 
+        				</property> 
+    				</bean>
+    				
+    				we can combine in this manner the run pam and notification sms steps. But because of synchronization (be sure DA is provided and already available after pam running before reading DA) and faster granting bonus to subscribers (priority is subscriber get night advantages bonus as soon and fast as possible and not send sms notification) reasons, we separate processing into two phases or steps
+			  -->
 	          <bean class="jobs.RunningPAMProcessor" scope="step">
       			<property name="waitingForResponse" value="false" />
       			<property name="productProperties" ref="productProperties" />
@@ -129,11 +159,38 @@
       			</bean>
       		</batch:listener>
 
+			<!-- Configuring the CustomerItemListener. It is useful when Logging Invalid Records as an example -->
+    	    <!-- Logging Invalid Records -->
+    	    <!-- While skipping problematic records is a useful tool, by itself it can raise an issue. In some scenarios, the 
+			ability to skip a record is okay. Say you are mining data and come across something you can’t resolve; it’s 
+			probably okay to skip it. However, when you get into situations where money is involved, say when 
+			processing transactions, just skipping a record probably will not be a robust enough solution. In cases 
+			like these, it is helpful to be able to log the record that was the cause of the error. In this section, you will 
+			look at using an ItemListener to record records that were invalid.  
+
+			 <batch:skippable-exception-classes>
+            	<batch:exclude class="java.lang.Exception" />
+         	</batch:skippable-exception-classes>
+
+			If you use the fixed length record job as an example and execute it with a file that contains an input 
+			record longer than 63 characters (FlatFileItemReader example with a threshold FixedLengthTokenizer), an exception (FlatFileParseException) will be thrown. However, since you have configured your 
+			job to skip all exceptions that extend Exception, the exception will not affect your job’s results, yet your 
+			subscriberItemLogger will be called and log the item as required. -->
+      		<batch:listener>
+      			<!-- <bean id="subscriberItemLogger" class="jobs.listeners.SubscriberItemListener" scope="step"> -->
+      			<bean id="subscriberItemLogger" class="jobs.listeners.SubscriberItemListener">
+      				<property name="dao" ref="dao" />
+      				<property name="productProperties" ref="productProperties" />
+      			</bean>
+      		</batch:listener>
+
+			<!-- Configuring the CustomerSkipListener -->
+    	    <!-- it is less global than CustomerItemListener and treats only item skipped. It is useful when Logging Invalid Records as an example -->
+			<batch:listener ref="itemProcessingSkipListener" />
+
       		<batch:listener>
       			<bean class="jobs.listeners.StagingRunningPAMChunkUpdater" scope="step" />
       		</batch:listener>
-
-			<batch:listener ref="itemProcessingSkipListener" />
     	  </batch:listeners>
 	    </batch:tasklet>
 
@@ -278,10 +335,85 @@
 	      <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" commit-interval="10" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
-	          <bean class="jobs.HappyBirthDayBonusProcessor">
+	    	  <!-- CompositeItemProcessor -->
+	    	  <!-- You break up a step into three phases (reading, processing, and writing) to divide responsibilities 
+					between components.  However, the business logic that needs to be applied to a given item may not 
+					make sense to couple into a single ItemProcessor.  Spring Batch allows you to maintain that same 
+					division of responsibilities within your business logic by chaining ItemProcessors within a step.  In this 
+					section, you will look at how to chain ItemProcessors within a single step using Spring Batch’s 
+					CompositeItemProcessor.
+
+					The org.springframework.batch.item.support.CompositeItemProcessor is an implementation of the 
+					ItemProcessor interface that delegates processing to each of a list of ItemProcessor implementations in 
+					order.  As each processor returns its result, that result is passed onto the next processor until they all 
+					have been called.  This pattern occurs regardless of the types returned so if the first ItemProcessor takes 
+					a String as input it can return a Product object as output as long as the next ItemProcessor takes a 
+					Product as input.  At the end, the result is passed to the ItemWriter configured for the step.  It is 
+					important to note that just like any other ItemProcessor, if any of the processors this one delegates to 
+					returns null, the item will not be process further.  Figure 8-2 shows how the processing within the 
+					CompositeItemProcessor occurs. 
+			  -->
+			  <bean id="completeItemProcessor" class="org.springframework.batch.item.support.CompositeItemProcessor">
+      			<property name="delegates"> 
+          			<util:list> 
+              			<!-- <ref bean="customerIdItemProcessor"/> 
+              			<ref bean="accountExecutiveItemProcessor"/> -->
+              			
+              			<!-- Validating items -->
+              			<!-- Because validation is business logic, the standard location to enforce validation rules is in the item-processing phase of a chunk-oriented step.
+              			A common practice in Spring Batch is for an item processor to perform validation checks on read items and decide whether to send the items to the item writer.
+              			As an example, let’s see how to validate the price of imported products and check that prices aren’t negative numbers (products with  a  negative  price  shouldn’t  reach  the  database—you  don’t  want  to  credit  your customers!).
+              			Should  you  consider  an  item  that  fails  the  validation  check  filtered  or skipped? Skipping is semantically closer to a validation failure, but this remains questionable, and the business requirements usually lead to the correct answer.
+              			
+              			A validation failure should lead to a skipped or filtered item, but what you care about is that the item writer doesn’t receive the item in question.
+              			Remember that the corresponding step-execution metadata stored in the job repository is distinct (skip and filter count), and this distinction can be relevant for some use cases.
+              			If you want to enforce validation rules in your item processor, use the following semantics for validation failure in the item processor’s process method:
+              				If validation means skip, throw a runtime exception
+              				If validation means filter, return null
+              			
+              			What kind of validation can an item processor perform? You can do almost anything: state validation of the read object, consistency check with other data, and so forth.
+              			In the import products job, for example, you can check that the price of products from the flat file is positive.
+              			A well-formatted negative price would pass the reading phase (no parsing exception), but you shouldn’t write the product to the database.
+              			The job of the item processor is to enforce this check and discard invalid products.
+              			You can implement an item processor corresponding to this example and follow the semantics outlined here, but Spring Batch already provides a class called ValidatingItemProcessor to handle this task.
+              			
+              			The Spring Batch class ValidatingItemProcessor has two interesting characteristics:
+              				It  delegates  validation  to  an  implementation  of  the  Spring  Batch  Validator interface.
+              				It has a filter flag that can be set to false to throw an exception (skip) or true  to  return  null  (filter)  if  the  validation  fails.  The  default  value  is  false (skip).
+              			By using the ValidatingItemProcessor class, you can embed your validation rules in dedicated Validator implementations (which you can reuse) and choose your validation semantics by setting the filter property.
+              			When you decide to use the ValidatingItemProcessor class, you can either code your validation logic in Validator implementations or create a Validator bridge to a full-blown validation framework. -->
+              			<bean class="org.springframework.batch.item.validator.ValidatingItemProcessor">
+              				<!-- If filter property is set to false (this is the default value), the item processor rethrows any ValidationException thrown by its validator to enforce skipping. This implies the configuration of a skip strategy if you don’t want to fail the whole job execution in case of a validation failure. -->
+              				<!-- <property name="filter" value="false" /> -->
+
+              				<!-- If filter property is set to true, item becomes null after validation phase and is filtered (not handled according the business rule) -->
+              				<!-- If you were only to filter products that have a negative price, you would set the filter property of the ValidatingItemProcessor to true and wouldn’t need any skip configuration. -->
+              				<property name="filter" value="true" />
+
+              				<property name="validator">
+		             			<bean class="jobs.HappyBirthDayBonusSubscriberValidator">
+		             				<constructor-arg index="0" type="product.ProductProperties" ref="productProperties" />
+		             				<!-- <constructor-arg index="0" type="product.ProductPropertiesBasedOnPropertiesFactoryBean" ref="productProperties" /> -->
+		             				<!-- <constructor-arg index="0" type="product.ProductPropertiesBasedOnPropertyPlaceholderConfigurer" ref="productProperties" /> -->
+		             				<constructor-arg index="1" type="dao.DAO" ref="dao" />
+
+		          					<!-- <property name="dao" ref="dao" />
+		          					<property name="productProperties" ref="productProperties" /> -->
+		          				</bean>
+              				</property>
+              			</bean>
+
+             			<bean class="jobs.HappyBirthDayBonusProcessor">
+          					<property name="dao" ref="dao" />
+          					<property name="productProperties" ref="productProperties" />
+          				</bean>
+          			</util:list> 
+      			</property> 
+  			  </bean>
+	          <!-- <bean class="jobs.HappyBirthDayBonusProcessor">
 	          	<property name="dao" ref="dao" />
 	          	<property name="productProperties" ref="productProperties" />
-	          </bean>
+	          </bean> -->
 	        </batch:processor>
 
 	        <batch:writer>
@@ -301,6 +433,14 @@
 			<!-- The Step allows a limit for the number of times an exception can be skipped, and a list of exceptions that are 'skippable'. -->
          	<batch:skippable-exception-classes>
             	<batch:include class="exceptions.AirAvailabilityException" />
+
+            	<!-- Skips validation exceptions -->
+            	<!-- Because you set the filter property of the validating item processor to false (this is the default value), the item processor rethrows any ValidationException thrown by its validator.
+            	This implies the configuration of a skip strategy if you don’t want to fail the whole job execution in case of a validation failure.
+            	The skip configuration consists of setting a skip limit and skipping ValidationExceptions. -->
+            	<!-- In my implementation, I were only to filter products that have a negative price, (I set the filter property of the ValidatingItemProcessor to true) and wouldn’t need any skip configuration.
+            	But I keep this configuration to preserve the whole job execution failure whatever filter property is set to -->
+            	<batch:include class="org.springframework.batch.item.validator.ValidationException" />
 
             	<!-- <batch:include class="org.springframework.batch.item.file.FlatFileParseException" />
             	<batch:exclude class="java.lang.Exception" />
@@ -330,12 +470,46 @@
       				<property name="productProperties" ref="productProperties" />
       			</bean>
       		</batch:listener>
+			<!-- Configuring the CustomerItemListener. It is useful when Logging Invalid Records as an example -->
+    	    <!-- Logging Invalid Records -->
+    	    <!-- While skipping problematic records is a useful tool, by itself it can raise an issue. In some scenarios, the 
+			ability to skip a record is okay. Say you are mining data and come across something you can’t resolve; it’s 
+			probably okay to skip it. However, when you get into situations where money is involved, say when 
+			processing transactions, just skipping a record probably will not be a robust enough solution. In cases 
+			like these, it is helpful to be able to log the record that was the cause of the error. In this section, you will 
+			look at using an ItemListener to record records that were invalid.  
 
+			 <batch:skippable-exception-classes>
+            	<batch:exclude class="java.lang.Exception" />
+         	</batch:skippable-exception-classes>
+
+			If you use the fixed length record job as an example and execute it with a file that contains an input 
+			record longer than 63 characters (FlatFileItemReader example with a threshold FixedLengthTokenizer), an exception (FlatFileParseException) will be thrown. However, since you have configured your 
+			job to skip all exceptions that extend Exception, the exception will not affect your job’s results, yet your 
+			happyBirthDayBonusSubscriberItemLogger will be called and log the item as required. -->
+      		<batch:listener>
+      			<!-- <bean id="happyBirthDayBonusSubscriberItemLogger" class="jobs.listeners.HappyBirthDayBonusSubscriberItemListener" scope="step"> -->
+      			<bean id="happyBirthDayBonusSubscriberItemLogger" class="jobs.listeners.HappyBirthDayBonusSubscriberItemListener">
+      				<property name="dao" ref="dao" />
+      				<property name="productProperties" ref="productProperties" />
+      			</bean>
+      		</batch:listener>
+
+			<!-- Configuring the CustomerSkipListener -->
+    	    <!-- it is less global than CustomerItemListener and treats only item skipped. It is useful when Logging Invalid Records as an example -->
+			<batch:listener ref="itemProcessingSkipListener" />
+
+			<!-- Configuring the CustomerItemReadListener -->
+    	    <!-- it is a CustomerItemListener restricted to only read methods. It is useful when Logging Invalid Records as an example -->
+      		<batch:listener>
+      			<bean class="jobs.listeners.HappyBirthDayBonusSubscriberItemReadListener" scope="step" />
+      		</batch:listener>
+
+			<!-- Configuring the CustomerItemWriteListener -->
+    	    <!-- it is a CustomerItemListener restricted to only write methods -->
       		<batch:listener>
       			<bean class="jobs.listeners.StagingHappyBirthDayBonusProcessedSubscriberChunkUpdater" scope="step" />
       		</batch:listener>
-
-      		<batch:listener ref="itemProcessingSkipListener" />
     	  </batch:listeners>
 	    </batch:tasklet>
 
@@ -369,7 +543,7 @@
 	<bean id="jobPhaseEventListener" class="jobs.listeners.JobPhaseEventListener" scope="job">
 		<property name="productProperties" ref="productProperties" />
 
-    	<!-- <property name="name" value="#{jobParameters[input]}" /> -->
+    	<!-- <property name="name" value="#{jobParameters['input']}" /> -->
     	<!-- <property name="name" value="#{jobExecutionContext['input.name']}.txt" /> -->
 	</bean>
 

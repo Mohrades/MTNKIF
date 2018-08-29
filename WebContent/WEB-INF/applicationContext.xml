@@ -10,13 +10,78 @@
     	http://www.springframework.org/schema/util 
     	http://www.springframework.org/schema/util/spring-util-4.1.xsd">
 
-    <context:property-placeholder location="classpath:applicationContext.properties" />
-
 	<!-- définir un bean de type Properties à partir du contenu d'un fichier .properties -->
-    <util:properties id="appConfig" location="classpath:conf.properties" />
-    <!-- <bean id="appConfig" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
-    	<property name="location" value="classpath:conf.properties" />
+    <!-- <util:properties id="appConfig" location="classpath:conf.properties" /> -->
+    <!-- Use another .properties file to initialize the datasource for the database configuration table. -->
+    <bean id="dbConfig" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+    	<property name="location" value="classpath:jdbc.properties" />
+    </bean>
+
+
+	<!-- Nous allons d'abord définir notre source de données comme ci-dessous à cause du Load Application Properties from Database -->
+    <!-- In order to load configuration/placeholders from a database table, the datasource has to be instaniated prior to the instaniation of all of the other beans with placeholders. The datasource factory creates the instance of the datasource via another properties file loaded outside of spring. -->
+    <!-- DB data source. -->
+    <bean id="db_connection" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+ 		<!-- <property name="driverClass" value="com.mysql.jdbc.Driver" />
+ 		<property name="jdbcUrl" value="jdbc:mysql://localhost:3306/localdb" /> -->
+	    <property name="driverClass" value="#{dbConfig['db.driverClassName']}" />
+	    <property name="jdbcUrl" value="#{dbConfig['db.host']}" />
+		<!-- <property name="user" value="abutu" /> -->
+		<property name="user" value="#{dbConfig['db.username']}" />
+		<!-- <property name="password" value="kT60#bTh03#18" /> -->
+		<property name="password" value="#{dbConfig['db.password']}" />
+
+	    <!-- <property name="minPoolSize" value="3" /> -->
+	    <property name="minPoolSize" value="#{dbConfig['db.minPoolSize']}" />
+	    <!-- <property name="maxPoolSize" value="10" /> -->
+	    <property name="maxPoolSize" value="#{dbConfig['db.maxPoolSize']}" />
+	    <!-- <property name="acquireIncrement" value="1" /> -->
+	    <property name="acquireIncrement" value="#{dbConfig['db.acquireIncrement']}" />
+	    <!-- <property name="maxStatements" value="0" /> -->
+	    <property name="maxStatements" value="#{dbConfig['db.maxStatements']}" />
+	    <property name="idleConnectionTestPeriod" value="100" />
+	    <property name="checkoutTimeout" value="60000" />
+    </bean>
+    <!-- <bean id="db_connection" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <property name="driverClass" value="${jdbc.driverClassName}" />
+        <property name="jdbcUrl" value="${jdbc.url}" />
+        <property name="user" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}" />
+        <property name="initialPoolSize" value="${jdbc.initialPoolSize}" />
+        <property name="minPoolSize" value="${jdbc.minPoolSize}" />
+        <property name="maxPoolSize" value="${jdbc.maxPoolSize}" />
+        <property name="acquireIncrement" value="${jdbc.acquireIncrement}"/>
+        <property name="preferredTestQuery" value="${jdbc.preferredTestQuery}" />
+        <property name="testConnectionOnCheckout" value="${jdbc.testConnection}" />
+        <property name="acquireRetryAttempts" value="${jdbc.acquireRetryAttempts}" />
+
+        <property name="maxStatements" value="${jdbc.maxStatements}" />
+    	<property name="maxStatementsPerConnection" value="${jdbc.maxStatementsPerConnection}" />
     </bean> -->
+
+
+
+	<!-- <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">   
+  		<property name="location" value="classpath:applicationContext.properties" />
+	</bean> -->
+	<!-- Load Application Properties from Database : nous définirons notre classe de processeur de propriété personnalisée qui étendra le PropertyPlaceholderConfigurer de Spring et chargera les propriétés de la base de données -->
+	<bean id="propertyConfigurer" class="com.util.PropertiesUtils">
+		<property name="dataSourceName" value="db_connection" />
+		<property name="serviceShortCode" value="#{dbConfig['db.serviceShortCode']}" />
+
+		<!-- You can also note that we have set localOverride as true. This will make sure that properties from database take precedence over that available in any properties file. -->
+		<property name="localOverride" value="true" />
+
+		<property name="locations">
+			<list>
+				<!-- <value>classpath:app-custom.properties</value> -->
+				<value>classpath:applicationContext.properties</value>
+			</list>
+		</property>
+	</bean>
+    <!-- Spring propose l'espace de nommage context qui simplifie cette déclaration en utilisant le tag <property-placeholder> -->
+    <!-- <context:property-placeholder location="classpath:applicationContext.properties" /> -->
+
 
 	<!-- The use of <context:component-scan> implicitly enables the functionality of <context:annotation-config>.
 	There is usually no need to include the <context:annotation-config> element when using <context:component-scan> -->
@@ -25,12 +90,14 @@
   	<context:component-scan base-package="product" use-default-filters="false">
   		<context:include-filter type="annotation" expression="org.springframework.stereotype.Component" />
   		<!-- <context:include-filter type="regex" expression=".*Stub.*Repository" /> -->
-  		<context:include-filter type="regex" expression=".*Properties" />
+  		<!-- <context:include-filter type="regex" expression=".*PropertiesBasedOnPropertiesFactoryBean" /> -->
+  		<context:include-filter type="regex" expression=".*PropertiesBasedOnPropertyPlaceholderConfigurer" />
 
   		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository" />
   		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service" />
   		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
   	</context:component-scan>
+
 
 	<bean id="dao" class="dao.DAO">
 		<!-- <constructor-arg><null /></constructor-arg>
@@ -71,37 +138,6 @@
 
     	<!-- <property name="dataSource" ref="db_connection" /> -->
    	</bean>
-
-    <!-- DB data source. -->
-    <bean id="db_connection" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
-	    <property name="driverClass" value="oracle.jdbc.driver.OracleDriver" />
-	    <property name="jdbcUrl" value="jdbc:oracle:thin:@ga-exa-scan.mtn.bj:1521/vmdg" />
-	    <property name="user" value="abutu" />
-	    <property name="password" value="kT60#bTh03#18" />
-	    <property name="minPoolSize" value="3" />
-	    <property name="maxPoolSize" value="10" />
-	    <property name="acquireIncrement" value="1" />
-
-	    <property name="idleConnectionTestPeriod" value="100" />
-	    <property name="maxStatements" value="0" />
-	    <property name="checkoutTimeout" value="60000" />
-    </bean>
-    <!-- <bean id="db_connection" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
-        <property name="driverClass" value="${jdbc.driverClassName}" />
-        <property name="jdbcUrl" value="${jdbc.url}" />
-        <property name="user" value="${jdbc.username}" />
-        <property name="password" value="${jdbc.password}" />
-        <property name="initialPoolSize" value="${jdbc.initialPoolSize}" />
-        <property name="minPoolSize" value="${jdbc.minPoolSize}" />
-        <property name="maxPoolSize" value="${jdbc.maxPoolSize}" />
-        <property name="acquireIncrement" value="${jdbc.acquireIncrement}"/>
-        <property name="preferredTestQuery" value="${jdbc.preferredTestQuery}" />
-        <property name="testConnectionOnCheckout" value="${jdbc.testConnection}" />
-        <property name="acquireRetryAttempts" value="${jdbc.acquireRetryAttempts}" />
-
-        <property name="maxStatements" value="${jdbc.maxStatements}" />
-    	<property name="maxStatementsPerConnection" value="${jdbc.maxStatementsPerConnection}" />
-    </bean> -->
 
     <!-- this MessageSource is being used in a web application -->
     <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">

@@ -18,19 +18,18 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
-import connexions.AIRRequest;
+
+import com.tools.SMPPConnector;
+
 import dao.DAO;
 import dao.queries.JdbcHappyBirthDayBonusSubscriberDao;
 import dao.queries.JdbcScheduledTaskDao;
-import dao.queries.JdbcSubscriberDao;
 import dao.queries.JdbcUSSDServiceDao;
 import domain.models.HappyBirthDayBonusSubscriber;
 import domain.models.ScheduledTask;
-import domain.models.Subscriber;
 import domain.models.USSDService;
-import product.PricePlanCurrentActions;
+import jobs.HappyBirthDayBonusSubscriberValidator;
 import product.ProductProperties;
-import tools.SMPPConnector;
 
 public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExecutionListener {
 
@@ -225,7 +224,8 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 								try {
 									// store birthdayBonusSubscriber : verify again msisdn is still mtnkif subscriber
 									// (éviter d'inscrire les numéros en bd) pour gagner du temps : juste vérifier lee statut de chaque subscriber
-									int status = checkPricePlanCurrent(productProperties, dao, happyBirthDayBonusSubscriber.getValue());
+									// int status = checkPricePlanCurrent(productProperties, dao, happyBirthDayBonusSubscriber.getValue());
+									int status = (new HappyBirthDayBonusSubscriberValidator(productProperties, dao)).checkPricePlanCurrent(happyBirthDayBonusSubscriber.getValue());
 
 									if(status == 0) {
 										// stage record as partially processed : batch will complete processing with happy birthday bonus granting
@@ -261,7 +261,7 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 		}
 	}
 
-	public int checkPricePlanCurrent(ProductProperties productProperties, DAO dao, String msisdn) {
+	/*public int checkPricePlanCurrent(ProductProperties productProperties, DAO dao, String msisdn) {
 		// attempts
 		int retry = 0;
 
@@ -283,6 +283,6 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 
 			return status;
 		 }
-	}
+	}*/
 
 }

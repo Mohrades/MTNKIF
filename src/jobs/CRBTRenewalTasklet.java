@@ -21,6 +21,9 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.MessageSource;
+
+import com.tools.SMPPConnector;
+
 import connexions.AIRRequest;
 import crbt.AddToneBox;
 import crbt.DelInboxTone;
@@ -35,7 +38,6 @@ import domain.models.CRBTReporting;
 import domain.models.Subscriber;
 import domain.models.USSDService;
 import product.ProductProperties;
-import tools.SMPPConnector;
 import util.AccountDetails;
 
 /*@Component("crbtRenewalTasklet")*/
@@ -84,6 +86,11 @@ public class CRBTRenewalTasklet implements Tasklet {
 		// TODO Auto-generated method stub
 
 		try {
+			/*Although Spring Batch stores the job parameters in an instance of the JobParameter class, when you 
+			obtain the parameters this way getJobParameters() returns a Map<String, Object>. Because of this, the cast is required.*/
+			// String param = (String) chunkContext.getStepContext().getJobParameters().get("paramName");
+
+
 			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 			Date now = new Date();
 
