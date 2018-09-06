@@ -184,6 +184,7 @@
 		<resources>
 			<heap unit="entries">100</heap>
 			<offheap unit="MB">1</offheap> <!-- unit of measure is case sensitive! -->
+            <disk persistent="true" unit="MB">5</disk>
 		</resources>
 	</cache-template>
 
