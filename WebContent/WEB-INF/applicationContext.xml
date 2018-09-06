@@ -3,18 +3,24 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   	xmlns:context="http://www.springframework.org/schema/context"
   	xmlns:util="http://www.springframework.org/schema/util"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans
-		http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
-        http://www.springframework.org/schema/context 
-    	http://www.springframework.org/schema/context/spring-context-4.1.xsd
-    	http://www.springframework.org/schema/util 
-    	http://www.springframework.org/schema/util/spring-util-4.1.xsd">
+  	xmlns:cache="http://www.springframework.org/schema/cache"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd
+    	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.1.xsd
+    	http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-4.1.xsd">
 
 	<!-- définir un bean de type Properties à partir du contenu d'un fichier .properties -->
     <!-- <util:properties id="appConfig" location="classpath:conf.properties" /> -->
     <!-- Use another .properties file to initialize the datasource for the database configuration table. -->
     <bean id="dbConfig" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
     	<property name="location" value="classpath:jdbc.properties" />
+
+  		<!-- <property name="locations">
+   			<list>
+   				<value>classpath:jdbc1.properties</value>
+    			<value>classpath:jdbc2.properties</value>
+   			</list>
+  		</property> -->
     </bean>
 
 
@@ -39,8 +45,8 @@
 	    <property name="acquireIncrement" value="#{dbConfig['db.acquireIncrement']}" />
 	    <!-- <property name="maxStatements" value="0" /> -->
 	    <property name="maxStatements" value="#{dbConfig['db.maxStatements']}" />
-	    <property name="idleConnectionTestPeriod" value="100" />
-	    <property name="checkoutTimeout" value="60000" />
+	    <property name="idleConnectionTestPeriod" value="#{dbConfig['db.idleConnectionTestPeriod']}" />
+	    <property name="checkoutTimeout" value="#{dbConfig['db.checkoutTimeout']}" />
     </bean>
     <!-- <bean id="db_connection" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
         <property name="driverClass" value="${jdbc.driverClassName}" />
@@ -66,12 +72,15 @@
 	</bean> -->
 	<!-- Load Application Properties from Database : nous définirons notre classe de processeur de propriété personnalisée qui étendra le PropertyPlaceholderConfigurer de Spring et chargera les propriétés de la base de données -->
 	<bean id="propertyConfigurer" class="com.util.PropertiesUtils">
+		<!-- Load Application Properties from Database : uniquement les propriétés métier ou logic du service et qui peuvent changer -->
 		<property name="dataSourceName" value="db_connection" />
+
 		<property name="serviceShortCode" value="#{dbConfig['db.serviceShortCode']}" />
 
 		<!-- You can also note that we have set localOverride as true. This will make sure that properties from database take precedence over that available in any properties file. -->
 		<property name="localOverride" value="true" />
 
+		<!-- uniquement les propriétés liées aux ressources pour configurer les différents composants de l'application et démarrer l'application -->
 		<property name="locations">
 			<list>
 				<!-- <value>classpath:app-custom.properties</value> -->
@@ -81,6 +90,31 @@
 	</bean>
     <!-- Spring propose l'espace de nommage context qui simplifie cette déclaration en utilisant le tag <property-placeholder> -->
     <!-- <context:property-placeholder location="classpath:applicationContext.properties" /> -->
+
+
+	<!-- <cache:annotation-driven /> -->
+	<!-- <cache:annotation-driven cache-manager="cacheManager" /> -->
+	<!-- EhCacheCacheManager est utilisé pour Ehcache 2. Vous ne devez pas l'utiliser -->
+    <!-- <bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+        <property name="cacheManager" ref="ehcacheManagerFactory"/>
+    </bean> -->
+	<!-- <bean id="ehcacheManagerFactory" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+	    <property name="configLocation" value="classpath:com/javaetmoi/demo/services/ ehcache.xml" />
+	    <property name="configLocation" value="classpath:ehcache.xml" />
+	    
+	    By passing true to setShared() method, we enable our cache to be shared as singleton at the ClassLoader level. By default it is false
+	    <property name="shared" value="true" />
+	</bean> -->
+
+	<!-- Ehcache 3 est configuré via JCache, vous devez donc utiliser le JCacheCacheManager plutôt. -->
+	<cache:annotation-driven cache-manager="ehCacheManager" />
+	<bean id="ehCacheManager" class="org.springframework.cache.jcache.JCacheCacheManager">
+	    <property name="cacheManager">
+	    	<bean class="org.springframework.cache.jcache.JCacheManagerFactoryBean">
+	    		<property name="cacheManagerUri" value="${spring.cache.jcache.config}" />
+	    	</bean>
+	    </property>
+	</bean>
 
 
 	<!-- The use of <context:component-scan> implicitly enables the functionality of <context:annotation-config>.
@@ -139,8 +173,22 @@
     	<!-- <property name="dataSource" ref="db_connection" /> -->
    	</bean>
 
+   	<bean id="databaseMessageSource" class="dao.DatabaseMessageSource">
+   		<constructor-arg index="0" type="dao.DAO">
+   			<ref bean="dao" />
+   		</constructor-arg>
+   	</bean>
+
+
+	<!-- !!! Spring recherche un bean nommé messageSource dans votre contexte et l'utilise pour résoudre ses messages. -->
     <!-- this MessageSource is being used in a web application -->
-    <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+    <!-- <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource"> -->
+	<!-- You have to implement custom message source. It's a class that extends AbstractMessageSource and implements the abstract resolveCode(java.lang.String, java.util.Locale) method	 -->
+	<bean id="messageSource" class="com.util.DatabaseBackedResourceBundleMessageSource">
+   		<constructor-arg index="0" type="dao.DatabaseMessageSource">
+   			<ref bean="databaseMessageSource" />
+   		</constructor-arg>
+
 		<property name="basenames">
 			<list>
 				<value>i18n.messages</value>
@@ -150,12 +198,20 @@
 
 		<property name="defaultEncoding" value="UTF-8" />
 
+		<property name="serviceShortCode" value="#{dbConfig['db.serviceShortCode']}" />
+
+		<!-- We were reminded of the default behavior of java.util.ResourceBundle (Remembering the basics is really important). -->
+		<!-- If your locale file for locale cs doesn't contains message for a code then Your system locale is used -->
+		<!-- We cannot really trust the locale if the deployment environment is the same than the locale of our locale development environment. Thus, in this use case the fallbackToSystemLocale property should always be set to false. -->
+		<!-- When the value of this property is set to false, the default resource file is used, when the resource file for the asked locale is not found. -->
+
 		<!-- property named setFallbackToSystemLocale is default to true so if your locale file for locale cs doesn't contains message for a code then Your system locale is used -->
 		<!-- <property name="fallbackToSystemLocale" value="true" /> -->
 		<!-- <property name="fallbackToSystemLocale" value="false" /> -->
 		<property name="fallbackToSystemLocale" value="false"></property>
 	</bean>
 
+	<!-- !!! Spring recherche un bean nommé messageSource dans votre contexte et l'utilise pour résoudre ses messages. -->
 	<!-- <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
 	    <property name="defaultEncoding" value="UTF-8" />
 	    <property name="basenames">
@@ -163,6 +219,12 @@
 	            <value>classpath:i18n/messages</value>
 	        </list>
 	    </property>
+
+
+		We were reminded of the default behavior of java.util.ResourceBundle (Remembering the basics is really important).
+		If your locale file for locale cs doesn't contains message for a code then Your system locale is used
+		We cannot really trust the locale if the deployment environment is the same than the locale of our locale development environment. Thus, in this use case the fallbackToSystemLocale property should always be set to false.
+		When the value of this property is set to false, the default resource file is used, when the resource file for the asked locale is not found.
 	    <property name="fallbackToSystemLocale" value="false" />
 	</bean> -->
 

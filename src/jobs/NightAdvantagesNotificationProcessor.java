@@ -1,10 +1,12 @@
 package jobs;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.beans.factory.InitializingBean;
 
 import connexions.AIRRequest;
 import dao.DAO;
@@ -16,12 +18,12 @@ import exceptions.AirAvailabilityException;
 import product.ProductProperties;
 import util.BalanceAndDate;
 
-public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRunningReporting, Subscriber> {
+public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRunningReporting, Subscriber>, InitializingBean {
 
 	private DAO dao;
 
 	private ProductProperties productProperties;
-
+	private Date night_advantages_expires_in = null;
 	private boolean waitingForResponse;
 
 	public NightAdvantagesNotificationProcessor() {
@@ -70,33 +72,39 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 	public Subscriber process(PAMRunningReporting pamRunningReporting) throws AirAvailabilityException {
 		// TODO Auto-generated method stub
 
-		try {
-			Subscriber subscriber = (new JdbcSubscriberDao(dao)).getOneSubscriber(pamRunningReporting.getSubscriber(), false);
+		// this time constraint is set to stop this process when it becomes unnecessary
+		if((night_advantages_expires_in == null) || (new Date().before(night_advantages_expires_in))) {
+			try {
+				Subscriber subscriber = (new JdbcSubscriberDao(dao)).getOneSubscriber(pamRunningReporting.getSubscriber(), false);
 
-			// check night advantages
-			if(getNightAdvantages(productProperties, subscriber.getValue())) {
-				// save notification
-				if(!waitingForResponse) pamRunningReporting.setFlag(true);
-				(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !waitingForResponse, true);
+				// check night advantages
+				if(getNightAdvantages(productProperties, subscriber.getValue())) {
+					// save notification
+					if(!waitingForResponse) pamRunningReporting.setFlag(true);
+					(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !waitingForResponse, true);
 
-				return subscriber;
+					return subscriber;
+				}
+				else {
+					if(!waitingForResponse) pamRunningReporting.setFlag(false);
+					(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !waitingForResponse, false);
+				}
+
+			} catch(AirAvailabilityException ex) {
+				throw ex;
+
+			} catch(Exception ex) {
+				if(ex instanceof AirAvailabilityException) throw ex;
+
+			} catch(Throwable th) {
+				if(th instanceof AirAvailabilityException) throw th;
 			}
-			else {
-				if(!waitingForResponse) pamRunningReporting.setFlag(false);
-				(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !waitingForResponse, false);
-			}
 
-		} catch(AirAvailabilityException ex) {
-			throw ex;
-
-		} catch(Exception ex) {
-			if(ex instanceof AirAvailabilityException) throw ex;
-
-		} catch(Throwable th) {
-			if(th instanceof AirAvailabilityException) throw th;
+			return null;
 		}
-
-		return null;
+		else {
+			return null;
+		}
 	}
 
 	public boolean getNightAdvantages(ProductProperties productProperties, String msisdn) throws AirAvailabilityException {
@@ -155,5 +163,27 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 		}
 
 		return false;
+	}
+
+	@SuppressWarnings("deprecation")
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		// TODO Auto-generated method stub
+		
+		try {
+			Date today = new Date();
+			night_advantages_expires_in = (productProperties.getNight_advantages_expires_in() == null) ? null : (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).parse(productProperties.getNight_advantages_expires_in());
+			night_advantages_expires_in.setYear(today.getYear()); night_advantages_expires_in.setMonth(today.getMonth()); night_advantages_expires_in.setDate(today.getDate());
+
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+
+		} catch (Throwable th) {
+			// TODO Auto-generated catch block
+
+		}
 	}
 }

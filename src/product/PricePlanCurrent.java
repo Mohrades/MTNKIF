@@ -1,5 +1,6 @@
 package product;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Formatter;
@@ -196,9 +197,26 @@ public class PricePlanCurrent {
 
 						if((expiryDate == null) || ((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(expiryDate).equals("9999-12-30 13:00:00")));
 						else {
-							expiryDate.setHours(06);
-							expiryDate.setMinutes(00);
-							expiryDate.setSeconds(00);
+							Date night_advantages_expires_in = null;
+							try {
+								night_advantages_expires_in = (productProperties.getNight_advantages_expires_in() == null) ? null : (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).parse(productProperties.getNight_advantages_expires_in());
+
+								if(night_advantages_expires_in != null) {
+									expiryDate.setHours(night_advantages_expires_in.getHours()); // expiryDate.setHours(06);
+									expiryDate.setMinutes(night_advantages_expires_in.getMinutes()); // expiryDate.setMinutes(00);
+									expiryDate.setSeconds(night_advantages_expires_in.getSeconds()); // expiryDate.setSeconds(00);
+								}
+
+							} catch (ParseException e) {
+								// TODO Auto-generated catch block
+
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+
+							} catch (Throwable th) {
+								// TODO Auto-generated catch block
+
+							}
 
 							if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_call_da())) {
 								balanceBonusCall = balanceAndDate;

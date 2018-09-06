@@ -170,6 +170,8 @@ public class ProductPropertiesBasedOnPropertiesFactoryBean implements ProductPro
 	private int night_advantages_call_da;
 	@Value("#{appConfig['night.advantages.data.da']}")
 	private int night_advantages_data_da;
+	@Value("#{appConfig['night.advantages.expires_in']}")
+	private String night_advantages_expires_in;
 
 	@Value("#{appConfig['gsm.mnc']}")
 	public void setMnc(final String gsmmnc) {
@@ -388,6 +390,10 @@ public class ProductPropertiesBasedOnPropertiesFactoryBean implements ProductPro
 
 	public int getNight_advantages_data_da() {
 		return night_advantages_data_da;
+	}
+
+	public String getNight_advantages_expires_in() {
+		return night_advantages_expires_in;
 	}
 
 	public boolean isAdvantages_always() {

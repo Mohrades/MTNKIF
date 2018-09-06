@@ -61,6 +61,22 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 	public ExitStatus afterStep(StepExecution stepExecution) {
 		// TODO Auto-generated method stub
 
+		/**
+		 *
+		Choosing the exit status for a step with a step execution listener
+		*/
+
+		/**
+		 * 
+		// Returns custom status for skipped items
+	    if(!ExitStatus.FAILED.equals(stepExecution.getExitStatus()) && stepExecution.getSkipCount() > 0) {            
+	       return new ExitStatus("COMPLETED WITH SKIPS");   
+	     }
+	    // Returns default status
+	    else {
+	       return stepExecution.getExitStatus();        
+	     }
+		*/
         return stepExecution.getExitStatus();
 		// return null;
 	}
@@ -143,8 +159,8 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 
 							// Kif+ Subscribers with ASPU >= 3000 XOF
 							Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
-							SQLQuery = productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + "");
-							ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", (new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
+							SQLQuery = productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", ((new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).toUpperCase()).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + "");
+							ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", ((new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).toUpperCase()).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
 							rs = ps.executeQuery();
 							// Liste des elements
 							while (rs.next()) {

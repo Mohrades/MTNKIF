@@ -91,6 +91,8 @@ public interface ProductProperties extends InitializingBean, DisposableBean {
 
 	public int getNight_advantages_data_da() ;
 
+	public String getNight_advantages_expires_in() ;
+
 	public boolean isAdvantages_always() ;
 
 	public int getAdvantages_sms_da() ;

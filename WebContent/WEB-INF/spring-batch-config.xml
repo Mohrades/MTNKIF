@@ -11,9 +11,9 @@
     <context:annotation-config />
     <context:component-scan base-package="jobs" />
 
-	<task:annotation-driven executor="batchTaskExecutor" scheduler="scheduling" exception-handler="myAsyncUncaughtExceptionHandler" />
-
 	<bean id="myAsyncUncaughtExceptionHandler" class="exceptions.MyAsyncUncaughtExceptionHandler" />
+
+	<task:annotation-driven executor="batchTaskExecutor" scheduler="scheduling" exception-handler="myAsyncUncaughtExceptionHandler" />
 
 	<!-- By default when specifying @Async on a method, the executor that will be used is the one supplied to the 'annotation-driven' -->
 	<!-- the value attribute of the @Async annotation can be used when needing to indicate that an executor other than the default should be used -->
@@ -55,7 +55,7 @@
 	  <batch:step id="cleanUssdRequest">
 	  	<!-- <batch:tasklet ref="cleanExpiredUssdRequestTasklet" transaction-manager="transactionManager" /> -->
 	  	<batch:tasklet transaction-manager="transactionManager">
-          <bean class="jobs.CleanExpiredUssdRequestTasklet">
+          <bean class="jobs.CleanExpiredUssdRequestAndMonitoringTasklet">
      		<property name="productProperties" ref="productProperties" />
      		<property name="dao" ref="dao" />
      	  </bean>
@@ -81,6 +81,7 @@
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="50" /> -->
 	      <!-- <batch:chunk reader="subscribers" processor="runningPAMProcessor" writer="runningPAMWriter" commit-interval="100" skip-limit="10" retry-limit="3"> -->
 	      <!-- <batch:chunk reader="subscribers" commit-interval="100" skip-limit="25" retry-limit="3"> -->
+	      <!-- <batch:chunk reader="runningPAMSubscribers" commit-interval="20" skip-policy="skipPolicy" retry-limit="3"> -->
 	      <batch:chunk reader="runningPAMSubscribers" commit-interval="20" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
@@ -127,7 +128,10 @@
 	        </batch:writer>
 
 			<!-- The Step allows a limit for the number of times an exception can be skipped, and a list of exceptions that are 'skippable'. -->
+         	<!-- Skipping instead of failing -->
+         	<!-- The job fails as soon as you reach 20 skipped products, as defined in the configuration -->
          	<batch:skippable-exception-classes>
+            	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
             	<batch:include class="exceptions.AirAvailabilityException" />
 
             	<!-- <batch:include class="org.springframework.batch.item.file.FlatFileParseException" />
@@ -136,13 +140,57 @@
          	</batch:skippable-exception-classes>
 
 			<!-- The Step allows a limit for the number of times an individual item can be retried, and a list of exceptions that are 'retryable'. -->
+			<!-- Automatic retry in a chunk-oriented step can make jobs more robust. It’s a shame to fail a step because of an unstable network, when retrying a few milliseconds later could have worked.
+			You now know about the default retry configuration in Spring Batch, and this should be enough for most cases. -->
+			<!-- Spring Batch only retries the item processing and item writing phases. By default, a retryable exception triggers a rollback, so you should be careful because retrying too many times for too many items can degrade performance.
+			You should use retryable exception only for exceptions that are nondeterministic, not for exceptions related to format or constraint violations, which are typically deterministic.
+			
+			Spring Batch retries only for exceptions thrown during item processing or item writing. Retry triggers a rollback, so retrying is costly : don’t abuse it!
+			Note that Spring Batch doesn’t read the items again, by default, because it maintains a chunk-scoped cache. -->
+			<!-- Override equals() and hashCode() when using retry
+			In a chunk-oriented step, Spring Batch handles retry on the item processing and writing phases.
+			By default, a retry implies a rollback, so Spring Batch must restore the context of retried operations across transactions.
+			It needs to track items closely to know which item could have triggered the retry.
+			Remember that Spring Batch can’t always know which item triggers an exception during the writing phase, because an item writer handles a list of items.
+			Spring Batch relies on the identity of items to track them, so for Spring Batch retry to work correctly, you should override the equals and hashCode methods of your items’ classes—by using a database identifier, for example. -->
 	        <batch:retryable-exception-classes>
-	          	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException"/>
+	          	<!-- <batch:include class="org.springframework.dao.OptimisticLockingFailureException" /> -->
+	          	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
 	        </batch:retryable-exception-classes>
+
+			<!-- Registers retry listener -->
+			<!-- Spring Batch provides the RetryListener interface to react to any retried operation. A retry listener can be useful to log retried operations and to gather information.
+			Once you know more about transient failures, you’re more likely to change the system to avoid them in subsequent executions (remember, retried operations always degrade performance). -->
+			<!-- Any time you need to know about retried operations—for example, to get rid of them! Spring Batch lets you register retry listeners to log errors.
+			Retry is a built-in feature of chunk-oriented steps. What can you do if you need to retry in your own code, for example, in a tasklet? => Retrying in application code with the RetryTemplate -->
+        	<batch:retry-listeners>
+          		<batch:listener ref="retryListener" />
+        	</batch:retry-listeners>
+
+			<!-- You can combine retry with skip: a job retries an unsuccessful operation several times and then skips it.
+			Remember that once Spring Batch reaches the retry limit, the exception causes the step to exit and, by default, fail.
+			Use combined retry and skip when you don’t want a persisting transient error to fail a step. -->
 	      </batch:chunk>
 
+		  <!-- Avoiding a rollback for an exception -->
+		  <!-- In a chunk-oriented step, Spring Batch rolls back a chunk transaction if an error occurs in the item processor or in the item writer.
+		  This seems safe because an error could have corrupted the state of the transaction, so a rollback ensures data isn’t in an inconsistent state.
+	      Sometimes you’re sure that a specific error didn’t corrupt the transaction, so Spring Batch can retry the operation or skip the item.
+		  This saves a rollback and therefore a new transaction. Having fewer transactions is better because transactions are costly.
+		  Use the no-rollback-exception-classes feature only when you’re sure that an exception can’t corrupt a transaction; consider yourself warned! -->
 		  <!-- the Step can be configured with a list of exceptions that should not cause rollback. -->
+		  <!-- Spring Batch doesn’t drive a chunk-oriented step the same way when a skippable exception is thrown in the reading, processing, or writing phase.
+			
+		  When an item reader throws a skippable exception, Spring Batch just calls the read method again on the item reader to get the next item. There’s no rollback on the transaction.
+			
+		  When an item processor throws a skippable exception, Spring Batch rolls back the transaction of the current chunk and resubmits the read items to the item processor, except for the one that triggered the skippable exception in the previous run.
+			
+		  When the item writer throws a skippable exception, because Spring Batch doesn’t know which item threw the exception, it reprocesses each item in the chunk one by one, in its own transaction.
+	      When a writer throws a skippable exception, Spring Batch can’t know which item triggered the exception. Spring Batch then rolls back the transaction and processes the chunk item by item.
+		  Note that Spring Batch doesn’t read the items again, by default, because it maintains a chunk-scoped cache.
+		  -->
 	      <batch:no-rollback-exception-classes>
+	      	 <batch:include class="java.lang.Exception" />
 	         <batch:include class="java.lang.Throwable" />
 	      </batch:no-rollback-exception-classes>
 
@@ -220,6 +268,7 @@
 	  <batch:step id="nightAdvantagesNotificationThroughSms">
 	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="4">
 	      <!-- <batch:chunk commit-interval="100" skip-limit="20" retry-limit="3"> -->
+	      <!-- <batch:chunk commit-interval="50" skip-policy="skipPolicy" retry-limit="3"> -->
 	      <batch:chunk commit-interval="50" skip-limit="20" retry-limit="3">
 	        <batch:reader>
 				<bean class="jobs.SynchronizingNightAdvantagesSubscriberReader">
@@ -245,7 +294,7 @@
 	        </batch:reader>
 
 	        <batch:processor>
-	          <bean class="jobs.NightAdvantagesNotificationProcessor">
+	          <bean class="jobs.NightAdvantagesNotificationProcessor" scope="step">
 	          	<property name="dao" ref="dao" />
 	          	<property name="productProperties" ref="productProperties" />
 	          	<property name="waitingForResponse" value="false" />
@@ -260,8 +309,11 @@
 	        </batch:writer>
 
 			<!-- The Step allows a limit for the number of times an exception can be skipped, and a list of exceptions that are 'skippable'. -->
+         	<!-- Skipping instead of failing -->
+         	<!-- The job fails as soon as you reach 20 skipped products, as defined in the configuration -->
          	<batch:skippable-exception-classes>
             	<batch:include class="exceptions.AirAvailabilityException" />
+            	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
 
             	<!-- <batch:include class="org.springframework.batch.item.file.FlatFileParseException" />
             	<batch:exclude class="java.lang.Exception" />
@@ -269,13 +321,57 @@
          	</batch:skippable-exception-classes>
 
 			<!-- The Step allows a limit for the number of times an individual item can be retried, and a list of exceptions that are 'retryable'. -->
+			<!-- Automatic retry in a chunk-oriented step can make jobs more robust. It’s a shame to fail a step because of an unstable network, when retrying a few milliseconds later could have worked.
+			You now know about the default retry configuration in Spring Batch, and this should be enough for most cases. -->
+			<!-- Spring Batch only retries the item processing and item writing phases. By default, a retryable exception triggers a rollback, so you should be careful because retrying too many times for too many items can degrade performance.
+			You should use retryable exception only for exceptions that are nondeterministic, not for exceptions related to format or constraint violations, which are typically deterministic.
+			
+			Spring Batch retries only for exceptions thrown during item processing or item writing. Retry triggers a rollback, so retrying is costly : don’t abuse it!
+			Note that Spring Batch doesn’t read the items again, by default, because it maintains a chunk-scoped cache. -->
+			<!-- Override equals() and hashCode() when using retry
+			In a chunk-oriented step, Spring Batch handles retry on the item processing and writing phases.
+			By default, a retry implies a rollback, so Spring Batch must restore the context of retried operations across transactions.
+			It needs to track items closely to know which item could have triggered the retry.
+			Remember that Spring Batch can’t always know which item triggers an exception during the writing phase, because an item writer handles a list of items.
+			Spring Batch relies on the identity of items to track them, so for Spring Batch retry to work correctly, you should override the equals and hashCode methods of your items’ classes—by using a database identifier, for example. -->
 	        <batch:retryable-exception-classes>
+	          	<!-- <batch:include class="org.springframework.dao.OptimisticLockingFailureException" /> -->
 	          	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
 	        </batch:retryable-exception-classes>
+
+			<!-- Registers retry listener -->
+			<!-- Spring Batch provides the RetryListener interface to react to any retried operation. A retry listener can be useful to log retried operations and to gather information.
+			Once you know more about transient failures, you’re more likely to change the system to avoid them in subsequent executions (remember, retried operations always degrade performance). -->
+			<!-- Any time you need to know about retried operations—for example, to get rid of them! Spring Batch lets you register retry listeners to log errors.
+			Retry is a built-in feature of chunk-oriented steps. What can you do if you need to retry in your own code, for example, in a tasklet? => Retrying in application code with the RetryTemplate -->
+        	<batch:retry-listeners>
+          		<batch:listener ref="retryListener" />
+        	</batch:retry-listeners>
+
+			<!-- You can combine retry with skip: a job retries an unsuccessful operation several times and then skips it.
+			Remember that once Spring Batch reaches the retry limit, the exception causes the step to exit and, by default, fail.
+			Use combined retry and skip when you don’t want a persisting transient error to fail a step. -->
 	      </batch:chunk>
 
+		  <!-- Avoiding a rollback for an exception -->
+		  <!-- In a chunk-oriented step, Spring Batch rolls back a chunk transaction if an error occurs in the item processor or in the item writer.
+		  This seems safe because an error could have corrupted the state of the transaction, so a rollback ensures data isn’t in an inconsistent state.
+	      Sometimes you’re sure that a specific error didn’t corrupt the transaction, so Spring Batch can retry the operation or skip the item.
+		  This saves a rollback and therefore a new transaction. Having fewer transactions is better because transactions are costly.
+		  Use the no-rollback-exception-classes feature only when you’re sure that an exception can’t corrupt a transaction; consider yourself warned! -->
 		  <!-- the Step can be configured with a list of exceptions that should not cause rollback. -->
+		  <!-- Spring Batch doesn’t drive a chunk-oriented step the same way when a skippable exception is thrown in the reading, processing, or writing phase.
+			
+		  When an item reader throws a skippable exception, Spring Batch just calls the read method again on the item reader to get the next item. There’s no rollback on the transaction.
+			
+		  When an item processor throws a skippable exception, Spring Batch rolls back the transaction of the current chunk and resubmits the read items to the item processor, except for the one that triggered the skippable exception in the previous run.
+			
+		  When the item writer throws a skippable exception, because Spring Batch doesn’t know which item threw the exception, it reprocesses each item in the chunk one by one, in its own transaction.
+	      When a writer throws a skippable exception, Spring Batch can’t know which item triggered the exception. Spring Batch then rolls back the transaction and processes the chunk item by item.
+		  Note that Spring Batch doesn’t read the items again, by default, because it maintains a chunk-scoped cache.
+		  -->
 	      <batch:no-rollback-exception-classes>
+	      	 <batch:include class="java.lang.Exception" />
 	         <batch:include class="java.lang.Throwable" />
 	      </batch:no-rollback-exception-classes>
 
@@ -332,6 +428,7 @@
 	  	<!-- <batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="5"> -->
 	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="4">
 	      <!-- <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" processor="happyBirthdayBonusProcessor" writer="happyBirthdayBonusWriter" commit-interval="10" skip-limit="20" retry-limit="3"> -->
+	      <!-- <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" commit-interval="10" skip-policy="skipPolicy" retry-limit="3"> -->
 	      <batch:chunk reader="allMTNKIFSubscribersWithNoHappyBirthDayBonusReader" commit-interval="10" skip-limit="20" retry-limit="3">
 
 	        <batch:processor>
@@ -392,6 +489,10 @@
 
               				<property name="validator">
 		             			<bean class="jobs.HappyBirthDayBonusSubscriberValidator">
+							   		<!-- <constructor-arg index="0" type="product.ProductProperties">
+							   			<ref local="anotherExampleBean" />
+							   			<ref bean="productProperties" />
+							   		</constructor-arg> -->
 		             				<constructor-arg index="0" type="product.ProductProperties" ref="productProperties" />
 		             				<!-- <constructor-arg index="0" type="product.ProductPropertiesBasedOnPropertiesFactoryBean" ref="productProperties" /> -->
 		             				<!-- <constructor-arg index="0" type="product.ProductPropertiesBasedOnPropertyPlaceholderConfigurer" ref="productProperties" /> -->
@@ -431,8 +532,11 @@
 	        </batch:streams> -->
 
 			<!-- The Step allows a limit for the number of times an exception can be skipped, and a list of exceptions that are 'skippable'. -->
+         	<!-- Skipping instead of failing -->
+         	<!-- The job fails as soon as you reach 20 skipped products, as defined in the configuration -->
          	<batch:skippable-exception-classes>
             	<batch:include class="exceptions.AirAvailabilityException" />
+            	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
 
             	<!-- Skips validation exceptions -->
             	<!-- Because you set the filter property of the validating item processor to false (this is the default value), the item processor rethrows any ValidationException thrown by its validator.
@@ -448,13 +552,59 @@
          	</batch:skippable-exception-classes>
 
 			<!-- The Step allows a limit for the number of times an individual item can be retried, and a list of exceptions that are 'retryable'. -->
+			<!-- Automatic retry in a chunk-oriented step can make jobs more robust. It’s a shame to fail a step because of an unstable network, when retrying a few milliseconds later could have worked.
+			You now know about the default retry configuration in Spring Batch, and this should be enough for most cases. -->
+			<!-- Spring Batch only retries the item processing and item writing phases. By default, a retryable exception triggers a rollback, so you should be careful because retrying too many times for too many items can degrade performance.
+			You should use retryable exception only for exceptions that are nondeterministic, not for exceptions related to format or constraint violations, which are typically deterministic.
+			
+			Spring Batch retries only for exceptions thrown during item processing or item writing. Retry triggers a rollback, so retrying is costly : don’t abuse it!
+			Note that Spring Batch doesn’t read the items again, by default, because it maintains a chunk-scoped cache. -->
+			<!-- Override equals() and hashCode() when using retry
+			In a chunk-oriented step, Spring Batch handles retry on the item processing and writing phases.
+			By default, a retry implies a rollback, so Spring Batch must restore the context of retried operations across transactions.
+			It needs to track items closely to know which item could have triggered the retry.
+			Remember that Spring Batch can’t always know which item triggers an exception during the writing phase, because an item writer handles a list of items.
+			Spring Batch relies on the identity of items to track them, so for Spring Batch retry to work correctly, you should override the equals and hashCode methods of your items’ classes—by using a database identifier, for example. -->
 	        <batch:retryable-exception-classes>
+	          	<!-- <batch:include class="org.springframework.dao.OptimisticLockingFailureException" /> -->
+	          	<!-- <batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" /> -->
 	          	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException"/>
 	        </batch:retryable-exception-classes>
+
+			<!-- Registers retry listener -->
+			<!-- Spring Batch provides the RetryListener interface to react to any retried operation. A retry listener can be useful to log retried operations and to gather information.
+			Once you know more about transient failures, you’re more likely to change the system to avoid them in subsequent executions (remember, retried operations always degrade performance). -->
+			<!-- Any time you need to know about retried operations—for example, to get rid of them! Spring Batch lets you register retry listeners to log errors.
+			Retry is a built-in feature of chunk-oriented steps. What can you do if you need to retry in your own code, for example, in a tasklet? => Retrying in application code with the RetryTemplate -->
+        	<batch:retry-listeners>
+          		<batch:listener ref="retryListener" />
+        	</batch:retry-listeners>
+
+			<!-- You can combine retry with skip: a job retries an unsuccessful operation several times and then skips it.
+			Remember that once Spring Batch reaches the retry limit, the exception causes the step to exit and, by default, fail.
+			Use combined retry and skip when you don’t want a persisting transient error to fail a step. -->
 	      </batch:chunk>
 
+		  <!-- Avoiding a rollback for an exception -->
+		  <!-- In a chunk-oriented step, Spring Batch rolls back a chunk transaction if an error occurs in the item processor or in the item writer.
+		  This seems safe because an error could have corrupted the state of the transaction, so a rollback ensures data isn’t in an inconsistent state.
+	      Sometimes you’re sure that a specific error didn’t corrupt the transaction, so Spring Batch can retry the operation or skip the item.
+		  This saves a rollback and therefore a new transaction. Having fewer transactions is better because transactions are costly.
+		  Use the no-rollback-exception-classes feature only when you’re sure that an exception can’t corrupt a transaction; consider yourself warned! -->
 		  <!-- the Step can be configured with a list of exceptions that should not cause rollback. -->
+		  <!-- Spring Batch doesn’t drive a chunk-oriented step the same way when a skippable exception is thrown in the reading, processing, or writing phase.
+			
+		  When an item reader throws a skippable exception, Spring Batch just calls the read method again on the item reader to get the next item. There’s no rollback on the transaction.
+			
+		  When an item processor throws a skippable exception, Spring Batch rolls back the transaction of the current chunk and resubmits the read items to the item processor, except for the one that triggered the skippable exception in the previous run.
+			
+		  When the item writer throws a skippable exception, because Spring Batch doesn’t know which item threw the exception, it reprocesses each item in the chunk one by one, in its own transaction.
+	      When a writer throws a skippable exception, Spring Batch can’t know which item triggered the exception. Spring Batch then rolls back the transaction and processes the chunk item by item.
+		  Note that Spring Batch doesn’t read the items again, by default, because it maintains a chunk-scoped cache.
+		  -->
 	      <batch:no-rollback-exception-classes>
+	      	 <batch:include class="org.springframework.batch.item.validator.ValidationException" />
+	      	 <batch:include class="java.lang.Exception" />
 	         <batch:include class="java.lang.Throwable" />
 	      </batch:no-rollback-exception-classes>
 
@@ -535,6 +685,24 @@
     	<!-- <batch:next on="*" to="step2" /> -->
 	  </batch:step>
 	</batch:job>
+
+	<!-- Implementing a skip policy with no skip limit. Plugging in a skip policy in a chunk-oriented step -->
+	<!-- Let’s say you know exactly on which exceptions you want to skip items, but you don’t care about the number of skipped items.
+	You can implement your own skip policy, as shown in the following listing. -->
+	<!-- <bean id="skipPolicy" class="exceptions.ExceptionSkipPolicy">                                       
+	  	<constructor-arg value="org.springframework.batch.item.file.FlatFileParseException" />
+  		<constructor-arg>
+   			<list>
+   				<value>org.springframework.batch.item.validator.ValidationException</value>
+    			<value>exceptions.AirAvailabilityException</value>
+   			</list>
+  		</constructor-arg>
+	</bean> -->
+
+	<!-- Declares retry listener bean -->
+	<!-- Any time you need to know about retried operations—for example, to get rid of them! Spring Batch lets you register retry listeners to log errors.
+	Retry is a built-in feature of chunk-oriented steps. What can you do if you need to retry in your own code, for example, in a tasklet? => Retrying in application code with the RetryTemplate -->
+	<bean id="retryListener" class="jobs.listeners.CustomRetryOperationsListener" />
 
 	<!-- Job scope, introduced in Spring Batch 3.0 is similar to Step scope in configuration but is a Scope for the Job context so there is only one instance of such a bean per executing job.
 	Additionally, support is provided for late binding of references accessible from the JobContext using #{..} placeholders. Using this feature, bean properties can be pulled from the job or job execution context and the job parameters. -->

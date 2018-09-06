@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- <ehcache>
+      <diskStore path="C:\temp\cache" />
+      <defaultCache maxElementsInMemory="100" eternal="false"
+            timeToIdleSeconds="120" timeToLiveSeconds="120" overflowToDisk="true" />
+</ehcache> -->
+
+<!-- <ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="ehcache.xsd"
+     updateCheck="true" monitoring="autodetect" dynamicConfig="true">
+    <cache name="empcache" 
+      maxEntriesLocalHeap="5000"
+      maxEntriesLocalDisk="1000" 
+      eternal="false" 
+      diskSpoolBufferSizeMB="20" 
+      timeToIdleSeconds="200" 
+      timeToLiveSeconds="500" 
+      memoryStoreEvictionPolicy="LFU" 
+      transactionalMode="off">
+        <persistence strategy="localTempSwap"/>
+    </cache>
+  </ehcache> -->
+
+
+<!-- <ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="ehcache.xsd"
+     updateCheck="true" monitoring="autodetect" dynamicConfig="true">
+    <cache name="empcache" 
+      maxEntriesLocalHeap="5000"
+      maxEntriesLocalDisk="1000" 
+      eternal="false" 
+      diskSpoolBufferSizeMB="20" 
+      timeToIdleSeconds="200" 
+      timeToLiveSeconds="500" 
+      memoryStoreEvictionPolicy="LFU" 
+      transactionalMode="off">
+
+        <persistence strategy="localTempSwap" />
+
+	</cache>
+</ehcache> -->
+
+
+<!-- <ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd" updateCheck="false">
+
+	<defaultCache eternal="false" maxElementsInMemory="1000"
+        overflowToDisk="false" diskPersistent="false" timeToIdleSeconds="0"
+        timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" />
+
+    <cache name="testCache" eternal="false"
+        maxElementsInMemory="100" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="10" timeToLiveSeconds="60"
+        memoryStoreEvictionPolicy="LRU" />
+
+</ehcache> -->
+
+
+<!-- <ehcache xmlms:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="ehcache.xsd">
+   	<diskStore path="java.io.tmpdir" />
+   	<diskStore path="cache" />
+
+   	<defaultCache
+    	maxElementsInMemory="100"
+        eternal="false"
+        timeToIdleSeconds="120"
+        timeToLiveSeconds="120"
+        overflowToDisk="false"
+    />
+
+	overflowToDisk="true" : le cache contient au maximum cent objets en mémoire, l’excédant étant stocké en mémoire
+	Si un objet du cache n’est pas utilisé pendant cinq minutes (300 secondes), il est supprimé du cache.
+	Dans tous les cas, tout objet est supprimé au bout de trente minutes (1 800 secondes)
+  	<cache
+      name="messageCache"
+      maxElementsInMemory="100"
+      eternal="false"
+      timeToIdleSeconds="300"
+      timeToLiveSeconds="1800"
+      overflowToDisk="false"
+      memoryStoreEvictionPolicy="LFU"
+      transactionalMode="off">
+
+        <persistence strategy="localTempSwap" />
+
+	</cache>
+</ehcache> -->
+
+
+<!-- vous pouvez utiliser soit l'api JSR-107 ou l'API ehcache3 pour charger un ehcache.xml et récupérer votre cacheManager et vos caches -->
+<!-- <config xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+    xmlns='http://www.ehcache.org/v3'
+        xmlns:jsr107='http://www.ehcache.org/v3/jsr107'
+        xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core-3.0.xsd 
+                            http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext-3.0.xsd">
+    
+    the config cache tenplate
+    <cache-template name="config-cache">
+        <expiry>
+            <none />
+        </expiry>
+        <resources>
+            <heap unit="entries">100</heap>
+        </resources>
+  	</cache-template>
+
+    <cache alias="messageCache" uses-template="config-cache" />
+</config> -->
+
+
+<config xmlns='http://www.ehcache.org/v3' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jsr107="http://www.ehcache.org/v3/jsr107"
+	xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core-3.0.xsd
+		http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext-3.0.xsd">
+
+	<service>
+		<!-- <jsr107:defaults default-template="maxEntriesOnHeapCache" enable-management="false" enable-statistics="true"> -->
+		<jsr107:defaults default-template="maxEntriesOnHeapCache" enable-management="true" enable-statistics="true">
+			<!-- <jsr107:cache name="messageCache" template="config-cache" /> -->
+			<!-- <jsr107:cache name="myCache1" template="heap-cache" /> -->
+			<!-- <jsr107:cache name="myCache2" template="heap-cache" /> -->
+			<!-- <jsr107:cache name="myCache3" template="heap-cache" /> -->
+		</jsr107:defaults>
+	</service>
+
+    <!-- file persistance enabling : Activation de la persistance de fichier-->
+    <!-- It requires the directory location where data will be stored on disk. -->
+    <!-- <persistence directory="${user.home}/cache-data" /> --> <!-- Here user.home will be replaced by the value of the system property, for example /home/user -->
+    <!-- <persistence directory="./cache"></persistence> -->
+    <persistence directory="C:\temp\cache"></persistence>
+
+    <!-- the 2 caches we will create : automatically call method createCache() of the cacheManager to create caches -->
+    <!-- <cache alias="defaultCache" uses-template="maxEntriesOnHeapCache" /> -->
+    <cache alias="messageCache" uses-template="config-cache" />
+
+	<cache-template name="maxEntriesOnHeapCache">
+		<!-- The keys of foo are declared as type String -->
+		<key-type>java.lang.String</key-type>
+		<value-type>java.lang.String</value-type>
+
+        <expiry>
+        	<!-- cela signifie que les mappages de cache n'expireront jamais : si necessaires, les mises à jour seront manuelles avec déclenchement par requete HTTP -->
+        	<none />
+
+        	<!-- Cela signifie que les mappages de cache expireront après une durée fixe suivant leur dernier accès -->
+            <!-- <tti unit="seconds">300</tti> -->
+
+            <!-- cela signifie que les mappages de cache expireront après une durée fixe suivant leur création -->
+            <!-- <ttl unit="seconds">1800</ttl> -->
+        </expiry>
+
+		<heap unit="entries">40</heap>
+	</cache-template>
+
+	<cache-template name="config-cache">
+		<!-- The keys of foo are declared as type String -->
+		<key-type>java.lang.String</key-type>
+		<value-type>java.lang.String</value-type>
+        <expiry>
+        	<!-- cela signifie que les mappages de cache n'expireront jamais : si necessaires, les mises à jour seront manuelles avec déclenchement par requete HTTP -->
+        	<none />
+
+        	<!-- Cela signifie que les mappages de cache expireront après une durée fixe suivant leur dernier accès -->
+            <!-- <tti unit="seconds">300</tti> -->
+
+            <!-- cela signifie que les mappages de cache expireront après une durée fixe suivant leur création -->
+            <!-- <ttl unit="seconds">1800</ttl> -->
+        </expiry>
+
+		<!-- You can register a callable method that will be executed when a particular cache event is performed. It is something similar to triggers in the database. -->
+		<listeners>
+			<listener>
+				<class>com.util.CacheEventLogger</class>
+				<!-- <event-firing-mode>SYNCHRONOUS</event-firing-mode> -->
+				<event-firing-mode>ASYNCHRONOUS</event-firing-mode>
+				<event-ordering-mode>UNORDERED</event-ordering-mode>
+				<events-to-fire-on>CREATED</events-to-fire-on>
+				<events-to-fire-on>UPDATED</events-to-fire-on>
+				<events-to-fire-on>EXPIRED</events-to-fire-on>
+				<events-to-fire-on>REMOVED</events-to-fire-on>
+				<events-to-fire-on>EVICTED</events-to-fire-on>
+			</listener>
+		</listeners>
+		<resources>
+			<heap unit="entries">100</heap>
+			<offheap unit="MB">1</offheap> <!-- unit of measure is case sensitive! -->
+		</resources>
+	</cache-template>
+
+</config>

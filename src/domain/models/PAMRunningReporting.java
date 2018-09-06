@@ -53,16 +53,16 @@ public class PAMRunningReporting implements Comparable<PAMRunningReporting> {
 		this.created_date_time = created_date_time;
 	}
 
-	public int hashCode() {
-		return subscriber;
-	}
-
 	public String getOriginOperatorID() {
 		return originOperatorID;
 	}
 
 	public void setOriginOperatorID(String originOperatorID) {
 		this.originOperatorID = originOperatorID;
+	}
+
+	public int hashCode() {
+		return subscriber;
 	}
 
 	public boolean equals (Object pp) {

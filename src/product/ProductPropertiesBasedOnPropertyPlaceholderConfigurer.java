@@ -172,6 +172,8 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 	private int night_advantages_call_da;
 	@Value("${night.advantages.data.da}")
 	private int night_advantages_data_da;
+	@Value("${night.advantages.expires_in}")
+	private String night_advantages_expires_in;
 
 	@Value("${gsm.mnc}")
 	public void setMnc(final String gsmmnc) {
@@ -390,6 +392,10 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 
 	public int getNight_advantages_data_da() {
 		return night_advantages_data_da;
+	}
+
+	public String getNight_advantages_expires_in() {
+		return night_advantages_expires_in;
 	}
 
 	public boolean isAdvantages_always() {

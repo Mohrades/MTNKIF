@@ -1,17 +1,23 @@
 package jobs;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.beans.factory.InitializingBean;
+
 import connexions.AIRRequest;
 import domain.models.Subscriber;
 import exceptions.AirAvailabilityException;
 import product.ProductProperties;
 
-public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber> {
+public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber>, InitializingBean {
 
 	private ProductProperties productProperties;
 
 	private int itemProcessedCount;
-
+	private Date night_advantages_expires_in = null;
 	private boolean waitingForResponse;
 
 	public RunningPAMProcessor() {
@@ -53,67 +59,95 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 	public Subscriber process(Subscriber subscriber) throws AirAvailabilityException {
 		// TODO Auto-generated method stub
 
-		AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
+		// this time constraint is set to stop this process when it becomes unnecessary
+		if((night_advantages_expires_in == null) || (new Date().before(night_advantages_expires_in))) {
+			AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 
-		try {
-			// attempts
-			int retry = 0;
+			try {
+				// attempts
+				int retry = 0;
 
-			while(productProperties.getAir_preferred_host() == -1) {
-				if(retry >= 3) throw new AirAvailabilityException();
+				while(productProperties.getAir_preferred_host() == -1) {
+					if(retry >= 3) throw new AirAvailabilityException();
 
-				productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
-				retry++;
-			}
+					productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+					retry++;
+				}
 
-			retry = 0;
+				retry = 0;
 
-			if(!request.isWaitingForResponse()) itemProcessedCount++;
+				if(!request.isWaitingForResponse()) itemProcessedCount++;
 
-			// don't waiting for the response : waitingForResponse is false
-			if((!request.isWaitingForResponse()) && ((itemProcessedCount % 600) == 0)) {
-				itemProcessedCount = 0;
+				// don't waiting for the response : waitingForResponse is false
+				if((!request.isWaitingForResponse()) && ((itemProcessedCount % 600) == 0)) {
+					itemProcessedCount = 0;
 
-				// change AIR HOST : to release current host and not to overload it
-				int current_preferred_host = productProperties.getAir_preferred_host();
-				current_preferred_host = (current_preferred_host + 1)  % (productProperties.getAir_hosts().size());
-				// productProperties.setAir_preferred_host((byte) current_preferred_host);
+					// change AIR HOST : to release current host and not to overload it
+					int current_preferred_host = productProperties.getAir_preferred_host();
+					current_preferred_host = (current_preferred_host + 1)  % (productProperties.getAir_hosts().size());
+					// productProperties.setAir_preferred_host((byte) current_preferred_host);
 
-				// waiting for the response to test connection
-				request.setWaitingForResponse(true);
-			}
-			else request.setWaitingForResponse(isWaitingForResponse());
+					// waiting for the response to test connection
+					request.setWaitingForResponse(true);
+				}
+				else request.setWaitingForResponse(isWaitingForResponse());
 
-			// do action
-			if(request.runPeriodicAccountManagement(subscriber.getValue(), productProperties.getPamServiceID(), "eBA")) {
-				subscriber.setFlag(true);
-			}
-			else {
-				if(request.isWaitingForResponse()) {
-					if(request.isSuccessfully()) subscriber.setFlag(false);
-					else {
-						productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
-						throw new AirAvailabilityException();
-					}
+				// do action
+				if(request.runPeriodicAccountManagement(subscriber.getValue(), productProperties.getPamServiceID(), "eBA")) {
+					subscriber.setFlag(true);
 				}
 				else {
-					subscriber.setFlag(request.isSuccessfully() ? true : false);
+					if(request.isWaitingForResponse()) {
+						if(request.isSuccessfully()) subscriber.setFlag(false);
+						else {
+							productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
+							throw new AirAvailabilityException();
+						}
+					}
+					else {
+						subscriber.setFlag(request.isSuccessfully() ? true : false);
+					}
 				}
+
+				return subscriber;
+
+			} catch(AirAvailabilityException ex) {
+				throw ex;
+
+			} catch(Exception ex) {
+				if(ex instanceof AirAvailabilityException) throw ex;
+
+			} catch(Throwable th) {
+				if(th instanceof AirAvailabilityException) throw th;
 			}
 
-			return subscriber;
-
-		} catch(AirAvailabilityException ex) {
-			throw ex;
-
-		} catch(Exception ex) {
-			if(ex instanceof AirAvailabilityException) throw ex;
-
-		} catch(Throwable th) {
-			if(th instanceof AirAvailabilityException) throw th;
+			return null;
 		}
+		else {
+			return null;
+		}
+	}
 
-		return null;
+	@SuppressWarnings("deprecation")
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		// TODO Auto-generated method stub
+
+		try {
+			Date today = new Date();
+			night_advantages_expires_in = (productProperties.getNight_advantages_expires_in() == null) ? null : (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).parse(productProperties.getNight_advantages_expires_in());
+			night_advantages_expires_in.setYear(today.getYear()); night_advantages_expires_in.setMonth(today.getMonth()); night_advantages_expires_in.setDate(today.getDate());
+
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+
+		} catch (Throwable th) {
+			// TODO Auto-generated catch block
+
+		}
 	}
 
 }

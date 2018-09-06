@@ -79,6 +79,22 @@ public class JobRunListener implements StepExecutionListener {
 
 		}
 
+		/**
+		 *
+		Choosing the exit status for a step with a step execution listener
+		*/
+
+		/**
+		 * 
+		// Returns custom status for skipped items
+	    if(!ExitStatus.FAILED.equals(stepExecution.getExitStatus()) && stepExecution.getSkipCount() > 0) {            
+	       return new ExitStatus("COMPLETED WITH SKIPS");   
+	     }
+	    // Returns default status
+	    else {
+	       return stepExecution.getExitStatus();        
+	     }
+		*/
         return stepExecution.getExitStatus();
 		// return null;
 	}
