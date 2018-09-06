@@ -94,7 +94,7 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 
 				// do action
 				if(request.runPeriodicAccountManagement(subscriber.getValue(), productProperties.getPamServiceID(), "eBA")) {
-					subscriber.setFlag(true);
+					subscriber.setFlag(true); 
 				}
 				else {
 					if(request.isWaitingForResponse()) {
