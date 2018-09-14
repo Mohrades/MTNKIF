@@ -268,7 +268,7 @@ public class USSDFlow {
 				}
 				else {
 					if(transitions.isEmpty() || transitions.equals("")) {
-						HappyBirthDayBonusSubscriber birthDayBonusSubscriber = (new JdbcHappyBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscriber(ussd.getMsisdn(), true);
+						/*HappyBirthDayBonusSubscriber birthDayBonusSubscriber = (new JdbcHappyBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscriber(ussd.getMsisdn(), true);
 
 						if(birthDayBonusSubscriber == null) {
 							modele.put("message", i18n.getMessage("menu" + transitions, null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
@@ -276,7 +276,10 @@ public class USSDFlow {
 						else {
 							Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language, false);
 							modele.put("message", i18n.getMessage(((int)(requestStatus[0]) == 0) ? "menu_with_hbd" : "menu", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
-						}
+						}*/
+
+						Object [] requestStatus = (new PricePlanCurrent()).hasBirthDayBonus(productProperties, i18n, dao, ussd.getMsisdn(), language);
+						modele.put("message", i18n.getMessage((((int)(requestStatus[0]) == 0) && (requestStatus[1] != null) && ((int)(requestStatus[1]) == 0)) ? "menu_with_hbd" : "menu", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
 					}
 					else {
 						modele.put("message", i18n.getMessage("menu" + transitions, null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));

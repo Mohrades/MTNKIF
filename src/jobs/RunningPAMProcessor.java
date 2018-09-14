@@ -3,6 +3,7 @@ package jobs;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.InitializingBean;
@@ -18,7 +19,9 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 
 	private int itemProcessedCount;
 	private Date night_advantages_expires_in = null;
+
 	private boolean waitingForResponse;
+	private HashSet<Integer> air_nodes_excluded_filter;
 
 	public RunningPAMProcessor() {
 		itemProcessedCount = 0;
@@ -76,30 +79,49 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 
 				retry = 0;
 
-				if(!request.isWaitingForResponse()) itemProcessedCount++;
-
 				// don't waiting for the response : waitingForResponse is false
-				if((!request.isWaitingForResponse()) && ((itemProcessedCount % 600) == 0)) {
-					itemProcessedCount = 0;
+				if(!isWaitingForResponse()) {
+					/*if((itemProcessedCount % 600) == 0) {*/
+					if(((itemProcessedCount % 600) == 0) || (itemProcessedCount >= 600)) {
+						itemProcessedCount = 0;
 
-					// change AIR HOST : to release current host and not to overload it
-					int current_preferred_host = productProperties.getAir_preferred_host();
-					current_preferred_host = (current_preferred_host + 1)  % (productProperties.getAir_hosts().size());
-					// productProperties.setAir_preferred_host((byte) current_preferred_host);
+						// SWITCH FROM ONE AIR NODE USED TO ANOTHER: to release current air node and not to overload it
+						int current_preferred_host = productProperties.getAir_preferred_host();
+						do {
+							current_preferred_host = (current_preferred_host + 1)  % (productProperties.getAir_hosts().size());
 
-					// waiting for the response to test connection
-					request.setWaitingForResponse(true);
+							// test first air node is not excluded before checking the number of air nodes down !!
+						} while((air_nodes_excluded_filter.contains(current_preferred_host)) && (air_nodes_excluded_filter.size() < productProperties.getAir_hosts().size())); // Exclude the next AIR NODE AS NOT CONNECTED AND NOT AVAILABLE ONE(not timeout)
+
+						productProperties.setAir_preferred_host((byte) current_preferred_host);
+
+						// waiting for the response to test connection
+						request.setWaitingForResponse(true);
+					}
+
+					itemProcessedCount++;
 				}
 				else request.setWaitingForResponse(isWaitingForResponse());
 
 				// do action
 				if(request.runPeriodicAccountManagement(subscriber.getValue(), productProperties.getPamServiceID(), "eBA")) {
 					subscriber.setFlag(true);
+
+					// Include the AIR NODE AS CONNECTED AND AVAILABLE ONE (not timeout)
+					if((!isWaitingForResponse()) && (request.isWaitingForResponse())) air_nodes_excluded_filter.remove((int) productProperties.getAir_preferred_host());
 				}
 				else {
 					if(request.isWaitingForResponse()) {
-						if(request.isSuccessfully()) subscriber.setFlag(false);
+						if(request.isSuccessfully()) {
+							subscriber.setFlag(false);
+
+							// Include the AIR NODE AS CONNECTED AND AVAILABLE ONE (not timeout)
+							if(!isWaitingForResponse()) air_nodes_excluded_filter.remove((int) productProperties.getAir_preferred_host());
+						}
 						else {
+							if(isWaitingForResponse()) ;
+							else air_nodes_excluded_filter.add((int) productProperties.getAir_preferred_host()); // Exclude the next AIR NODE AS NOT CONNECTED AND NOT AVAILABLE ONE(not timeout)
+
 							productProperties.setAir_preferred_host((byte) (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).testConnection(productProperties.getAir_test_connection_msisdn(), productProperties.getAir_preferred_host()));
 							throw new AirAvailabilityException();
 						}
@@ -148,6 +170,8 @@ public class RunningPAMProcessor implements ItemProcessor<Subscriber, Subscriber
 			// TODO Auto-generated catch block
 
 		}
+
+		if(!isWaitingForResponse()) air_nodes_excluded_filter = new HashSet<Integer>();
 	}
 
 }

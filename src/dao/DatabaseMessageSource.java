@@ -12,7 +12,7 @@ import org.springframework.cache.annotation.Cacheable;
 
 @SuppressWarnings("unused")
 public class DatabaseMessageSource {
-	
+
 	private DAO dao;
 
 	public DatabaseMessageSource(DAO dao) {

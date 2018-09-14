@@ -80,14 +80,14 @@ public class NightAdvantagesNotificationProcessor implements ItemProcessor<PAMRu
 				// check night advantages
 				if(getNightAdvantages(productProperties, subscriber.getValue())) {
 					// save notification
-					if(!waitingForResponse) pamRunningReporting.setFlag(true);
-					(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !waitingForResponse, true);
+					if(!isWaitingForResponse()) pamRunningReporting.setFlag(true);
+					(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !isWaitingForResponse(), true);
 
 					return subscriber;
 				}
 				else {
-					if(!waitingForResponse) pamRunningReporting.setFlag(false);
-					(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !waitingForResponse, false);
+					if(!isWaitingForResponse()) pamRunningReporting.setFlag(false);
+					(new JdbcPAMRunningReportingDao(dao)).notifyNightAdvantages(pamRunningReporting, subscriber.getId(), !isWaitingForResponse(), false);
 				}
 
 			} catch(AirAvailabilityException ex) {

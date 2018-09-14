@@ -107,6 +107,9 @@ public class ProductPropertiesBasedOnPropertiesFactoryBean implements ProductPro
 	@Value("#{appConfig['crbt.renewal.aspu.minimum']}")
 	private long crbt_renewal_aspu_minimum;
 
+	@Value("#{appConfig['crbt.renewal.days']}")
+	private short crbt_renewal_days;
+
 	@Value("#{appConfig['happy.birthday.bonus.aspu.minimum']}")
 	private long happy_birthday_bonus_aspu_minimum;
 
@@ -434,6 +437,10 @@ public class ProductPropertiesBasedOnPropertiesFactoryBean implements ProductPro
 
 	public long getCrbt_renewal_aspu_minimum() {
 		return crbt_renewal_aspu_minimum;
+	}
+
+	public short getCrbt_renewal_days() {
+		return crbt_renewal_days;
 	}
 
 	public String getDatabase_aspu_filter() {

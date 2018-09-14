@@ -98,9 +98,22 @@ public class InputHandler {
 					endStep(dao, ussd, modele, productProperties, (new PricePlanCurrentActions()).getInfo(i18n, productProperties, ussd.getMsisdn()), null, null, null, null);
 				}
 				else if(ussd.getInput().equals(short_code + "*4")) {
-					// happy birthday bonus
+					/*// happy birthday bonus
 					// endStep(dao, ussd, modele, productProperties, i18n.getMessage("request.unavailable", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
-					birthdayBonus(i18n, language, productProperties, dao, ussd, modele);
+					birthdayBonus(i18n, language, productProperties, dao, ussd, modele);*/
+
+					Object [] requestStatus = (new PricePlanCurrent()).hasBirthDayBonus(productProperties, i18n, dao, ussd.getMsisdn(), language);
+					if((int)(requestStatus[0]) == 0) {
+						if((requestStatus[1] != null) && ((int)(requestStatus[1]) == 0)) {
+							birthdayBonus(i18n, language, productProperties, dao, ussd, modele);
+						}
+						else {
+							endStep(dao, ussd, modele, productProperties, i18n.getMessage("happy.birthday.bonus.status.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+						}
+					}
+					else {
+						endStep(dao, ussd, modele, productProperties, (String)(requestStatus[1]), null, null, null, null);
+					}
 				}
 				else if(((ussd.getInput().startsWith(short_code + "*1")) || (ussd.getInput().startsWith(short_code + "*0"))) && (ussd.getInput().endsWith("*1"))) {
 					if((new MSISDNValidator()).isFiltered(dao, productProperties, ussd.getMsisdn(), "A")) {

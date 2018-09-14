@@ -11,6 +11,7 @@ import org.springframework.context.MessageSource;
 
 import connexions.AIRRequest;
 import dao.DAO;
+import dao.queries.JdbcHappyBirthDayBonusSubscriberDao;
 import dao.queries.JdbcSubscriberDao;
 import domain.models.Subscriber;
 import util.AccumulatorInformation;
@@ -104,6 +105,17 @@ public class PricePlanCurrent {
 		return new Object [] {statusCode, message, subscriber};
 	}
 
+	public Object [] hasBirthDayBonus(ProductProperties productProperties, MessageSource i18n, DAO dao, String msisdn, int language) {
+		Object [] requestStatus = getStatus(productProperties, i18n, dao, msisdn, language, false);
+
+		if((int)(requestStatus[0]) == 0) {
+			return new Object [] {0, (((new JdbcHappyBirthDayBonusSubscriberDao(dao)).getOneBirthdayBonusSubscriber(msisdn, true)) == null) ? 1 : 0};
+		}
+		else {
+			return new Object [] {(int)(requestStatus[0]), (String)(requestStatus[1])};
+		}
+	}
+
 	@SuppressWarnings("deprecation")
 	public Object[] getBonusSMS(ProductProperties productProperties, String msisdn, int language) {
 
@@ -169,97 +181,112 @@ public class PricePlanCurrent {
 
 	@SuppressWarnings({ "resource", "deprecation" })
 	public Object[] getNightAdvantages(ProductProperties productProperties, String msisdn, int language) {
-		if(((productProperties.getNight_advantages_call_da() == 0) && (productProperties.getNight_advantages_data_da() == 0))) return null;
+		Date night_advantages_expires_in = null;
 
 		try {
-			AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
-			HashSet<BalanceAndDate> balancesBonus = null;
+			Date today = new Date();
+			night_advantages_expires_in = (productProperties.getNight_advantages_expires_in() == null) ? null : (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).parse(productProperties.getNight_advantages_expires_in());
+			night_advantages_expires_in.setYear(today.getYear()); night_advantages_expires_in.setMonth(today.getMonth()); night_advantages_expires_in.setDate(today.getDate());
 
-			if((productProperties.getNight_advantages_call_da() > 0) && (productProperties.getNight_advantages_data_da() > 0)) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_call_da(), productProperties.getNight_advantages_call_da()}, {productProperties.getNight_advantages_data_da(), productProperties.getNight_advantages_data_da()}});
-			else if(productProperties.getNight_advantages_call_da() > 0) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_call_da(), productProperties.getNight_advantages_call_da()}});
-			else if(productProperties.getNight_advantages_data_da() > 0) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_data_da(), productProperties.getNight_advantages_data_da()}});
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
 
-			// BONUS GRANTED
-			// 141 299996  Thu Jul 05 23:59:59 WAT 2018 : System.out.println(balanceBonusData.getAccountID() + " " + balanceBonusData.getAccountValue() + "  " + balanceBonusData.getExpiryDate());
-			// 118 360000  Thu Jul 05 23:59:59 WAT 2018 : System.out.println(balanceBonusCall.getAccountID() + " " + balanceBonusCall.getAccountValue() + "  " + balanceBonusCall.getExpiryDate());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
 
-			// NO BONUS
-			// 141 0  Thu Dec 30 13:00:00 WAT 9999 : System.out.println(balanceBonusData.getAccountID() + " " + balanceBonusData.getAccountValue() + "  " + balanceBonusData.getExpiryDate());
-			// 118 0  Thu Dec 30 13:00:00 WAT 9999 : System.out.println(balanceBonusCall.getAccountID() + " " + balanceBonusCall.getAccountValue() + "  " + balanceBonusCall.getExpiryDate());
+		} catch (Throwable th) {
+			// TODO Auto-generated catch block
 
-			if((balancesBonus != null) && (!balancesBonus.isEmpty())) {
-				BalanceAndDate balanceBonusCall = null;
-				BalanceAndDate balanceBonusData = null;
+		}
 
-				for(BalanceAndDate balanceAndDate : balancesBonus) {
-					if(balanceAndDate.getExpiryDate() != null) {
-						Date expiryDate = (Date)balanceAndDate.getExpiryDate();
+		// this time constraint is set to stop this process when it becomes unnecessary
+		if((night_advantages_expires_in == null) || (new Date().before(night_advantages_expires_in))) {
+			if(((productProperties.getNight_advantages_call_da() == 0) && (productProperties.getNight_advantages_data_da() == 0))) return null;
 
-						if((expiryDate == null) || ((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(expiryDate).equals("9999-12-30 13:00:00")));
-						else {
-							Date night_advantages_expires_in = null;
-							try {
-								night_advantages_expires_in = (productProperties.getNight_advantages_expires_in() == null) ? null : (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).parse(productProperties.getNight_advantages_expires_in());
+			try {
+				AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
+				HashSet<BalanceAndDate> balancesBonus = null;
 
-								if(night_advantages_expires_in != null) {
-									expiryDate.setHours(night_advantages_expires_in.getHours()); // expiryDate.setHours(06);
-									expiryDate.setMinutes(night_advantages_expires_in.getMinutes()); // expiryDate.setMinutes(00);
-									expiryDate.setSeconds(night_advantages_expires_in.getSeconds()); // expiryDate.setSeconds(00);
+				if((productProperties.getNight_advantages_call_da() > 0) && (productProperties.getNight_advantages_data_da() > 0)) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_call_da(), productProperties.getNight_advantages_call_da()}, {productProperties.getNight_advantages_data_da(), productProperties.getNight_advantages_data_da()}});
+				else if(productProperties.getNight_advantages_call_da() > 0) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_call_da(), productProperties.getNight_advantages_call_da()}});
+				else if(productProperties.getNight_advantages_data_da() > 0) balancesBonus = request.getDedicatedAccounts(msisdn, new int[][] {{productProperties.getNight_advantages_data_da(), productProperties.getNight_advantages_data_da()}});
+
+				// BONUS GRANTED
+				// 141 299996  Thu Jul 05 23:59:59 WAT 2018 : System.out.println(balanceBonusData.getAccountID() + " " + balanceBonusData.getAccountValue() + "  " + balanceBonusData.getExpiryDate());
+				// 118 360000  Thu Jul 05 23:59:59 WAT 2018 : System.out.println(balanceBonusCall.getAccountID() + " " + balanceBonusCall.getAccountValue() + "  " + balanceBonusCall.getExpiryDate());
+
+				// NO BONUS
+				// 141 0  Thu Dec 30 13:00:00 WAT 9999 : System.out.println(balanceBonusData.getAccountID() + " " + balanceBonusData.getAccountValue() + "  " + balanceBonusData.getExpiryDate());
+				// 118 0  Thu Dec 30 13:00:00 WAT 9999 : System.out.println(balanceBonusCall.getAccountID() + " " + balanceBonusCall.getAccountValue() + "  " + balanceBonusCall.getExpiryDate());
+
+				if((balancesBonus != null) && (!balancesBonus.isEmpty())) {
+					BalanceAndDate balanceBonusCall = null;
+					BalanceAndDate balanceBonusData = null;
+
+					for(BalanceAndDate balanceAndDate : balancesBonus) {
+						if(balanceAndDate.getExpiryDate() != null) {
+							Date expiryDate = (Date)balanceAndDate.getExpiryDate();
+
+							if((expiryDate == null) || ((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(expiryDate).equals("9999-12-30 13:00:00")));
+							else {
+								try {
+									if(night_advantages_expires_in != null) {
+										expiryDate.setHours(night_advantages_expires_in.getHours()); // expiryDate.setHours(06);
+										expiryDate.setMinutes(night_advantages_expires_in.getMinutes()); // expiryDate.setMinutes(00);
+										expiryDate.setSeconds(night_advantages_expires_in.getSeconds()); // expiryDate.setSeconds(00);
+									}
+
+								} catch (Exception e) {
+									// TODO Auto-generated catch block
+
+								} catch (Throwable th) {
+									// TODO Auto-generated catch block
+
 								}
 
-							} catch (ParseException e) {
-								// TODO Auto-generated catch block
-
-							} catch (Exception e) {
-								// TODO Auto-generated catch block
-
-							} catch (Throwable th) {
-								// TODO Auto-generated catch block
-
+								if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_call_da())) {
+									balanceBonusCall = balanceAndDate;
+									balanceBonusCall.setExpiryDate(expiryDate);
+								}
+								else if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_data_da())) {
+									balanceBonusData = balanceAndDate;
+									balanceBonusData.setExpiryDate(expiryDate);
+								}
 							}
+						}
+					}
 
-							if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_call_da())) {
-								balanceBonusCall = balanceAndDate;
-								balanceBonusCall.setExpiryDate(expiryDate);
-							}
-							else if((balanceAndDate.getAccountID() > 0) && (balanceAndDate.getAccountID() == productProperties.getNight_advantages_data_da())) {
-								balanceBonusData = balanceAndDate;
-								balanceBonusData.setExpiryDate(expiryDate);
-							}
+					if((balanceBonusCall != null) && (balanceBonusData != null)) {
+						long volumeData = balanceBonusData.getAccountValue()/(10*100);
+						long volumeVoice = balanceBonusCall.getAccountValue()/100;
+
+						if(volumeData >= 1024) {
+							return new Object[] {(int)(volumeVoice/60), (int)(volumeVoice%60), new Formatter().format("%.2f", ((double)volumeData/1024)), (language == 2) ? "GB" : "Go", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusData.getExpiryDate())};
+						}
+						else {
+							return new Object[] {(int)(volumeVoice/60), (int)(volumeVoice%60), (volumeData + ""), (language == 2) ? "MB" : "Mo", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusCall.getExpiryDate())};
+						}
+					}
+					else if(balanceBonusCall != null) {
+						long volumeVoice = balanceBonusCall.getAccountValue()/100;
+
+						return new Object[] {(int)(volumeVoice/60), (int)(volumeVoice%60), "0", (language == 2) ? "MB" : "Mo", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusCall.getExpiryDate())};
+					}
+					else if(balanceBonusData != null) {
+						long volumeData = balanceBonusData.getAccountValue()/(10*100);
+
+						if(volumeData >= 1024) {
+							return new Object[] {0, 0, new Formatter().format("%.2f", ((double)volumeData/1024)), (language == 2) ? "GB" : "Go", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusData.getExpiryDate())};
+						}
+						else {
+							return new Object[] {0, 0, (volumeData + ""), (language == 2) ? "MB" : "Mo", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusData.getExpiryDate())};
 						}
 					}
 				}
 
-				if((balanceBonusCall != null) && (balanceBonusData != null)) {
-					long volumeData = balanceBonusData.getAccountValue()/(10*100);
-					long volumeVoice = balanceBonusCall.getAccountValue()/100;
+			} catch(Throwable th) {
 
-					if(volumeData >= 1024) {
-						return new Object[] {(int)(volumeVoice/60), (int)(volumeVoice%60), new Formatter().format("%.2f", ((double)volumeData/1024)), (language == 2) ? "GB" : "Go", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusData.getExpiryDate())};
-					}
-					else {
-						return new Object[] {(int)(volumeVoice/60), (int)(volumeVoice%60), (volumeData + ""), (language == 2) ? "MB" : "Mo", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusCall.getExpiryDate())};
-					}
-				}
-				else if(balanceBonusCall != null) {
-					long volumeVoice = balanceBonusCall.getAccountValue()/100;
-
-					return new Object[] {(int)(volumeVoice/60), (int)(volumeVoice%60), "0", (language == 2) ? "MB" : "Mo", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusCall.getExpiryDate())};
-				}
-				else if(balanceBonusData != null) {
-					long volumeData = balanceBonusData.getAccountValue()/(10*100);
-
-					if(volumeData >= 1024) {
-						return new Object[] {0, 0, new Formatter().format("%.2f", ((double)volumeData/1024)), (language == 2) ? "GB" : "Go", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusData.getExpiryDate())};
-					}
-					else {
-						return new Object[] {0, 0, (volumeData + ""), (language == 2) ? "MB" : "Mo", (new SimpleDateFormat("HH'H'mm")).format(balanceBonusData.getExpiryDate())};
-					}
-				}
 			}
-
-		} catch(Throwable th) {
-			
 		}
 
 		return null;

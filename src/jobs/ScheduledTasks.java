@@ -28,7 +28,8 @@ public class ScheduledTasks {
 	private Job runningPAMJob;
 
 	@Autowired
-	private Job crbtRenewalJob;
+	/*private Job crbtRenewalJob;*/
+	private Job periodicSubscriberManagementJob;
 
 	@Autowired
 	private Job happyBirthDayBonusJob;
@@ -50,8 +51,12 @@ public class ScheduledTasks {
 		execute(cleanExpiredUssdRequestJob);
 	}
 
-	public void renew_crbt() {
+	/*public void renew_crbt() {
 		execute(crbtRenewalJob);
+	}*/
+
+	public void runPeriodicSubscriberManagement() {
+		execute(periodicSubscriberManagementJob);
 	}
 
 	public void run_pam() {

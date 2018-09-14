@@ -138,6 +138,7 @@ public class JobRunListener implements StepExecutionListener {
 				String StepExecutionDescription = stepExecution.toString();
 
 				if(StepExecutionDescription.contains("name=nightAdvantagesNotificationThroughSms")) ;
+				else if(StepExecutionDescription.contains("name=periodicSubscriberManagement")) ;
 				else {
 					String stepName = StepExecutionDescription.substring(StepExecutionDescription.indexOf("name=") + 5, StepExecutionDescription.indexOf(", status=", StepExecutionDescription.indexOf("name="))).trim();
 					@SuppressWarnings("deprecation")

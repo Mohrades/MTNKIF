@@ -108,10 +108,16 @@
 </config> -->
 
 
-<config xmlns='http://www.ehcache.org/v3' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<!-- <config xmlns='http://www.ehcache.org/v3' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:jsr107="http://www.ehcache.org/v3/jsr107"
 	xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core-3.0.xsd
-		http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext-3.0.xsd">
+		http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext-3.0.xsd"> -->
+<config
+    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+    xmlns='http://www.ehcache.org/v3'
+    xmlns:jsr107='http://www.ehcache.org/v3/jsr107'
+    xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core-3.0.xsd
+        http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext-3.0.xsd">
 
 	<service>
 		<!-- <jsr107:defaults default-template="maxEntriesOnHeapCache" enable-management="false" enable-statistics="true"> -->
@@ -127,7 +133,7 @@
     <!-- It requires the directory location where data will be stored on disk. -->
     <!-- <persistence directory="${user.home}/cache-data" /> --> <!-- Here user.home will be replaced by the value of the system property, for example /home/user -->
     <!-- <persistence directory="./cache"></persistence> -->
-    <persistence directory="C:\temp\cache"></persistence>
+    <!-- <persistence directory="C:\temp\cache"></persistence> -->
 
     <!-- the 2 caches we will create : automatically call method createCache() of the cacheManager to create caches -->
     <!-- <cache alias="defaultCache" uses-template="maxEntriesOnHeapCache" /> -->
@@ -184,7 +190,7 @@
 		<resources>
 			<heap unit="entries">100</heap>
 			<offheap unit="MB">1</offheap> <!-- unit of measure is case sensitive! -->
-            <disk persistent="true" unit="MB">5</disk>
+            <!-- <disk persistent="true" unit="MB">5</disk> -->
 		</resources>
 	</cache-template>
 

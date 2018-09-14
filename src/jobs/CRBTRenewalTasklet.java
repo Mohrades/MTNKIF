@@ -212,10 +212,13 @@ public class CRBTRenewalTasklet implements Tasklet {
 						// croiser subscriber with today is crbt renewal date and aspu reached
 						allMSISDN_Today_Is_CRBTRENEWABLE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
 
-						now.setDate(now.getDate() + 30);
+						now.setDate(now.getDate() + productProperties.getCrbt_renewal_days());
+						AIRRequest AIRRequest = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 
 						// crbt renewal failed
 						for(Subscriber subscriber : allMSISDN_Today_Is_CRBTRENEWABLE_COPY) {
+							AccountDetails accountDetails = AIRRequest.getAccountDetails(subscriber.getValue());
+
 							try {
 								// remove mtnkif+ crbt song
 								if(productProperties.getSong_rbt_code() != null) {
@@ -245,9 +248,16 @@ public class CRBTRenewalTasklet implements Tasklet {
 									// reporting
 									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
 										subscriber.setCrbt(false); // update status
-										subscriber.setCrbtNextRenewalDate(now);
+
+										// calculate CrbtNextRenewalDate
+										Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
+										if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = now;
+										else currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+										subscriber.setCrbtNextRenewalDate(currentCrbtNextRenewalDate);
+
 										// store subscriber
 										new JdbcSubscriberDao(dao).setCRBTFlag(subscriber);
+
 										// store reporting
 										CRBTReporting reporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), "eBA");
 										reporting.setAuto(true);
@@ -258,10 +268,16 @@ public class CRBTRenewalTasklet implements Tasklet {
 							} catch(Throwable th) {
 
 							}
+
+							// send monthly reminder notification sms
+							String notification_message = i18n.getMessage("monthly.reminder", null, null, (accountDetails == null) ? Locale.FRENCH : (accountDetails.getLanguageIDCurrent() == 2) ? Locale.ENGLISH : Locale.FRENCH);
+							requestSubmitSmToSmppConnector(notification_message, subscriber.getValue(), productProperties.getSms_notifications_header());
 						}
 
 						// crbt renewal succeeded
 						for(Subscriber subscriber : allMSISDN_Today_Is_CRBTRENEWABLE) {
+							AccountDetails accountDetails = AIRRequest.getAccountDetails(subscriber.getValue());
+
 							try {
 								// // set mtnkif+ crbt song
 								if(productProperties.getSong_rbt_code() != null) {
@@ -376,7 +392,13 @@ public class CRBTRenewalTasklet implements Tasklet {
 													// reporting
 													if((multiRef != null) && (multiRef.containsKey("returnCode")) && multiRef.get("returnCode").equals("000000")) {
 														subscriber.setCrbt(true); // update status
-														subscriber.setCrbtNextRenewalDate(now);
+
+														// calculate CrbtNextRenewalDate
+														Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
+														if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = now;
+														else currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+														subscriber.setCrbtNextRenewalDate(currentCrbtNextRenewalDate);
+
 														// store subscriber
 														new JdbcSubscriberDao(dao).setCRBTFlag(subscriber);
 
@@ -387,20 +409,27 @@ public class CRBTRenewalTasklet implements Tasklet {
 														new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(reporting);
 
 														// send notification sms
-														requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());
+														String notification_message = i18n.getMessage("crbt.renewal.successful", null, null, (accountDetails == null) ? Locale.FRENCH : (accountDetails.getLanguageIDCurrent() == 2) ? Locale.ENGLISH : Locale.FRENCH);
+														requestSubmitSmToSmppConnector(notification_message, subscriber.getValue(), productProperties.getSms_notifications_header());
 													}
 												}
 											}
 											else if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("302011"))) {
 												// send notification sms
-												requestSubmitSmToSmppConnector(null, subscriber.getValue(), null, null, productProperties.getSms_notifications_header());
+												String notification_message = i18n.getMessage("crbt.renewal.successful", null, null, (accountDetails == null) ? Locale.FRENCH : (accountDetails.getLanguageIDCurrent() == 2) ? Locale.ENGLISH : Locale.FRENCH);
+												requestSubmitSmToSmppConnector(notification_message, subscriber.getValue(), productProperties.getSms_notifications_header());
 											}
 										}
 									}
 								}
+
 							} catch(Throwable th) {
 
 							}
+
+							// send monthly reminder notification sms
+							String notification_message = i18n.getMessage("monthly.reminder", null, null, (accountDetails == null) ? Locale.FRENCH : (accountDetails.getLanguageIDCurrent() == 2) ? Locale.ENGLISH : Locale.FRENCH);
+							requestSubmitSmToSmppConnector(notification_message, subscriber.getValue(), productProperties.getSms_notifications_header());
 						}
 
 						stepContribution.setExitStatus(ExitStatus.COMPLETED);
@@ -416,22 +445,17 @@ public class CRBTRenewalTasklet implements Tasklet {
 		return null;
 	}
 
-	public void requestSubmitSmToSmppConnector(String messageA, String Anumber, String messageB, String Bnumber, String senderName) {
+	public void requestSubmitSmToSmppConnector(String message, String msisdn, String senderName) {
 		if(senderName != null) {
 			Logger logger = LogManager.getLogger("logging.log4j.SubmitSMLogger");
 
-			AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).getAccountDetails(Anumber);
-			messageA = i18n.getMessage("crbt.renewal.successful", null, null, (accountDetails == null) ? Locale.FRENCH : (accountDetails.getLanguageIDCurrent() == 2) ? Locale.ENGLISH : Locale.FRENCH);
-
-			if(Anumber != null) {
-				// if(Anumber.startsWith(productProperties.getMcc() + "")) Anumber = Anumber.substring((productProperties.getMcc() + "").length());
-				new SMPPConnector().submitSm(senderName, Anumber, messageA);
-				logger.log(Level.TRACE, "[" + Anumber + "] " + messageA);
+			if(msisdn != null) {
+				new SMPPConnector().submitSm(senderName, msisdn, message);
+				logger.log(Level.TRACE, "[" + msisdn + "] " + message);
 			}
-			if(Bnumber != null) {
-				// if(Bnumber.startsWith(productProperties.getMcc() + "")) Bnumber = Bnumber.substring((productProperties.getMcc() + "").length());
-				new SMPPConnector().submitSm(senderName, Bnumber, messageB);
-				logger.trace("[" + Bnumber + "] " + messageB);
+			else {
+				new SMPPConnector().submitSm(senderName, msisdn, message);
+				logger.trace("[" + msisdn + "] " + message);
 			}
 		}
 	}

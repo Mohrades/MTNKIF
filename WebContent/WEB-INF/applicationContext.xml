@@ -71,8 +71,12 @@
   		<property name="location" value="classpath:applicationContext.properties" />
 	</bean> -->
 	<!-- Load Application Properties from Database : nous définirons notre classe de processeur de propriété personnalisée qui étendra le PropertyPlaceholderConfigurer de Spring et chargera les propriétés de la base de données -->
-	<bean id="propertyConfigurer" class="com.util.PropertiesUtils">
+	<!-- The names of the beans that this bean depends on being initialized. The bean factory will guarantee that these beans get initialized before this bean.
+	Note that dependencies are normally expressed through bean properties or  constructor arguments. This property should just be necessary for other kinds of dependencies like statics (*ugh*) or database preparation on startup. -->
+	<bean id="propertyConfigurer" class="com.util.PropertiesUtils" depends-on="db_connection">
 		<!-- Load Application Properties from Database : uniquement les propriétés métier ou logic du service et qui peuvent changer -->
+		<!-- The names of the beans that this bean depends on being initialized. The bean factory will guarantee that these beans get initialized before this bean.
+		Note that dependencies are normally expressed through bean properties or  constructor arguments. This property should just be necessary for other kinds of dependencies like statics (*ugh*) or database preparation on startup. -->
 		<property name="dataSourceName" value="db_connection" />
 
 		<property name="serviceShortCode" value="#{dbConfig['db.serviceShortCode']}" />
@@ -91,30 +95,6 @@
     <!-- Spring propose l'espace de nommage context qui simplifie cette déclaration en utilisant le tag <property-placeholder> -->
     <!-- <context:property-placeholder location="classpath:applicationContext.properties" /> -->
 
-
-	<!-- <cache:annotation-driven /> -->
-	<!-- <cache:annotation-driven cache-manager="cacheManager" /> -->
-	<!-- EhCacheCacheManager est utilisé pour Ehcache 2. Vous ne devez pas l'utiliser -->
-    <!-- <bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
-        <property name="cacheManager" ref="ehcacheManagerFactory"/>
-    </bean> -->
-	<!-- <bean id="ehcacheManagerFactory" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
-	    <property name="configLocation" value="classpath:com/javaetmoi/demo/services/ ehcache.xml" />
-	    <property name="configLocation" value="classpath:ehcache.xml" />
-	    
-	    By passing true to setShared() method, we enable our cache to be shared as singleton at the ClassLoader level. By default it is false
-	    <property name="shared" value="true" />
-	</bean> -->
-
-	<!-- Ehcache 3 est configuré via JCache, vous devez donc utiliser le JCacheCacheManager plutôt. -->
-	<cache:annotation-driven cache-manager="ehCacheManager" />
-	<bean id="ehCacheManager" class="org.springframework.cache.jcache.JCacheCacheManager">
-	    <property name="cacheManager">
-	    	<bean class="org.springframework.cache.jcache.JCacheManagerFactoryBean">
-	    		<property name="cacheManagerUri" value="${spring.cache.jcache.config}" />
-	    	</bean>
-	    </property>
-	</bean>
 
 
 	<!-- The use of <context:component-scan> implicitly enables the functionality of <context:annotation-config>.
@@ -173,6 +153,42 @@
     	<!-- <property name="dataSource" ref="db_connection" /> -->
    	</bean>
 
+	<!-- <cache:annotation-driven /> -->
+	<!-- <cache:annotation-driven cache-manager="cacheManager" /> -->
+	<!-- EhCacheCacheManager est utilisé pour Ehcache 2. Vous ne devez pas l'utiliser -->
+    <!-- <bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+        <property name="cacheManager" ref="ehcacheManagerFactory"/>
+    </bean> -->
+	<!-- <bean id="ehcacheManagerFactory" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+	    <property name="configLocation" value="classpath:com/javaetmoi/demo/services/ ehcache.xml" />
+	    <property name="configLocation" value="classpath:ehcache.xml" />
+	    
+	    By passing true to setShared() method, we enable our cache to be shared as singleton at the ClassLoader level. By default it is false
+	    <property name="shared" value="true" />
+	</bean> -->
+
+	<!-- Ehcache 3 est configuré via JCache, vous devez donc utiliser le JCacheCacheManager plutôt. -->
+	<cache:annotation-driven cache-manager="ehCacheManager" />
+	<bean id="ehCacheManager" class="org.springframework.cache.jcache.JCacheCacheManager">
+	    <property name="cacheManager">
+	    	<bean class="org.springframework.cache.jcache.JCacheManagerFactoryBean">
+	    		<!-- <property name="cacheManagerUri" value="${spring.cache.jcache.config}" /> -->
+		        <property name="cacheManagerUri">
+		            <value>${spring.cache.jcache.config}</value>
+		        </property>
+	    	</bean>
+	    </property>
+	</bean>
+
+	<!-- <cache:annotation-driven />
+	<bean id="cacheManager" class="org.springframework.cache.jcache.JCacheCacheManager">
+        <property name="cacheManager">
+            <bean class="org.springframework.cache.jcache.JCacheManagerFactoryBean">
+               <property name="cacheManagerUri" value="classpath:ehcache.xml"/>
+            </bean>
+        </property>
+	</bean> -->
+
    	<bean id="databaseMessageSource" class="dao.DatabaseMessageSource">
    		<constructor-arg index="0" type="dao.DAO">
    			<ref bean="dao" />
@@ -227,6 +243,7 @@
 		When the value of this property is set to false, the default resource file is used, when the resource file for the asked locale is not found.
 	    <property name="fallbackToSystemLocale" value="false" />
 	</bean> -->
+
 
     <import resource="spring-batch-config.xml" />
 

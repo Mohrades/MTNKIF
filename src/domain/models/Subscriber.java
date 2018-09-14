@@ -1,8 +1,14 @@
 package domain.models;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class Subscriber extends MSISDN {
+public class Subscriber extends MSISDN implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8739679135572490569L;
 
 	private Date last_update_time, crbtNextRenewalDate;
 	private boolean flag, crbt, locked;

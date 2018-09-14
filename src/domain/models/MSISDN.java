@@ -1,6 +1,13 @@
 package domain.models;
 
-public class MSISDN {
+import java.io.Serializable;
+
+public class MSISDN implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6045691419276623261L;
 
 	private int id;
 	private String value;

@@ -33,7 +33,8 @@
   		<task:scheduled ref="jobs" method="run_pam" cron="30 01/12 * ? * *" />
 
   		<!-- <task:scheduled ref="jobs" method="renew_crbt" cron="0 30 02 ? * *" /> -->
-  		<task:scheduled ref="jobs" method="renew_crbt" cron="0 5/12 * 5/1 * ?" />
+  		<!-- <task:scheduled ref="jobs" method="renew_crbt" cron="0 5/12 * 5/1 * ?" /> -->
+  		<task:scheduled ref="jobs" method="runPeriodicSubscriberManagement" cron="0 5/12 * 5/1 * ?" />
 
 		<!-- <task:scheduled ref="jobs" method="setHappyBirthDayBonus" cron="0 30 07 ? * *" /> -->
 		<task:scheduled ref="jobs" method="setHappyBirthDayBonus" cron="0 03/12 * 5/1 * ?" />
@@ -386,7 +387,33 @@
 	  </batch:step>
 	</batch:job>
 
-	<batch:job id="crbtRenewalJob">
+	<!-- <batch:job id="crbtRenewalJob">
+	  <batch:listeners>
+      	<batch:listener>
+          <bean class="jobs.listeners.JobPhaseEventListener" />
+        </batch:listener>
+        <batch:listener ref="jobPhaseEventListener" />
+  	  </batch:listeners>
+
+	  <batch:step id="crbtRenewal">
+	  	<batch:tasklet ref="crbtRenewalTasklet" transaction-manager="transactionManager" />
+	  	<batch:tasklet transaction-manager="transactionManager">
+          <bean class="jobs.CRBTRenewalTasklet">
+          	<property name="i18n" ref="messageSource" />
+     		<property name="productProperties" ref="productProperties" />
+     		<property name="dao" ref="dao" />
+     	  </bean>
+		  Intercepting Step Execution
+		  Just as with the Job, there are many events during the execution of a Step where a user may need to perform some functionality.
+		  This can be accomplished with one of many Step scoped listeners.
+    	  <batch:listeners>
+    	  	<batch:listener ref="jobRunListener" />
+    	  </batch:listeners>
+	    </batch:tasklet>
+	  </batch:step>
+	</batch:job> -->
+
+	<batch:job id="periodicSubscriberManagementJob">
 	  <batch:listeners>
       	<!-- <batch:listener>
           <bean class="jobs.listeners.JobPhaseEventListener" />
@@ -394,11 +421,9 @@
         <batch:listener ref="jobPhaseEventListener" />
   	  </batch:listeners>
 
-	  <batch:step id="crbtRenewal">
-	  	<!-- <batch:tasklet ref="crbtRenewalTasklet" transaction-manager="transactionManager" /> -->
+	  <batch:step id="monthlyJobDataCalculating">
 	  	<batch:tasklet transaction-manager="transactionManager">
-          <bean class="jobs.CRBTRenewalTasklet">
-          	<property name="i18n" ref="messageSource" />
+          <bean class="jobs.MonthlyJobDataCalculatingTasklet">
      		<property name="productProperties" ref="productProperties" />
      		<property name="dao" ref="dao" />
      	  </bean>
@@ -407,8 +432,186 @@
 		  This can be accomplished with one of many Step scoped listeners. -->
     	  <batch:listeners>
     	  	<batch:listener ref="jobRunListener" />
+    	  	<!-- Promoting data from the step to the job execution context -->
+    	  	<!-- Registers listener on writing step : Declares promotion step listener -->
+    	  	<batch:listener>
+    	  		<!-- Declares promotion step listener -->
+				<bean id="promotionListener" class="org.springframework.batch.core.listener.ExecutionContextPromotionListener" scope="job">
+				  <property name="keys" value="allMSISDN_With_ASPU_NotReachedFlag" />
+				</bean>
+			</batch:listener>
     	  </batch:listeners>
 	    </batch:tasklet>
+
+		<!-- Declares job should end at this point, without the possibility of restart. BatchStatus will be COMPLETED. ExitStatus is configurable. -->
+		<!-- The 'end' element instructs a Job to stop with a BatchStatus of COMPLETED. A Job that has finished with status COMPLETED cannot be restarted (the framework will throw a JobInstanceAlreadyCompleteException) -->
+		<!-- The 'end' element also allows for an optional 'exit-code' attribute that can be used to customize the ExitStatus of the Job. If no 'exit-code' attribute is given, then the ExitStatus will be "COMPLETED" by default, to match the BatchStatus. -->
+    	<batch:end on="FAILED" exit-code="STOPPED BECAUSE OF ERRORS" />
+    	<batch:end on="STOPPED" exit-code="Job should not be run right now." />
+
+		<!-- If transition elements are used, then all of the behavior for the Step's transitions must be defined explicitly. While there is no limit to the number of transition elements on a Step, if the Step's execution results in an ExitStatus that is not covered by an element, then the framework will throw an exception and the Job will fail. The framework will automatically order transitions from most specific to least specific. -->
+		<!-- Defines a transition from this step to the next one depending on the value of the exit status. ExitStatus represents the status of a Step after it finishes execution. More specifically, the 'next' element above references the exit code of the ExitStatus -->
+    	<!-- <batch:next on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
+    	<!-- <batch:next on="*" to="step2" /> -->
+    	<!-- <batch:next on="FAILED" to="nightAdvantagesNotificationThroughSms" /> -->
+    	<batch:next on="COMPLETED" to="periodicSubscriberManagement" />
+	  </batch:step>
+
+	  <!-- A single step cannot have both a "next" attribute and a transition element. -->
+	  <!-- <batch:step id="stepA" next="stepB" /> -->
+	  <batch:step id="periodicSubscriberManagement">
+	  	<batch:tasklet task-executor="MultithreadedStepsTaskExecutor" throttle-limit="4">
+	      <batch:chunk reader="periodicSubscriberManagementReader" commit-interval="50" skip-limit="20" retry-limit="3">
+
+	        <batch:processor>
+	    	  <!-- CompositeItemProcessor -->
+	    	  <!-- You break up a step into three phases (reading, processing, and writing) to divide responsibilities 
+					between components.  However, the business logic that needs to be applied to a given item may not 
+					make sense to couple into a single ItemProcessor.  Spring Batch allows you to maintain that same 
+					division of responsibilities within your business logic by chaining ItemProcessors within a step.  In this 
+					section, you will look at how to chain ItemProcessors within a single step using Spring Batch’s 
+					CompositeItemProcessor.
+
+					The org.springframework.batch.item.support.CompositeItemProcessor is an implementation of the 
+					ItemProcessor interface that delegates processing to each of a list of ItemProcessor implementations in 
+					order.  As each processor returns its result, that result is passed onto the next processor until they all 
+					have been called.  This pattern occurs regardless of the types returned so if the first ItemProcessor takes 
+					a String as input it can return a Product object as output as long as the next ItemProcessor takes a 
+					Product as input.  At the end, the result is passed to the ItemWriter configured for the step.  It is 
+					important to note that just like any other ItemProcessor, if any of the processors this one delegates to 
+					returns null, the item will not be process further.  Figure 8-2 shows how the processing within the 
+					CompositeItemProcessor occurs. 
+			  -->
+			  <bean id="completePeriodicSubscriberManagementItemProcessor" class="org.springframework.batch.item.support.CompositeItemProcessor">
+      			<property name="delegates"> 
+          			<util:list> 
+              			<bean class="jobs.MonthlyReminderProcessor">
+          					<property name="i18n" ref="messageSource" />
+          					<property name="productProperties" ref="productProperties" />
+          				</bean>
+
+             			<bean class="jobs.CRBTRenewalProcessor" scope="step">
+          					<property name="dao" ref="dao" />
+          					<property name="productProperties" ref="productProperties" />
+          					<property name="allMSISDN_With_ASPU_ReachedFlag" value="#{jobExecutionContext['allMSISDN_With_ASPU_ReachedFlag']}" />
+          					<property name="allMSISDN_With_ASPU_NotReachedFlag" value="#{jobExecutionContext['allMSISDN_With_ASPU_NotReachedFlag']}" />
+          				</bean>
+          			</util:list>
+      			</property>
+  			  </bean>
+	        </batch:processor>
+
+	        <batch:writer>
+	          <bean class="jobs.PeriodicSubscriberManagementWriter">
+	          	<property name="i18n" ref="messageSource" />
+	          	<property name="productProperties" ref="productProperties" />
+	          </bean>
+	        </batch:writer>
+
+			<!-- Each stream element involved in the step.
+			By default, objects referenced using a reader, processor, and writer are automatically registered. You don’t need to specify them again here. -->
+	        <!-- <batch:streams>
+	          <batch:stream ref="allHVCsWithNoBonusReader" />
+	          <batch:stream ref="defaultBonusWriter" />
+	        </batch:streams> -->
+
+			<!-- The Step allows a limit for the number of times an exception can be skipped, and a list of exceptions that are 'skippable'. -->
+         	<!-- Skipping instead of failing -->
+         	<!-- The job fails as soon as you reach 20 skipped products, as defined in the configuration -->
+         	<batch:skippable-exception-classes>
+            	<batch:include class="exceptions.AirAvailabilityException" />
+            	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
+
+            	<!-- <batch:include class="org.springframework.batch.item.file.FlatFileParseException" />
+            	<batch:exclude class="java.lang.Exception" />
+            	<batch:exclude class="java.io.FileNotFoundException" /> -->
+         	</batch:skippable-exception-classes>
+
+			<!-- The Step allows a limit for the number of times an individual item can be retried, and a list of exceptions that are 'retryable'. -->
+			<!-- Automatic retry in a chunk-oriented step can make jobs more robust. It’s a shame to fail a step because of an unstable network, when retrying a few milliseconds later could have worked.
+			You now know about the default retry configuration in Spring Batch, and this should be enough for most cases. -->
+			<!-- Spring Batch only retries the item processing and item writing phases. By default, a retryable exception triggers a rollback, so you should be careful because retrying too many times for too many items can degrade performance.
+			You should use retryable exception only for exceptions that are nondeterministic, not for exceptions related to format or constraint violations, which are typically deterministic.
+			
+			Spring Batch retries only for exceptions thrown during item processing or item writing. Retry triggers a rollback, so retrying is costly : don’t abuse it!
+			Note that Spring Batch doesn’t read the items again, by default, because it maintains a chunk-scoped cache. -->
+			<!-- Override equals() and hashCode() when using retry
+			In a chunk-oriented step, Spring Batch handles retry on the item processing and writing phases.
+			By default, a retry implies a rollback, so Spring Batch must restore the context of retried operations across transactions.
+			It needs to track items closely to know which item could have triggered the retry.
+			Remember that Spring Batch can’t always know which item triggers an exception during the writing phase, because an item writer handles a list of items.
+			Spring Batch relies on the identity of items to track them, so for Spring Batch retry to work correctly, you should override the equals and hashCode methods of your items’ classes—by using a database identifier, for example. -->
+	        <batch:retryable-exception-classes>
+	          	<!-- <batch:include class="org.springframework.dao.OptimisticLockingFailureException" /> -->
+	          	<!-- <batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" /> -->
+	          	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException"/>
+	        </batch:retryable-exception-classes>
+
+			<!-- Registers retry listener -->
+			<!-- Spring Batch provides the RetryListener interface to react to any retried operation. A retry listener can be useful to log retried operations and to gather information.
+			Once you know more about transient failures, you’re more likely to change the system to avoid them in subsequent executions (remember, retried operations always degrade performance). -->
+			<!-- Any time you need to know about retried operations—for example, to get rid of them! Spring Batch lets you register retry listeners to log errors.
+			Retry is a built-in feature of chunk-oriented steps. What can you do if you need to retry in your own code, for example, in a tasklet? => Retrying in application code with the RetryTemplate -->
+        	<batch:retry-listeners>
+          		<batch:listener ref="retryListener" />
+        	</batch:retry-listeners>
+
+			<!-- You can combine retry with skip: a job retries an unsuccessful operation several times and then skips it.
+			Remember that once Spring Batch reaches the retry limit, the exception causes the step to exit and, by default, fail.
+			Use combined retry and skip when you don’t want a persisting transient error to fail a step. -->
+	      </batch:chunk>
+
+		  <!-- Avoiding a rollback for an exception -->
+		  <!-- In a chunk-oriented step, Spring Batch rolls back a chunk transaction if an error occurs in the item processor or in the item writer.
+		  This seems safe because an error could have corrupted the state of the transaction, so a rollback ensures data isn’t in an inconsistent state.
+	      Sometimes you’re sure that a specific error didn’t corrupt the transaction, so Spring Batch can retry the operation or skip the item.
+		  This saves a rollback and therefore a new transaction. Having fewer transactions is better because transactions are costly.
+		  Use the no-rollback-exception-classes feature only when you’re sure that an exception can’t corrupt a transaction; consider yourself warned! -->
+		  <!-- the Step can be configured with a list of exceptions that should not cause rollback. -->
+		  <!-- Spring Batch doesn’t drive a chunk-oriented step the same way when a skippable exception is thrown in the reading, processing, or writing phase.
+			
+		  When an item reader throws a skippable exception, Spring Batch just calls the read method again on the item reader to get the next item. There’s no rollback on the transaction.
+			
+		  When an item processor throws a skippable exception, Spring Batch rolls back the transaction of the current chunk and resubmits the read items to the item processor, except for the one that triggered the skippable exception in the previous run.
+			
+		  When the item writer throws a skippable exception, because Spring Batch doesn’t know which item threw the exception, it reprocesses each item in the chunk one by one, in its own transaction.
+	      When a writer throws a skippable exception, Spring Batch can’t know which item triggered the exception. Spring Batch then rolls back the transaction and processes the chunk item by item.
+		  Note that Spring Batch doesn’t read the items again, by default, because it maintains a chunk-scoped cache.
+		  -->
+	      <batch:no-rollback-exception-classes>
+	      	 <batch:include class="java.lang.Exception" />
+	         <batch:include class="java.lang.Throwable" />
+	      </batch:no-rollback-exception-classes>
+
+		  <!-- Intercepting Step Execution -->
+		  <!-- Just as with the Job, there are many events during the execution of a Step where a user may need to perform some functionality.
+		  This can be accomplished with one of many Step scoped listeners. -->
+    	  <batch:listeners>
+    	  	<batch:listener ref="jobRunListener" />
+			<batch:listener ref="itemProcessingSkipListener" />
+    	  </batch:listeners>
+	    </batch:tasklet>
+
+		<!-- Declares job should end at this point, without the possibility of restart. BatchStatus will be COMPLETED. ExitStatus is configurable. -->
+		<!-- The 'end' element instructs a Job to stop with a BatchStatus of COMPLETED. A Job that has finished with status COMPLETED cannot be restarted (the framework will throw a JobInstanceAlreadyCompleteException) -->
+		<!-- The 'end' element also allows for an optional 'exit-code' attribute that can be used to customize the ExitStatus of the Job. If no 'exit-code' attribute is given, then the ExitStatus will be "COMPLETED" by default, to match the BatchStatus. -->
+    	<!-- <batch:end on="FAILED" /> -->
+    	<!-- <batch:end on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
+
+		<!-- Declares job should fail at this point. BatchStatus will be FAILED. ExitStatus is configurable. -->
+		<!-- The 'fail' element instructs a Job to stop with a BatchStatus of FAILED. Unlike the 'end' element, the 'fail' element will not prevent the Job from being restarted.
+		The 'fail' element also allows for an optional 'exit-code' attribute that can be used to customize the ExitStatus of the Job. If no 'exit-code' attribute is given, then the ExitStatus will be "FAILED" by default, to match the BatchStatus. -->
+		<!-- <batch:fail on="FAILED" exit-code="EARLY TERMINATION" /> -->
+
+		<!-- Declares job should be stop at this point and provides pointer where execution should continue when the job is restarted. -->
+		<!-- The 'stop' element instructs a Job to stop with a BatchStatus of STOPPED. Stopping a Job can provide a temporary break in processing so that the operator can take some action before restarting the Job. -->
+		<!-- The 'stop' element requires a 'restart' attribute that specifies the step where execution should pick up when the Job is restarted. -->
+		<!-- <batch:stop on="COMPLETED" restart="step2" /> -->
+
+		<!-- If transition elements are used, then all of the behavior for the Step's transitions must be defined explicitly. While there is no limit to the number of transition elements on a Step, if the Step's execution results in an ExitStatus that is not covered by an element, then the framework will throw an exception and the Job will fail. The framework will automatically order transitions from most specific to least specific. -->
+		<!-- Defines a transition from this step to the next one depending on the value of the exit status. ExitStatus represents the status of a Step after it finishes execution. More specifically, the 'next' element above references the exit code of the ExitStatus -->
+    	<!-- <batch:next on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
+    	<!-- <batch:next on="*" to="step2" /> -->
 	  </batch:step>
 	</batch:job>
 
@@ -752,6 +955,26 @@
 			    		SELECT ID,MSISDN,NAME,LANGUAGE,BIRTH_DATE,ASPU,BONUS,BONUS_EXPIRES_IN,LAST_UPDATE_TIME FROM MTN_KIF_BIRTHDAY_BONUS_EBA WHERE ((BONUS IS NULL) AND (ASPU IS NOT NULL) AND (LOCKED = 0))
 			  		</value>
 				</property> -->
+			</bean>
+	  	</property>
+	</bean>
+
+	<!-- Configuring a thread-safe JdbcCursorItemReader with an indicator -->
+	<!-- You start by configuring a SynchronizingItemReader bean to make the delegate item reader thread-safe. The synchronized item reader uses the delegate property to reference the delegate item reader.
+	You then use the processed indicator column in the SQL statement to read data. A processed value of false causes the database to return only unprocessed rows.
+	Finally, you  disable Spring Batch state management. This is the other requirement to make the item reader thread-safe (with the synchronization of the read method).
+	But by doing that, you lose the reader’s restartability feature, because the item reader won’t know where it left off after a failure.
+	Luckily, the process indicator is there to enable restartability: the reader reads only unprocessed items. The item writer then needs to flag the product as handled using the processed column and then write the item, as described in the following listing. -->
+	<bean id="periodicSubscriberManagementReader" class="jobs.SynchronizingPeriodicSubscriberManagementReader">
+	  	<property name="delegate">
+	  		<!-- reader must be evaluated for every scheduled execution of the given job. -->
+	  		<!-- If you set the scope of the bean to step, then a new bean will be created every time the step is executed. -->
+			<bean class="jobs.PeriodicSubscriberManagementReader" scope="step">
+			  	<property name="dataSource" ref="db_connection" />
+			  	<property name="saveState" value="false" />
+			  	<property name="rowMapper">
+			    	<bean class="dao.mapping.SubscriberRowMapper" />
+			  	</property>
 			</bean>
 	  	</property>
 	</bean>

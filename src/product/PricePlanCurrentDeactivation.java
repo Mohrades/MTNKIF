@@ -72,7 +72,7 @@ public class PricePlanCurrentDeactivation {
 							subscriber.setLocked(false); // synchronisation database and object
 
 							new JdbcSubscriptionReportingDao(dao).saveOneSubscriptionReporting(new SubscriptionReporting(0, (subscriber.getId() > 0) ? subscriber.getId() : (new JdbcSubscriberDao(dao).getOneSubscriber(msisdn).getId()), false, (subscriber.getId() == 0) ? 0 : (subscriber.getLast_update_time() == null) ? 0 : (subscriber.getLast_update_time().before(now)) ? 0 : productProperties.getDeactivation_chargingAmount(), new Date(), originOperatorID)); // reporting
-							new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_days()); // release Lock
+							new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, false, productProperties.getDeactivation_freeCharging_days(), productProperties.getCrbt_renewal_days()); // release Lock
 
 							return new Object [] {0, i18n.getMessage("deactivation.change.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
@@ -92,7 +92,7 @@ public class PricePlanCurrentDeactivation {
 
 							// statusCode = 1, change not done
 							// statusCode = -1, change done unreliable (errors should occur) : subscriber may 
-							new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
+							new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days(), productProperties.getCrbt_renewal_days()); // release Lock
 							return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("deactivation.change.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 						}
 					}
@@ -110,7 +110,7 @@ public class PricePlanCurrentDeactivation {
 							}
 						}
 
-						new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
+						new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days(), productProperties.getCrbt_renewal_days()); // release Lock
 						return new Object [] {statusCode, (statusCode == 1) ? i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH) : i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 					}
 				}
@@ -118,7 +118,7 @@ public class PricePlanCurrentDeactivation {
 					if(request.isSuccessfully());
 					else new JdbcRollBackDao(dao).saveOneRollBack(new RollBack(0, -100, 2, msisdn, msisdn, null));
 
-					new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days()); // release Lock
+					new JdbcSubscriberDao(dao).releasePricePlanCurrentStatusAndLock(subscriber, true, productProperties.getDeactivation_freeCharging_days(), productProperties.getCrbt_renewal_days()); // release Lock
 					return new Object [] {request.isSuccessfully() ? 1 : -1, i18n.getMessage("service.internal.error", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH)};
 				}
 			}

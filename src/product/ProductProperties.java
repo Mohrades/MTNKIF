@@ -112,6 +112,8 @@ public interface ProductProperties extends InitializingBean, DisposableBean {
 	public String getSong_rbt_id() ;
 
 	public long getCrbt_renewal_aspu_minimum() ;
+	
+	public short getCrbt_renewal_days() ;
 
 	public String getDatabase_aspu_filter() ;
 

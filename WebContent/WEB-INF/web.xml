@@ -2,6 +2,11 @@
 <web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" id="WebApp_ID" version="3.1">
   <display-name>MTNKIF+</display-name>
   
+  <!-- Le paramètre contextConfigLocation permet de préciser le ou les fichiers de configuration à utiliser.
+  Plusieurs fichiers peuvent être précisés en utilisant un espace, une virgule ou un point virgule comme séparateur.
+  Il est aussi possible d'utiliser des motifs par exemple /WEB-INF/*Context.xml pour désigner tous les fichiers finissant par Context.xml dans
+  le répertoire WEB-INF ou /WEB-INF/**/*Context.xml pour désigner tous les fichiers finissant par Context.xml dans le répertoire WEB-INF et tous ses sous-répertoires.
+  Si le paramètre contextConfigLocation n'est pas défini, le listener ou la servlet utilisent par défaut le fichier /WEB-INF/applicationContext.xml. -->
   <context-param>
     <param-name>contextConfigLocation</param-name>
     <param-value>

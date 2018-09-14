@@ -109,6 +109,9 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 	@Value("${crbt.renewal.aspu.minimum}")
 	private long crbt_renewal_aspu_minimum;
 
+	@Value("${crbt.renewal.days}")
+	private short crbt_renewal_days;
+
 	@Value("${happy.birthday.bonus.aspu.minimum}")
 	private long happy_birthday_bonus_aspu_minimum;
 
@@ -436,6 +439,10 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 
 	public long getCrbt_renewal_aspu_minimum() {
 		return crbt_renewal_aspu_minimum;
+	}
+
+	public short getCrbt_renewal_days() {
+		return crbt_renewal_days;
 	}
 
 	public String getDatabase_aspu_filter() {

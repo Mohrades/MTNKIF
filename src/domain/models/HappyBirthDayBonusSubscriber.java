@@ -4,6 +4,11 @@ import java.util.Date;
 
 public class HappyBirthDayBonusSubscriber extends MSISDN {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2944574977815456561L;
+
 	private String name;
 	private int language, bonus;
 	// private long aspu;

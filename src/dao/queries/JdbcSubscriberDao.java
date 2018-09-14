@@ -48,7 +48,7 @@ public class JdbcSubscriberDao {
 	}
 
 	@SuppressWarnings("deprecation")
-	public void releasePricePlanCurrentStatusAndLock(Subscriber subscriber, boolean rollback, int days) {
+	public void releasePricePlanCurrentStatusAndLock(Subscriber subscriber, boolean rollback, int deactivation_freeCharging_days, int crbt_renewal_days) {
 		try {
 			if(rollback) {
 				if(subscriber.getId() > 0) getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET FLAG = (CASE FLAG WHEN 1 THEN 0 ELSE 1 END), LOCKED = 0 WHERE ((ID = " + subscriber.getId() + ") AND (LOCKED = 1))");
@@ -59,7 +59,7 @@ public class JdbcSubscriberDao {
 				Date next_month = new Date();
 				next_month.setYear(now.getYear());
 				next_month.setMonth(now.getMonth());
-				next_month.setDate(now.getDate() + days);
+				next_month.setDate(now.getDate() + crbt_renewal_days);
 				next_month.setHours(now.getHours());
 				next_month.setMinutes(now.getMinutes());
 				next_month.setSeconds(now.getSeconds());
@@ -108,7 +108,7 @@ public class JdbcSubscriberDao {
 			return -1;
 		}
 
-		return 0;		
+		return 0;
 	}
 
 	public Subscriber getOneSubscriber(int id, boolean locked) {
@@ -149,7 +149,8 @@ public class JdbcSubscriberDao {
 		Date now = new Date();
 		String tableName = "MTN_KIF_CRBT_REPORT_EBA_" + ((new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(now)).toUpperCase();
 
-		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA Aa WHERE ((Aa.CRBT_NEXT_RENEWAL_DATE_INDEX <= " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (Aa.FLAG = 1) AND (Aa.CRBT_NEXT_RENEWAL_DATE IS NOT NULL) AND (NOT EXISTS (SELECT B.CREATED_DATE_TIME FROM " + tableName + " B WHERE ((B.CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (B.SUBSCRIBER = Aa.ID)))))", new SubscriberRowMapper());
+		return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA Aa WHERE ((Aa.CRBT_NEXT_RENEWAL_DATE_INDEX <= " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (Aa.FLAG = 1) AND (NOT EXISTS (SELECT B.CREATED_DATE_TIME FROM " + tableName + " B WHERE ((B.CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (B.SUBSCRIBER = Aa.ID)))))", new SubscriberRowMapper());
+		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA Aa WHERE ((Aa.CRBT_NEXT_RENEWAL_DATE_INDEX <= " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (Aa.FLAG = 1) AND (Aa.CRBT_NEXT_RENEWAL_DATE IS NOT NULL) AND (NOT EXISTS (SELECT B.CREATED_DATE_TIME FROM " + tableName + " B WHERE ((B.CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (B.SUBSCRIBER = Aa.ID)))))", new SubscriberRowMapper());
 		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA Aa WHERE ((Aa.CRBT_NEXT_RENEWAL_DATE_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (Aa.FLAG = 1) AND (NOT EXISTS (SELECT B.CREATED_DATE_TIME FROM " + tableName + " B WHERE ((B.CREATED_DATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (B.SUBSCRIBER = Aa.ID)))))", new SubscriberRowMapper());
 		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((CRBT_NEXT_RENEWAL_DATE_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ") AND (FLAG = 1) AND (LOCKED = 0))", new SubscriberRowMapper());
 		// return getJdbcTemplate().query("SELECT ID,MSISDN,FLAG,CRBT,LAST_UPDATE_TIME,CRBT_NEXT_RENEWAL_DATE,LOCKED FROM MTN_KIF_MSISDN_EBA WHERE ((FLAG = 1) AND (TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "' >= CRBT_NEXT_RENEWAL_DATE))", new SubscriberRowMapper());
