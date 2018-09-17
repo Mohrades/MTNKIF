@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.context.MessageSource;
 
 import com.google.common.base.Splitter;
-import com.tools.DefaultPricePlan;
+import com.integration.DefaultPricePlan;
 import com.tools.SMPPConnector;
 
 import connexions.AIRRequest;

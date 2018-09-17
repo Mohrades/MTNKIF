@@ -8,7 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.MessageSource;
 
-import com.tools.DefaultPricePlan;
+import com.integration.DefaultPricePlan;
 import com.tools.SMPPConnector;
 
 import connexions.AIRRequest;

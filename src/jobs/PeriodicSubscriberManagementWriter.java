@@ -53,12 +53,12 @@ public class PeriodicSubscriberManagementWriter implements ItemWriter<Subscriber
 						AccountDetails accountDetails = (new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host())).getAccountDetails(subscriber.getValue());
 						int lang = (accountDetails == null) ? 1 : accountDetails.getLanguageIDCurrent();
 
-						// crbt renewal succeeded : send notification sms
+						// default crbt song rolled over successfully : send notification sms
 						if(subscriber.getId() > 0) {
 							String notification_message = i18n.getMessage("crbt.renewal.successful", null, null, (lang == 2) ? Locale.ENGLISH : Locale.FRENCH);
 							requestSubmitSmToSmppConnector(notification_message, subscriber.getValue(), productProperties.getSms_notifications_header());
 						}
-						// crbt renewal failed
+						//  default crbt song deleted successfully
 						else if(subscriber.getId() < 0) {
 							
 						}

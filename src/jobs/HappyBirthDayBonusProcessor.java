@@ -63,10 +63,10 @@ public class HappyBirthDayBonusProcessor implements ItemProcessor<HappyBirthDayB
 			throw ex;
 
 		} catch(Exception ex) {
-			if(ex instanceof AirAvailabilityException) throw ex;
+			if(ex instanceof AirAvailabilityException) throw (AirAvailabilityException)ex;
 
 		} catch(Throwable th) {
-			if(th instanceof AirAvailabilityException) throw th;
+			if(th instanceof AirAvailabilityException) throw (AirAvailabilityException)th;
 		}
 
 		return null;

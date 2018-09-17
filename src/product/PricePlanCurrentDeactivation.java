@@ -6,7 +6,7 @@ import java.util.Locale;
 
 import org.springframework.context.MessageSource;
 
-import com.tools.DefaultPricePlan;
+import com.integration.DefaultPricePlan;
 
 import connexions.AIRRequest;
 import dao.DAO;

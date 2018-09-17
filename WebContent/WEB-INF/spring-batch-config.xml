@@ -398,7 +398,7 @@
 	  <batch:step id="crbtRenewal">
 	  	<batch:tasklet ref="crbtRenewalTasklet" transaction-manager="transactionManager" />
 	  	<batch:tasklet transaction-manager="transactionManager">
-          <bean class="jobs.CRBTRenewalTasklet">
+          <bean class="jobs.DefaultCrbtSongRenewalTasklet">
           	<property name="i18n" ref="messageSource" />
      		<property name="productProperties" ref="productProperties" />
      		<property name="dao" ref="dao" />
@@ -421,9 +421,9 @@
         <batch:listener ref="jobPhaseEventListener" />
   	  </batch:listeners>
 
-	  <batch:step id="monthlyJobDataCalculating">
+	  <batch:step id="defaultCrbtSongRenewalDataCalculating">
 	  	<batch:tasklet transaction-manager="transactionManager">
-          <bean class="jobs.MonthlyJobDataCalculatingTasklet">
+          <bean class="jobs.DefaultCrbtSongRenewalDataCalculatingTasklet">
      		<property name="productProperties" ref="productProperties" />
      		<property name="dao" ref="dao" />
      	  </bean>
@@ -432,7 +432,15 @@
 		  This can be accomplished with one of many Step scoped listeners. -->
     	  <batch:listeners>
     	  	<batch:listener ref="jobRunListener" />
-    	  	<!-- Promoting data from the step to the job execution context -->
+
+    	  	<!-- Sharing data between steps : Promoting data from the step to the job execution context -->
+    	  	<!-- USING THE STEP EXECUTION CONTEXT AND PROMOTING THE DATA TO THE JOB EXECUTION CONTEXT -->
+			<!-- The solution used to promote data from a step’s scope to a job’s scope consists of two parts: you programmatically make the data available in the step execution context and promote this data to the job execution context through configuration.
+			This solution  looks complex, but it confines the data exposure to the step and makes the choice of exposing the data a configuration choice.
+			The communicating steps aren’t as tightly coupled with each other as in the pure job execution context solution. Imagine that you write jobs by assembling existing tasklets.
+			In some cases, you need to share data between steps, and in other cases, you don’t need to share data. By using the  promotion approach, you can choose to conceal data from the step execution context or to expose the data transparently only when you need to. -->
+    	  	<!-- How does the data end up in the job execution context? Spring Batch provides a ready-to-use step listener for that, the ExecutionContextPromotionListener.
+			All you need to do is register the step listener on the writing step and set which key(s) you want to promote. -->
     	  	<!-- Registers listener on writing step : Declares promotion step listener -->
     	  	<batch:listener>
     	  		<!-- Declares promotion step listener -->
@@ -448,12 +456,12 @@
 		<!-- The 'end' element also allows for an optional 'exit-code' attribute that can be used to customize the ExitStatus of the Job. If no 'exit-code' attribute is given, then the ExitStatus will be "COMPLETED" by default, to match the BatchStatus. -->
     	<batch:end on="FAILED" exit-code="STOPPED BECAUSE OF ERRORS" />
     	<batch:end on="STOPPED" exit-code="Job should not be run right now." />
+    	<batch:end on="COMPLETED WITH NO DATA" />
 
 		<!-- If transition elements are used, then all of the behavior for the Step's transitions must be defined explicitly. While there is no limit to the number of transition elements on a Step, if the Step's execution results in an ExitStatus that is not covered by an element, then the framework will throw an exception and the Job will fail. The framework will automatically order transitions from most specific to least specific. -->
 		<!-- Defines a transition from this step to the next one depending on the value of the exit status. ExitStatus represents the status of a Step after it finishes execution. More specifically, the 'next' element above references the exit code of the ExitStatus -->
     	<!-- <batch:next on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
     	<!-- <batch:next on="*" to="step2" /> -->
-    	<!-- <batch:next on="FAILED" to="nightAdvantagesNotificationThroughSms" /> -->
     	<batch:next on="COMPLETED" to="periodicSubscriberManagement" />
 	  </batch:step>
 
@@ -490,9 +498,16 @@
           					<property name="productProperties" ref="productProperties" />
           				</bean>
 
-             			<bean class="jobs.CRBTRenewalProcessor" scope="step">
+             			<bean class="jobs.DefaultCrbtSongRenewalProcessor" scope="step">
           					<property name="dao" ref="dao" />
           					<property name="productProperties" ref="productProperties" />
+
+          					<!-- Sharing data between steps : WRITING IN THE JOB EXECUTION CONTEXT AND READING USING LATE BINDING -->
+          					<!-- This approach consists of writing in the job execution context and then referring to the data from the XML configuration, using late binding.
+          					The receiving tasklet doesn’t read from any execution context: it reads its own property.
+          					The good news about this new version of the receiving tasklet is that it doesn’t depend on the Spring Batch runtime anymore.
+          					Speaking of dependency injection, the responsibility of setting the property correctly now belongs to Spring, with help from the step scope and SpEL.
+          					The # character triggers the evaluation of an expression. This implicit variable is available only for a step-scoped Spring bean running in a step! Spring Batch creates the instance at the last moment, when the step is about to run. That’s why we call it late binding. -->
           					<property name="allMSISDN_With_ASPU_ReachedFlag" value="#{jobExecutionContext['allMSISDN_With_ASPU_ReachedFlag']}" />
           					<property name="allMSISDN_With_ASPU_NotReachedFlag" value="#{jobExecutionContext['allMSISDN_With_ASPU_NotReachedFlag']}" />
           				</bean>
@@ -519,11 +534,13 @@
          	<!-- Skipping instead of failing -->
          	<!-- The job fails as soon as you reach 20 skipped products, as defined in the configuration -->
          	<batch:skippable-exception-classes>
+         		<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
             	<batch:include class="exceptions.AirAvailabilityException" />
-            	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" />
+            	<batch:exclude class="exceptions.HuaweiCrbtServerException" />
+            	<!-- <batch:exclude class="java.lang.Exception" />
+            	<batch:exclude class="java.lang.Throwable" /> -->
 
             	<!-- <batch:include class="org.springframework.batch.item.file.FlatFileParseException" />
-            	<batch:exclude class="java.lang.Exception" />
             	<batch:exclude class="java.io.FileNotFoundException" /> -->
          	</batch:skippable-exception-classes>
 
@@ -545,6 +562,7 @@
 	          	<!-- <batch:include class="org.springframework.dao.OptimisticLockingFailureException" /> -->
 	          	<!-- <batch:include class="org.springframework.dao.DeadlockLoserDataAccessException" /> -->
 	          	<batch:include class="org.springframework.dao.DeadlockLoserDataAccessException"/>
+	          	<batch:exclude class="exceptions.HuaweiCrbtServerException" />
 	        </batch:retryable-exception-classes>
 
 			<!-- Registers retry listener -->

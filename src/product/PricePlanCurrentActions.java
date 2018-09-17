@@ -10,13 +10,15 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.springframework.context.MessageSource;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.listener.RetryListenerSupport;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
+
+import com.integration.HuaweiCrbtServer;
 
 import connexions.AIRRequest;
-import crbt.AddToneBox;
-import crbt.DelInboxTone;
-import crbt.OrderTone;
-import crbt.SetTone;
-import crbt.Subscribe;
 import dao.DAO;
 import dao.queries.JdbcCRBTReportingDao;
 import dao.queries.JdbcRollBackDao;
@@ -24,6 +26,7 @@ import domain.models.CRBTReporting;
 import domain.models.RollBack;
 import domain.models.Subscriber;
 import ema.CAI_For_HLR_EMARequest;
+import jobs.listeners.CustomRetryOperationsListener;
 import util.AccountDetails;
 import util.BalanceAndDate;
 import util.DedicatedAccount;
@@ -197,34 +200,102 @@ public class PricePlanCurrentActions {
 								}
 
 								// crbt advantages
-								/*if((true || advantages) && (productProperties.getSong_rbt_code() != null)) {*/
-								if(productProperties.getSong_rbt_code() != null) {
-									// set mtnkif+ crbt song
-									String national = msisdn.substring((productProperties.getMcc() + "").length());
+								try {
+									/*if((true || advantages) && (productProperties.getSong_rbt_code() != null)) {*/
+									if(productProperties.getSong_rbt_code() != null) {
+										/**
+										 * 
+										Configures RetryTemplate
+										*/
+									    RetryTemplate retryTemplate = new RetryTemplate();
+									    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();                        
+									    retryPolicy.setMaxAttempts(3);                    
+									    retryTemplate.setRetryPolicy(retryPolicy);
+									    retryTemplate.setListeners(new RetryListenerSupport[] {new CustomRetryOperationsListener()});
 
-									// first step : subscribe
-									HashMap<String, String> multiRef = new Subscribe(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, true);
-									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("301009"))) {
-										 // step two : order  tone
-										// multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null, true);
-										multiRef = new OrderTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", null, null, true);
-										if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302011"))) {
-											// step three : add tone
-											multiRef = new AddToneBox(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, "2", "mtnkif", null, new String[] {productProperties.getSong_rbt_code()}, null, null, "2", "1", "000000000", national, true);
-											if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") && multiRef.containsKey("toneBoxID"))) {
-												// set tone
-												String toneBoxID = multiRef.get("toneBoxID");
-												multiRef = new SetTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, national, null, null, null, null, "1", "1", "2", null, null, toneBoxID, "1", true);
-												// reporting
-												if((multiRef != null) && (multiRef.containsKey("returnCode")) && multiRef.get("returnCode").equals("000000")) {
-													subscriber.setCrbt(true); // update status
-													CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), true, new Date(), originOperatorID);
-													CRBTReporting.setToneBoxID(toneBoxID);
-													new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(CRBTReporting);										
+										// set mtnkif+ crbt song
+										String national = msisdn.substring((productProperties.getMcc() + "").length());
+										HuaweiCrbtServer huaweiCrbtServer = new HuaweiCrbtServer(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout());
+
+										// first step : subscribe
+										/**
+										 * 
+										Calls web service with retry
+										*/
+										HashMap<String, String> multiRef = retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
+
+											@Override
+											public HashMap<String, String> doWithRetry(RetryContext context) throws Throwable {
+												// TODO Auto-generated method stub
+
+												return huaweiCrbtServer.subscribe("1", "000000", "1", national, national);
+											}
+									    });
+
+										if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("301009"))) {
+											 // step two : order  tone
+											/**
+											 * 
+											Calls web service with retry
+											*/
+											multiRef = retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
+
+												@Override
+												public HashMap<String, String> doWithRetry(RetryContext context) throws Throwable {
+													// TODO Auto-generated method stub
+
+													// return huaweiCrbtServer.orderTone("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", "0", null);
+													return huaweiCrbtServer.orderTone("1", "000000", "1", national, national, national, productProperties.getSong_rbt_code(), "1", "0", null, null);
+												}
+										    });
+
+											if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302011"))) {
+												// step three : add tone
+												/**
+												 * 
+												Calls web service with retry
+												*/
+												multiRef = retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
+
+													@Override
+													public HashMap<String, String> doWithRetry(RetryContext context) throws Throwable {
+														// TODO Auto-generated method stub
+
+														return huaweiCrbtServer.addToneBox("1", "000000", "1", national, "2", "mtnkif", null, new String[] {productProperties.getSong_rbt_code()}, null, null, "2", "1", "000000000", national);
+													}
+											    });
+
+												if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") && multiRef.containsKey("toneBoxID"))) {
+													// set tone
+													String toneBoxID = multiRef.get("toneBoxID");
+													/**
+													 * 
+													Calls web service with retry
+													*/
+													multiRef = retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
+
+														@Override
+														public HashMap<String, String> doWithRetry(RetryContext context) throws Throwable {
+															// TODO Auto-generated method stub
+
+															return huaweiCrbtServer.setTone("1", "000000", "1", national, national, national, null, null, null, null, "1", "1", "2", null, null, toneBoxID, "1");
+														}
+												    });
+
+													// reporting
+													if((multiRef != null) && (multiRef.containsKey("returnCode")) && multiRef.get("returnCode").equals("000000")) {
+														subscriber.setCrbt(true); // update status
+														CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), true, new Date(), originOperatorID);
+														CRBTReporting.setToneBoxID(toneBoxID);
+														new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(CRBTReporting);										
+													}
 												}
 											}
 										}
 									}
+
+								} catch(Throwable th) {
+
 								}
 
 								// delete others settings
@@ -405,16 +476,45 @@ public class PricePlanCurrentActions {
 
 							if((productProperties.getProductID() == 0) || (cai.execute("SET:PCRFSUB:MSISDN," + msisdn + ":ACTIONTYPE,UNSUBSCRIBEPRODUCT:CHANNELID,99:PAYTYPE,0:PRODUCTID," + productProperties.getProductID() + ";", allResp, successResp))) {
 								// remove mtnkif+ crbt song
-								if(productProperties.getSong_rbt_code() != null) {
-									String national = msisdn.substring((productProperties.getMcc() + "").length());
+								try {
+									if(productProperties.getSong_rbt_code() != null) {
+										/**
+										 * 
+										Configures RetryTemplate
+										*/
+									    RetryTemplate retryTemplate = new RetryTemplate();
+									    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();                        
+									    retryPolicy.setMaxAttempts(3);                    
+									    retryTemplate.setRetryPolicy(retryPolicy);
+									    retryTemplate.setListeners(new RetryListenerSupport[] {new CustomRetryOperationsListener()});
 
-									HashMap<String, String> multiRef = new DelInboxTone(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout()).execute("1", "000000", "1", national, national, null, null, null, productProperties.getSong_rbt_code(), null, "1", true);
-									// reporting
-									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
-										subscriber.setCrbt(false); // update status
-										CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), originOperatorID);
-										new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(CRBTReporting);
+										String national = msisdn.substring((productProperties.getMcc() + "").length());
+										HuaweiCrbtServer huaweiCrbtServer = new HuaweiCrbtServer(productProperties.getCrbt_server_host(), productProperties.getCrbt_server_io_sleep(), productProperties.getCrbt_server_io_timeout());
+
+										/**
+										 * 
+										Calls web service with retry
+										*/
+										HashMap<String, String> multiRef = retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
+
+											@Override
+											public HashMap<String, String> doWithRetry(RetryContext context) throws Throwable {
+												// TODO Auto-generated method stub
+
+												return huaweiCrbtServer.delInboxTone("1", "000000", "1", national, national, null, null, null, productProperties.getSong_rbt_code(), null, "1");
+											}
+									    });
+
+										// reporting
+										if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
+											subscriber.setCrbt(false); // update status
+											CRBTReporting CRBTReporting = new CRBTReporting(0, subscriber.getId(), false, new Date(), originOperatorID);
+											new JdbcCRBTReportingDao(dao).saveOneCRBTReporting(CRBTReporting);
+										}
 									}
+
+								} catch(Throwable th) {
+
 								}
 
 								return 0;
