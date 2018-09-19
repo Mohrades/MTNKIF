@@ -55,6 +55,9 @@ public class JobRunListener implements StepExecutionListener {
 			If both conditions are met, a new ExitStatus with an exit code of "COMPLETED WITH SKIPS" is returned.*/
 
 	        String exitCode = stepExecution.getExitStatus().getExitCode();
+	        if(ExitStatus.COMPLETED.getExitCode().equals(exitCode) && (stepExecution.getSkipCount() > 0)) {
+	        	stepExecution.setExitStatus(new ExitStatus("COMPLETED WITH SKIPS"));
+	        }
 	        /*if (!exitCode.equals(ExitStatus.FAILED.getExitCode()) && (stepExecution.getSkipCount() > 0)) {
 	            return new ExitStatus("COMPLETED WITH SKIPS");
 	        }

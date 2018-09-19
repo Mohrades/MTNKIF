@@ -258,12 +258,12 @@ public class USSDFlow {
 					Object [] requestStatus = (new PricePlanCurrent()).getStatus(productProperties, i18n, dao, ussd.getMsisdn(), language, false);
 
 					if(("menu" + transitions).equals("menu.1")) {
-						modele.put("message", i18n.getMessage("menu.1", new Object[] {(((Subscriber)requestStatus[2] == null) || (((Subscriber)requestStatus[2]).getId() == 0) || (((Subscriber)requestStatus[2]).getLast_update_time() == null)) ? 0 : (productProperties.getActivation_chargingAmount()/100)}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+						modele.put("message", i18n.getMessage("menu.1", new Object[] {(((Subscriber)requestStatus[2] == null) || (((Subscriber)requestStatus[2]).getId() == 0) || (((Subscriber)requestStatus[2]).getLast_update_time() == null)) ? (0 + "") : ((productProperties.getActivation_chargingAmount()/100) + "")}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
 					}
 					else {
 						Date now = new Date();
 						now.setDate(now.getDate() - productProperties.getDeactivation_freeCharging_days());
-						modele.put("message", i18n.getMessage("menu.5", new Object[] {(((Subscriber)requestStatus[2] == null) || (((Subscriber)requestStatus[2]).getId() == 0) || (((Subscriber)requestStatus[2]).getLast_update_time() == null) || (((Subscriber)requestStatus[2]).getLast_update_time().before(now))) ? 0 : (productProperties.getDeactivation_chargingAmount()/100)}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+						modele.put("message", i18n.getMessage("menu.5", new Object[] {(((Subscriber)requestStatus[2] == null) || (((Subscriber)requestStatus[2]).getId() == 0) || (((Subscriber)requestStatus[2]).getLast_update_time() == null) || (((Subscriber)requestStatus[2]).getLast_update_time().before(now))) ? (0 + "") : ((productProperties.getDeactivation_chargingAmount()/100) + "")}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
 					}
 				}
 				else {

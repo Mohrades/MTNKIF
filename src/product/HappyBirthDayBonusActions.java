@@ -159,10 +159,10 @@ public class HappyBirthDayBonusActions {
 				long volumeVoice = balanceVoice.getAccountValue()/100;
 
 				if(volumeData >= 1024) {
-					message = i18n.getMessage("happy.birthday.bonus.status", new Object [] {volumeVoice/60, volumeVoice%60, new Formatter().format("%.2f", ((double)volumeData/1024)), (language == 2) ? "GB" : "Go", (language == 2) ? (new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm")).format(balanceData.getExpiryDate()) : (new SimpleDateFormat("dd/MM/yyyy 'a' HH:mm")).format(balanceVoice.getExpiryDate())}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+					message = i18n.getMessage("happy.birthday.bonus.status", new Object [] {((volumeVoice/60) + ""), ((volumeVoice%60) + ""), new Formatter().format("%.2f", ((double)volumeData/1024)), (language == 2) ? "GB" : "Go", (language == 2) ? (new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm")).format(balanceData.getExpiryDate()) : (new SimpleDateFormat("dd/MM/yyyy 'a' HH:mm")).format(balanceVoice.getExpiryDate())}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
 				}
 				else {
-					message = i18n.getMessage("happy.birthday.bonus.status", new Object [] {volumeVoice/60, volumeVoice%60, volumeData, (language == 2) ? "MB" : "Mo", (language == 2) ? (new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm")).format(balanceData.getExpiryDate()) : (new SimpleDateFormat("dd/MM/yyyy 'a' HH:mm")).format(balanceVoice.getExpiryDate())}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+					message = i18n.getMessage("happy.birthday.bonus.status", new Object [] {((volumeVoice/60) + ""), ((volumeVoice%60) + ""), (volumeData + ""), (language == 2) ? "MB" : "Mo", (language == 2) ? (new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm")).format(balanceData.getExpiryDate()) : (new SimpleDateFormat("dd/MM/yyyy 'a' HH:mm")).format(balanceVoice.getExpiryDate())}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
 				}
 			}
 		}

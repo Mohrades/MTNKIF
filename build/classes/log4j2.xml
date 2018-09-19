@@ -275,8 +275,8 @@
       <AppenderRef ref="AsyncDataAvailabilityMail" />
     </Logger>
 
-    <!-- <Root level="error"> -->
-    <Root level="INFO">
+    <Root level="error">
+    <!-- <Root level="INFO"> -->
       <AppenderRef ref="STDOUT" />
     </Root>
   </Loggers>

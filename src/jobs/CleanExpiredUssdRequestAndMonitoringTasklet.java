@@ -44,7 +44,7 @@ public class CleanExpiredUssdRequestAndMonitoringTasklet implements Tasklet {
 	}
 
 	@Override
-	public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) {
+	public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
 		// TODO Auto-generated method stub
 
 		try {

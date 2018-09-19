@@ -259,11 +259,26 @@
 		<!-- The 'stop' element requires a 'restart' attribute that specifies the step where execution should pick up when the Job is restarted. -->
 		<!-- <batch:stop on="COMPLETED" restart="step2" /> -->
 
+    	<!-- Syntax for the step attribute on
+    	Value/special character : String, Description : Exact value of the step exit status, Examples : COMPLETED,FAILED
+    	Value/special character : *, Description : Matches 0 or more characters, Examples : * (matches any value) => COMPLETED* (matches COMPLETED and COMPLETED WITH SKIPS)
+    	Value/special character : ?, Description : Matches exactly one character, Examples : C?T (matches CAT but not COUNT)
+
+		Note that Spring Batch is smart enough to order transitions from the most to the least specific automatically.
+		This means the order of the next tags in the configuration doesn’t matter; you can define transitions with wildcards first (less specific) and transitions with exact values last (more specific).
+
+		WARNING : Be careful when transitioning to a step using the * special character. If the * matches the FAILED exit status (because there’s no more specific match), the next step is executed even if the current step fails.
+		Perhaps this isn’t what you want; you may want to fail the job execution when a step fails. When using conditional transitions, you must handle failed steps yourself. -->
+
 		<!-- If transition elements are used, then all of the behavior for the Step's transitions must be defined explicitly. While there is no limit to the number of transition elements on a Step, if the Step's execution results in an ExitStatus that is not covered by an element, then the framework will throw an exception and the Job will fail. The framework will automatically order transitions from most specific to least specific. -->
 		<!-- Defines a transition from this step to the next one depending on the value of the exit status. ExitStatus represents the status of a Step after it finishes execution. More specifically, the 'next' element above references the exit code of the ExitStatus -->
+
     	<!-- <batch:next on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
+    	<!-- <batch:next on="COMPLETED*" to="errorPrint1" /> -->
     	<!-- <batch:next on="*" to="step2" /> -->
-    	<batch:next on="COMPLETED" to="nightAdvantagesNotificationThroughSms" />
+
+    	<!-- <batch:next on="COMPLETED" to="nightAdvantagesNotificationThroughSms" /> -->
+    	<batch:next on="COMPLETED*" to="nightAdvantagesNotificationThroughSms" />
 	  </batch:step>
 
 	  <batch:step id="nightAdvantagesNotificationThroughSms">
@@ -458,11 +473,26 @@
     	<batch:end on="STOPPED" exit-code="Job should not be run right now." />
     	<batch:end on="COMPLETED WITH NO DATA" />
 
+    	<!-- Syntax for the step attribute on
+    	Value/special character : String, Description : Exact value of the step exit status, Examples : COMPLETED,FAILED
+    	Value/special character : *, Description : Matches 0 or more characters, Examples : * (matches any value) => COMPLETED* (matches COMPLETED and COMPLETED WITH SKIPS)
+    	Value/special character : ?, Description : Matches exactly one character, Examples : C?T (matches CAT but not COUNT)
+
+		Note that Spring Batch is smart enough to order transitions from the most to the least specific automatically.
+		This means the order of the next tags in the configuration doesn’t matter; you can define transitions with wildcards first (less specific) and transitions with exact values last (more specific).
+
+		WARNING : Be careful when transitioning to a step using the * special character. If the * matches the FAILED exit status (because there’s no more specific match), the next step is executed even if the current step fails.
+		Perhaps this isn’t what you want; you may want to fail the job execution when a step fails. When using conditional transitions, you must handle failed steps yourself. -->
+
 		<!-- If transition elements are used, then all of the behavior for the Step's transitions must be defined explicitly. While there is no limit to the number of transition elements on a Step, if the Step's execution results in an ExitStatus that is not covered by an element, then the framework will throw an exception and the Job will fail. The framework will automatically order transitions from most specific to least specific. -->
 		<!-- Defines a transition from this step to the next one depending on the value of the exit status. ExitStatus represents the status of a Step after it finishes execution. More specifically, the 'next' element above references the exit code of the ExitStatus -->
+
     	<!-- <batch:next on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
+    	<!-- <batch:next on="COMPLETED*" to="errorPrint1" /> -->
     	<!-- <batch:next on="*" to="step2" /> -->
-    	<batch:next on="COMPLETED" to="periodicSubscriberManagement" />
+
+    	<!-- <batch:next on="COMPLETED" to="periodicSubscriberManagement" /> -->
+		<batch:next on="COMPLETED*" to="periodicSubscriberManagement" />
 	  </batch:step>
 
 	  <!-- A single step cannot have both a "next" attribute and a transition element. -->
@@ -626,9 +656,22 @@
 		<!-- The 'stop' element requires a 'restart' attribute that specifies the step where execution should pick up when the Job is restarted. -->
 		<!-- <batch:stop on="COMPLETED" restart="step2" /> -->
 
+    	<!-- Syntax for the step attribute on
+    	Value/special character : String, Description : Exact value of the step exit status, Examples : COMPLETED,FAILED
+    	Value/special character : *, Description : Matches 0 or more characters, Examples : * (matches any value) => COMPLETED* (matches COMPLETED and COMPLETED WITH SKIPS)
+    	Value/special character : ?, Description : Matches exactly one character, Examples : C?T (matches CAT but not COUNT)
+
+		Note that Spring Batch is smart enough to order transitions from the most to the least specific automatically.
+		This means the order of the next tags in the configuration doesn’t matter; you can define transitions with wildcards first (less specific) and transitions with exact values last (more specific).
+
+		WARNING : Be careful when transitioning to a step using the * special character. If the * matches the FAILED exit status (because there’s no more specific match), the next step is executed even if the current step fails.
+		Perhaps this isn’t what you want; you may want to fail the job execution when a step fails. When using conditional transitions, you must handle failed steps yourself. -->
+
 		<!-- If transition elements are used, then all of the behavior for the Step's transitions must be defined explicitly. While there is no limit to the number of transition elements on a Step, if the Step's execution results in an ExitStatus that is not covered by an element, then the framework will throw an exception and the Job will fail. The framework will automatically order transitions from most specific to least specific. -->
 		<!-- Defines a transition from this step to the next one depending on the value of the exit status. ExitStatus represents the status of a Step after it finishes execution. More specifically, the 'next' element above references the exit code of the ExitStatus -->
+
     	<!-- <batch:next on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
+    	<!-- <batch:next on="COMPLETED*" to="errorPrint1" /> -->
     	<!-- <batch:next on="*" to="step2" /> -->
 	  </batch:step>
 	</batch:job>
@@ -900,9 +943,22 @@
 		<!-- The 'stop' element requires a 'restart' attribute that specifies the step where execution should pick up when the Job is restarted. -->
 		<!-- <batch:stop on="COMPLETED" restart="step2" /> -->
 
+    	<!-- Syntax for the step attribute on
+    	Value/special character : String, Description : Exact value of the step exit status, Examples : COMPLETED,FAILED
+    	Value/special character : *, Description : Matches 0 or more characters, Examples : * (matches any value) => COMPLETED* (matches COMPLETED and COMPLETED WITH SKIPS)
+    	Value/special character : ?, Description : Matches exactly one character, Examples : C?T (matches CAT but not COUNT)
+
+		Note that Spring Batch is smart enough to order transitions from the most to the least specific automatically.
+		This means the order of the next tags in the configuration doesn’t matter; you can define transitions with wildcards first (less specific) and transitions with exact values last (more specific).
+
+		WARNING : Be careful when transitioning to a step using the * special character. If the * matches the FAILED exit status (because there’s no more specific match), the next step is executed even if the current step fails.
+		Perhaps this isn’t what you want; you may want to fail the job execution when a step fails. When using conditional transitions, you must handle failed steps yourself. -->
+
 		<!-- If transition elements are used, then all of the behavior for the Step's transitions must be defined explicitly. While there is no limit to the number of transition elements on a Step, if the Step's execution results in an ExitStatus that is not covered by an element, then the framework will throw an exception and the Job will fail. The framework will automatically order transitions from most specific to least specific. -->
 		<!-- Defines a transition from this step to the next one depending on the value of the exit status. ExitStatus represents the status of a Step after it finishes execution. More specifically, the 'next' element above references the exit code of the ExitStatus -->
+
     	<!-- <batch:next on="COMPLETED WITH SKIPS" to="errorPrint1" /> -->
+    	<!-- <batch:next on="COMPLETED*" to="errorPrint1" /> -->
     	<!-- <batch:next on="*" to="step2" /> -->
 	  </batch:step>
 	</batch:job>

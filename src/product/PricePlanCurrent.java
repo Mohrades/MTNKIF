@@ -90,13 +90,13 @@ public class PricePlanCurrent {
 			Object[] bonusNight = getNightAdvantages(productProperties, msisdn, language);
 
 			if((bonusSMS != null) && (bonusNight != null)) {
-				message = i18n.getMessage("status.successful_with_bonus", new Object[] {(int)(bonusSMS[0]), (String)(bonusSMS[1]), (int)(bonusNight[0]), (int)(bonusNight[1]), (String)(bonusNight[2]), (String)(bonusNight[3]), (String)(bonusNight[4])}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+				message = i18n.getMessage("status.successful_with_bonus", new Object[] {(((int)(bonusSMS[0])) + ""), (String)(bonusSMS[1]), (((int)(bonusNight[0])) + ""), (((int)(bonusNight[1])) + ""), (String)(bonusNight[2]), (String)(bonusNight[3]), (String)(bonusNight[4])}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
 			}
 			else if(bonusSMS != null) {
-				message = i18n.getMessage("status.successful_with_bonus_only_sms_bonus", new Object[] {(int)(bonusSMS[0]), (String)(bonusSMS[1])}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+				message = i18n.getMessage("status.successful_with_bonus_only_sms_bonus", new Object[] {(((int)(bonusSMS[0])) + ""), (String)(bonusSMS[1])}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
 			}
 			else if(bonusNight != null) {
-				message = i18n.getMessage("status.successful_with_bonus_only_night_advantages", new Object[] {(int)(bonusNight[0]), (int)(bonusNight[1]), (String)(bonusNight[2]), (String)(bonusNight[3]), (String)(bonusNight[4])}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
+				message = i18n.getMessage("status.successful_with_bonus_only_night_advantages", new Object[] {(((int)(bonusNight[0])) + ""), (((int)(bonusNight[1])) + ""), (String)(bonusNight[2]), (String)(bonusNight[3]), (String)(bonusNight[4])}, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
 			}
 			else message = i18n.getMessage("status.successful", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
 		}

@@ -96,7 +96,7 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 	The DiscountService interface hides the call to the web service. The following listing shows the tasklet that retrieves the discounts (the setter methods are omitted for brevity). The tasklet uses a RetryTemplate to retry in case of failure.
 
 	*/
-	public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) {
+	public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
 		// TODO Auto-generated method stub
 
 		try {
@@ -443,8 +443,11 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 				}
 			}
 
-		} catch(Throwable th) {
+		}/* catch(Throwable th) {
 
+		}*/
+		catch(Throwable th) {
+			throw th;
 		}
 
 		return null;

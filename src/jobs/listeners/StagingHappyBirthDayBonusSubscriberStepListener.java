@@ -69,12 +69,12 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 		/**
 		 * 
 		// Returns custom status for skipped items
-	    if(!ExitStatus.FAILED.equals(stepExecution.getExitStatus()) && stepExecution.getSkipCount() > 0) {            
-	       return new ExitStatus("COMPLETED WITH SKIPS");   
+	    if(!ExitStatus.FAILED.equals(stepExecution.getExitStatus()) && stepExecution.getSkipCount() > 0) {
+	       return new ExitStatus("COMPLETED WITH SKIPS");
 	     }
 	    // Returns default status
 	    else {
-	       return stepExecution.getExitStatus();        
+	       return stepExecution.getExitStatus();
 	     }
 		*/
         return stepExecution.getExitStatus();

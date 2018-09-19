@@ -77,7 +77,7 @@ public class DefaultCrbtSongRenewalDataCalculatingTasklet implements Tasklet {
 	The unlucky artifacts without this access are the item reader, processor, and writer. If you need access to an execution context from an item reader, processor, or writer, you can implement a listener interface that provides more insight into the execution, such as an ItemStream.
 
 	*/
-	public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) {
+	public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
 		// TODO Auto-generated method stub
 
 		try {
