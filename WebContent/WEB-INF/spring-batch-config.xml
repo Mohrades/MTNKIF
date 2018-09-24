@@ -422,6 +422,7 @@
 		  Just as with the Job, there are many events during the execution of a Step where a user may need to perform some functionality.
 		  This can be accomplished with one of many Step scoped listeners.
     	  <batch:listeners>
+    	  	<batch:listener ref="validatingMonthlySubscriberManagementListener" />
     	  	<batch:listener ref="jobRunListener" />
     	  </batch:listeners>
 	    </batch:tasklet>
@@ -446,7 +447,9 @@
 		  <!-- Just as with the Job, there are many events during the execution of a Step where a user may need to perform some functionality.
 		  This can be accomplished with one of many Step scoped listeners. -->
     	  <batch:listeners>
-    	  	<batch:listener ref="jobRunListener" />
+    	  	<batch:listener ref="validatingMonthlySubscriberManagementListener" />
+
+			<batch:listener ref="jobRunListener" />
 
     	  	<!-- Sharing data between steps : Promoting data from the step to the job execution context -->
     	  	<!-- USING THE STEP EXECUTION CONTEXT AND PROMOTING THE DATA TO THE JOB EXECUTION CONTEXT -->
@@ -507,7 +510,7 @@
 					between components.  However, the business logic that needs to be applied to a given item may not 
 					make sense to couple into a single ItemProcessor.  Spring Batch allows you to maintain that same 
 					division of responsibilities within your business logic by chaining ItemProcessors within a step.  In this 
-					section, you will look at how to chain ItemProcessors within a single step using Spring Batch’s 
+					section, you will look at how to chain ItemProcessors within a single step using Spring Batch’s
 					CompositeItemProcessor.
 
 					The org.springframework.batch.item.support.CompositeItemProcessor is an implementation of the 
@@ -635,6 +638,7 @@
 		  <!-- Just as with the Job, there are many events during the execution of a Step where a user may need to perform some functionality.
 		  This can be accomplished with one of many Step scoped listeners. -->
     	  <batch:listeners>
+    	  	<batch:listener ref="validatingMonthlySubscriberManagementListener" />
     	  	<batch:listener ref="jobRunListener" />
 			<batch:listener ref="itemProcessingSkipListener" />
     	  </batch:listeners>
@@ -876,6 +880,8 @@
 		  <!-- Just as with the Job, there are many events during the execution of a Step where a user may need to perform some functionality.
 		  This can be accomplished with one of many Step scoped listeners. -->
     	  <batch:listeners>
+    	  	<batch:listener ref="validatingMonthlySubscriberManagementListener" />
+
     	  	<batch:listener ref="jobRunListener" />
 
       		<batch:listener>
@@ -1002,6 +1008,8 @@
       	<!-- <property name="resource" value="#{stepExecutionContext['input.file.name']}" />
       	<property name="resource" value="#{jobExecutionContext['input.file.name']}" /> -->
     </bean>
+
+	<bean id="validatingMonthlySubscriberManagementListener" class="jobs.listeners.MonthlySubscriberManagementListener" scope="step" />
 
 	<bean id="itemProcessingSkipListener" class="jobs.listeners.ItemProcessingSkipListener" scope="step" />
 

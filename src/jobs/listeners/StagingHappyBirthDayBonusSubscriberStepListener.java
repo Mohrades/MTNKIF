@@ -18,7 +18,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
-
 import com.tools.SMPPConnector;
 
 import dao.DAO;
@@ -86,8 +85,8 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 	// action avant l'exécution de l'étape
 	public void beforeStep(StepExecution stepExecution) {
 		try {
-			Date now = stepExecution.getStartTime();
-			if(now == null) now = new Date();
+			// Date now = (stepExecution.getStartTime() == null) ? new Date() : (Date) stepExecution.getStartTime().clone();
+			Date now = (stepExecution.getJobExecution().getStartTime() == null) ? new Date() : (Date) stepExecution.getJobExecution().getStartTime().clone();
 			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
 
 			// Stopping a job from a tasklet : Setting the stop flag in a tasklet is straightforward;
@@ -158,7 +157,11 @@ public class StagingHappyBirthDayBonusSubscriberStepListener implements StepExec
 							connexion.setReadOnly(true); // en mode lecture seule
 
 							// Kif+ Subscribers with ASPU >= 3000 XOF
-							Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+							// Date previous_month = (stepExecution.getStartTime() == null) ? new Date() : (Date) stepExecution.getStartTime().clone();
+							Date previous_month = (stepExecution.getJobExecution().getStartTime() == null) ? new Date() : (Date) stepExecution.getJobExecution().getStartTime().clone();
+							// consider previous month table
+							previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+
 							SQLQuery = productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", ((new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).toUpperCase()).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + "");
 							ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", ((new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).toUpperCase()).replace("<%= VALUE>", productProperties.getHappy_birthday_bonus_aspu_minimum() + ""));
 							rs = ps.executeQuery();

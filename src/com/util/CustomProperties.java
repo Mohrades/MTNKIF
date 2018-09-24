@@ -17,11 +17,11 @@ public class CustomProperties extends Properties {
 	 * 
 	 */
 	private static final long serialVersionUID = 7149552055602431893L;
-	
+
 	public CustomProperties() {
-		
+
 	}
-	
+
 	// This will make sure that you will have properties loaded from database as well as any additional configuration that you can safely put in application.
 	public CustomProperties(DataSource dataSource, int serviceShortCode) {
 		super();

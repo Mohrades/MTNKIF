@@ -56,13 +56,13 @@ public class JdbcSubscriberDao {
 			}
 			else {
 				Date now = new Date();
-				Date next_month = new Date();
-				next_month.setYear(now.getYear());
-				next_month.setMonth(now.getMonth());
+				Date next_month = (Date) now.clone();
 				next_month.setDate(now.getDate() + crbt_renewal_days);
-				next_month.setHours(now.getHours());
-				next_month.setMinutes(now.getMinutes());
-				next_month.setSeconds(now.getSeconds());
+
+				// validate month M and M-1 : dates'months must be different
+				while(now.getMonth() == next_month.getMonth()) {
+					next_month.setDate(next_month.getDate() + 1);
+				}
 
 				if(subscriber.getId() > 0) getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET CRBT = " + (subscriber.isCrbt() ? 1 : 0) + ", LAST_UPDATE_TIME = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "', LAST_UPDATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ", CRBT_NEXT_RENEWAL_DATE = (CASE FLAG WHEN 1 THEN TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(next_month) + "' ELSE CRBT_NEXT_RENEWAL_DATE END), CRBT_NEXT_RENEWAL_DATE_INDEX = (CASE FLAG WHEN 1 THEN " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(next_month)) + " ELSE CRBT_NEXT_RENEWAL_DATE_INDEX END), LOCKED = 0 WHERE ((ID = " + subscriber.getId() + ") AND (LOCKED = 1))");
 				else getJdbcTemplate().update("UPDATE MTN_KIF_MSISDN_EBA SET CRBT = " + (subscriber.isCrbt() ? 1 : 0) + ", LAST_UPDATE_TIME = TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(now) + "', LAST_UPDATE_TIME_INDEX = " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(now)) + ", CRBT_NEXT_RENEWAL_DATE = (CASE FLAG WHEN 1 THEN TIMESTAMP '" + (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(next_month) + "' ELSE CRBT_NEXT_RENEWAL_DATE END), CRBT_NEXT_RENEWAL_DATE_INDEX = (CASE FLAG WHEN 1 THEN " + Integer.parseInt((new SimpleDateFormat("yyyyMMdd")).format(next_month)) + " ELSE CRBT_NEXT_RENEWAL_DATE_INDEX), LOCKED = 0 WHERE ((MSISDN = '" + subscriber.getValue() + "') AND (LOCKED = 1))");

@@ -66,6 +66,14 @@ public class ExceptionSkipPolicy implements SkipPolicy {
 					!! CECI EST JUSTE UNE INFORMATION A SE RAPPELER
 
 					 */
+
+					/**
+					 *
+					Determines if the class or interface represented by this Class object is either the same as, or is a superclass or superinterface of, the class or interface represented by the specified Class parameter. It returns true if so; otherwise it returns false.
+					If this Class object represents a primitive type, this method returns true if the specified Class parameter is exactly this Class object; otherwise it returns false.
+					Specifically, this method tests whether the type represented by the specified Class parameter can be converted to the type represented by this Class object via an identity conversion or via a widening reference conversion.
+
+					 */
 					if(exceptionClassToSkip.isAssignableFrom(t.getClass())) {
 						return true;
 					}

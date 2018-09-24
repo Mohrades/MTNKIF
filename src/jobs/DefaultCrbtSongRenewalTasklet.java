@@ -104,9 +104,9 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 			obtain the parameters this way getJobParameters() returns a Map<String, Object>. Because of this, the cast is required.*/
 			// String param = (String) chunkContext.getStepContext().getJobParameters().get("paramName");
 
-
+			// Date now = (chunkContext.getStepContext().getStepExecution().getStartTime() == null) ? new Date() : (Date) chunkContext.getStepContext().getStepExecution().getStartTime().clone();
+			Date now = (chunkContext.getStepContext().getStepExecution().getJobExecution().getStartTime() == null) ? new Date() : (Date) chunkContext.getStepContext().getStepExecution().getJobExecution().getStartTime().clone();
 			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
-			Date now = new Date();
 
 			/*The first way to stop execution is to throw an exception. This works all the time, unless you configured the job to skip some exceptions in a chunk-oriented step!*/
 			// Stopping a job from a tasklet : Setting the stop flag in a tasklet is straightforward;
@@ -141,7 +141,11 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 
 						// on lit la table PRICEPLAN.VALUE_BAND_LIST [MSISDN, CUSTOMER_SEGMENT]
 						// ps = connexion.prepareStatement(productProperties.getCrbt_renewal_aspu_filter());
-						Date previous_month = new Date(); previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+						// Date previous_month = (chunkContext.getStepContext().getStepExecution().getStartTime() == null) ? new Date() : (Date) chunkContext.getStepContext().getStepExecution().getStartTime().clone();
+						Date previous_month = (chunkContext.getStepContext().getStepExecution().getJobExecution().getStartTime() == null) ? new Date() : (Date) chunkContext.getStepContext().getStepExecution().getJobExecution().getStartTime().clone();
+						// consider previous month table
+						previous_month.setMonth(previous_month.getMonth() - 1); // consider previous month table
+
 						SQLQuery = productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", ((new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month).toUpperCase())).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + "");
 						ps = connexion.prepareStatement(productProperties.getDatabase_aspu_filter().trim().replace("[monthnameYY]", ((new SimpleDateFormat("MMMyy", Locale.ENGLISH)).format(previous_month)).toUpperCase()).replace("<%= VALUE>", productProperties.getCrbt_renewal_aspu_minimum() + ""));
 						rs = ps.executeQuery();
@@ -195,8 +199,8 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 						Configures RetryTemplate
 						*/
 					    RetryTemplate retryTemplate = new RetryTemplate();
-					    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();                        
-					    retryPolicy.setMaxAttempts(3);                    
+					    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+					    retryPolicy.setMaxAttempts(3);
 					    retryTemplate.setRetryPolicy(retryPolicy);
 					    retryTemplate.setListeners(new RetryListenerSupport[] {new CustomRetryOperationsListener()});
 
@@ -210,8 +214,17 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 						allMSISDN_Today_Is_CRBTRENEWABLE.retainAll(allMSISDN_With_ASPU_ReachedFlag);
 
 						now.setDate(now.getDate() + productProperties.getCrbt_renewal_days());
+						// validate month M and M-1 : dates'months must be different
+						while(now.getMonth() == (new Date()).getMonth()) {
+							now.setDate(now.getDate() + 1);
+						}
 						AIRRequest AIRRequest = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 
+
+						/**
+						 * 
+						test if subscriber.isCrbt() is false to go faster in processing : bypass delInboxTone() method
+						*/
 						// crbt renewal failed
 						for(Subscriber subscriber : allMSISDN_Today_Is_CRBTRENEWABLE_COPY) {
 							AccountDetails accountDetails = AIRRequest.getAccountDetails(subscriber.getValue());
@@ -226,7 +239,7 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 									 * 
 									Calls web service with retry
 									*/
-									HashMap<String, String> multiRef = retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
+									HashMap<String, String> multiRef = (!subscriber.isCrbt()) ? null : retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
 										HashMap<String, String> results = null;
 
 										@Override
@@ -245,13 +258,20 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 								    });
 
 									// reporting
-									if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
+									if((!subscriber.isCrbt()) || ((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073")))) {
 										subscriber.setCrbt(false); // update status
 
 										// calculate CrbtNextRenewalDate
 										Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
-										if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = now;
-										else currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+										if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = (Date) now.clone();
+										else {
+											currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+											// validate month M and M-1 : dates'months must be different
+											while(currentCrbtNextRenewalDate.getMonth() == (new Date()).getMonth()) {
+												currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + 1);
+											}
+										}
+
 										subscriber.setCrbtNextRenewalDate(currentCrbtNextRenewalDate);
 
 										// store subscriber
@@ -400,8 +420,15 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 
 														// calculate CrbtNextRenewalDate
 														Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
-														if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = now;
-														else currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+														if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = (Date) now.clone();
+														else {
+															currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+															// validate month M and M-1 : dates'months must be different
+															while(currentCrbtNextRenewalDate.getMonth() == (new Date()).getMonth()) {
+																currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + 1);
+															}
+														}
+
 														subscriber.setCrbtNextRenewalDate(currentCrbtNextRenewalDate);
 
 														// store subscriber

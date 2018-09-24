@@ -85,9 +85,9 @@ public class DefaultCrbtSongRenewalDataCalculatingTasklet implements Tasklet {
 			obtain the parameters this way getJobParameters() returns a Map<String, Object>. Because of this, the cast is required.*/
 			// String param = (String) chunkContext.getStepContext().getJobParameters().get("paramName");
 
-
+			// Date now = (chunkContext.getStepContext().getStepExecution().getStartTime() == null) ? new Date() : (Date) chunkContext.getStepContext().getStepExecution().getStartTime().clone();
+			Date now = (chunkContext.getStepContext().getStepExecution().getJobExecution().getStartTime() == null) ? new Date() : (Date) chunkContext.getStepContext().getStepExecution().getJobExecution().getStartTime().clone();
 			USSDService service = new JdbcUSSDServiceDao(dao).getOneUSSDService(productProperties.getSc());
-			Date now = new Date();
 
 			/*The first way to stop execution is to throw an exception. This works all the time, unless you configured the job to skip some exceptions in a chunk-oriented step!*/
 			// Stopping a job from a tasklet : Setting the stop flag in a tasklet is straightforward;

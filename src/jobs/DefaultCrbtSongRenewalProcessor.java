@@ -218,8 +218,15 @@ public class DefaultCrbtSongRenewalProcessor implements ItemProcessor<Subscriber
 
 										// calculate CrbtNextRenewalDate
 										Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
-										if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = crbtNextRenewalDefaultDate;
-										else currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+										if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = (Date) crbtNextRenewalDefaultDate.clone();
+										else {
+											currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+											// validate month M and M-1 : dates'months must be different
+											while(currentCrbtNextRenewalDate.getMonth() == (new Date()).getMonth()) {
+												currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + 1);
+											}
+										}
+
 										subscriber.setCrbtNextRenewalDate(currentCrbtNextRenewalDate);
 
 										// store subscriber
@@ -247,6 +254,11 @@ public class DefaultCrbtSongRenewalProcessor implements ItemProcessor<Subscriber
 				return subscriber;
 			}
 
+
+			/**
+			 * 
+			test if subscriber.isCrbt() is false to go faster in processing : bypass delInboxTone() method
+			*/
 			// remove mtnkif+ crbt song
 			else if(allMSISDN_With_ASPU_NotReachedFlag.contains(subscriber)) {
 				int id = subscriber.getId();
@@ -260,7 +272,7 @@ public class DefaultCrbtSongRenewalProcessor implements ItemProcessor<Subscriber
 					 * 
 					Calls web service with retry
 					*/
-					HashMap<String, String> multiRef = retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
+					HashMap<String, String> multiRef = (!subscriber.isCrbt()) ? null : retryTemplate.execute(new RetryCallback<HashMap<String, String>, Throwable>() {
 						HashMap<String, String> results = null;
 
 						@Override
@@ -279,13 +291,20 @@ public class DefaultCrbtSongRenewalProcessor implements ItemProcessor<Subscriber
 				    });
 
 					// reporting
-					if((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073"))) {
+					if((!subscriber.isCrbt()) || ((multiRef != null) && (multiRef.containsKey("returnCode")) && (multiRef.get("returnCode").equals("000000") || multiRef.get("returnCode").equals("302073")))) {
 						subscriber.setCrbt(false); // update status
 
 						// calculate CrbtNextRenewalDate
 						Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
-						if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = crbtNextRenewalDefaultDate;
-						else currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+						if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = (Date) crbtNextRenewalDefaultDate.clone();
+						else {
+							currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+							// validate month M and M-1 : dates'months must be different
+							while(currentCrbtNextRenewalDate.getMonth() == (new Date()).getMonth()) {
+								currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + 1);
+							}
+						}
+
 						subscriber.setCrbtNextRenewalDate(currentCrbtNextRenewalDate);
 
 						// store subscriber
@@ -311,12 +330,158 @@ public class DefaultCrbtSongRenewalProcessor implements ItemProcessor<Subscriber
 			throw ex;
 
 		} catch(Exception ex) {
-			if(ex instanceof AirAvailabilityException) throw (AirAvailabilityException)ex;
-			if(ex instanceof HuaweiCrbtServerException) throw (HuaweiCrbtServerException)ex;
+			/**
+			 *
+			On peut s'assurer qu'un objet est bien une instance d'une classe donnée en recourant à l'opérateur instanceOf.
+			Par exemple, l'expression p instanceOf Point vaudra true si p est (exactement) de type Point.
+			Mais ce test ne reponds pas à nos problématiques ici. Et donc, nous n'utilisons pas cette méthode.
+
+			Les conversions explicites de références:
+			Nous avons largement insisté sur la compatibilité qui existe entre référence à un objet d’un type donné et référence à un objet d'un type ascendant.
+			Comme on peut s'y attendre, la compatibilité n'a pas lieu dans le sens inverse. Considérons cet exemple, fondé sur nos classes Point et Pointcol habituelles :
+			class Point { ..... }
+			class Pointcol extends Point { ..... }
+			   .....
+			Pointcol pc ;
+			pc = new Point (...) ;    // erreur de compilation
+			Si l'affectation était légale, un simple appel tel que pc.colore(...) conduirait à attribuer une
+			couleur à un objet de type Point, ce qui poserait quelques problèmes à l'exécution...
+			Mais considérons cette situation :
+			Point p ;
+			Pointcol pc1 = new Pointcol(...), pc2 ;
+			   .....
+			p = pc1 ;   // p contient la référence à un objet de type Pointcol
+			   .....
+			pc2 = p ;   // refusé en compilation
+			L'affectation pc2 = p est tout naturellement refusée. Cependant, nous sommes certains que p contient bien ici la référence à un objet de type Pointcol.
+			En fait, nous pouvons forcer le compilateur à réaliser la conversion correspondante en utilisant l'opérateur de cast déjà rencontré pour les types primitifs. Ici, nous écrirons simplement :
+			pc2 = (Pointcol) p ;   // accepté en compilation
+			Toutefois, lors de l'exécution, Java s'assurera que p contient bien une référence à un objet de type Pointcol (ou dérivé) afin de ne pas compromettre la bonne exécution du programme.
+			Dans le cas contraire, on obtiendra une exception ClassCastException qui, si elle n'est pas traitée, conduira à un arrêt de l'exécution.
+
+			!! CECI EST JUSTE UNE INFORMATION A SE RAPPELER
+
+			 */
+
+			/**
+			 *
+			Determines if the class or interface represented by this Class object is either the same as, or is a superclass or superinterface of, the class or interface represented by the specified Class parameter. It returns true if so; otherwise it returns false.
+			If this Class object represents a primitive type, this method returns true if the specified Class parameter is exactly this Class object; otherwise it returns false.
+			Specifically, this method tests whether the type represented by the specified Class parameter can be converted to the type represented by this Class object via an identity conversion or via a widening reference conversion.
+
+			 */
+			/*if(ex instanceof AirAvailabilityException) throw (AirAvailabilityException)ex;*/
+			try {
+				AirAvailabilityException exceptionClass = (AirAvailabilityException)ex;
+				throw exceptionClass;
+
+			} catch(AirAvailabilityException exception) {
+				throw exception;
+
+			} catch(NullPointerException exception) {
+
+			} catch(ClassCastException exception) {
+
+			} catch(Exception exception) {
+
+			} catch(Throwable th) {
+
+			}
+
+			/*if(ex instanceof HuaweiCrbtServerException) throw (HuaweiCrbtServerException)ex;*/
+			try {
+				HuaweiCrbtServerException exceptionClass = (HuaweiCrbtServerException)ex;
+				throw exceptionClass;
+
+			} catch(HuaweiCrbtServerException exception) {
+				throw exception;
+
+			} catch(NullPointerException exception) {
+
+			} catch(ClassCastException exception) {
+
+			} catch(Exception exception) {
+
+			} catch(Throwable th) {
+
+			}
 
 		} catch(Throwable th) {
-			if(th instanceof AirAvailabilityException) throw (AirAvailabilityException)th;
-			if(th instanceof HuaweiCrbtServerException) throw (HuaweiCrbtServerException)th;
+			/**
+			 *
+			On peut s'assurer qu'un objet est bien une instance d'une classe donnée en recourant à l'opérateur instanceOf.
+			Par exemple, l'expression p instanceOf Point vaudra true si p est (exactement) de type Point.
+			Mais ce test ne reponds pas à nos problématiques ici. Et donc, nous n'utilisons pas cette méthode.
+
+			Les conversions explicites de références:
+			Nous avons largement insisté sur la compatibilité qui existe entre référence à un objet d’un type donné et référence à un objet d'un type ascendant.
+			Comme on peut s'y attendre, la compatibilité n'a pas lieu dans le sens inverse. Considérons cet exemple, fondé sur nos classes Point et Pointcol habituelles :
+			class Point { ..... }
+			class Pointcol extends Point { ..... }
+			   .....
+			Pointcol pc ;
+			pc = new Point (...) ;    // erreur de compilation
+			Si l'affectation était légale, un simple appel tel que pc.colore(...) conduirait à attribuer une
+			couleur à un objet de type Point, ce qui poserait quelques problèmes à l'exécution...
+			Mais considérons cette situation :
+			Point p ;
+			Pointcol pc1 = new Pointcol(...), pc2 ;
+			   .....
+			p = pc1 ;   // p contient la référence à un objet de type Pointcol
+			   .....
+			pc2 = p ;   // refusé en compilation
+			L'affectation pc2 = p est tout naturellement refusée. Cependant, nous sommes certains que p contient bien ici la référence à un objet de type Pointcol.
+			En fait, nous pouvons forcer le compilateur à réaliser la conversion correspondante en utilisant l'opérateur de cast déjà rencontré pour les types primitifs. Ici, nous écrirons simplement :
+			pc2 = (Pointcol) p ;   // accepté en compilation
+			Toutefois, lors de l'exécution, Java s'assurera que p contient bien une référence à un objet de type Pointcol (ou dérivé) afin de ne pas compromettre la bonne exécution du programme.
+			Dans le cas contraire, on obtiendra une exception ClassCastException qui, si elle n'est pas traitée, conduira à un arrêt de l'exécution.
+
+			!! CECI EST JUSTE UNE INFORMATION A SE RAPPELER
+
+			 */
+
+			/**
+			 *
+			Determines if the class or interface represented by this Class object is either the same as, or is a superclass or superinterface of, the class or interface represented by the specified Class parameter. It returns true if so; otherwise it returns false.
+			If this Class object represents a primitive type, this method returns true if the specified Class parameter is exactly this Class object; otherwise it returns false.
+			Specifically, this method tests whether the type represented by the specified Class parameter can be converted to the type represented by this Class object via an identity conversion or via a widening reference conversion.
+
+			 */
+			/*if(th instanceof AirAvailabilityException) throw (AirAvailabilityException)th;*/
+			try {
+				AirAvailabilityException exceptionClass = (AirAvailabilityException)th;
+				throw exceptionClass;
+
+			} catch(AirAvailabilityException exception) {
+				throw exception;
+
+			} catch(NullPointerException exception) {
+
+			} catch(ClassCastException exception) {
+
+			} catch(Exception exception) {
+
+			} catch(Throwable throwable) {
+
+			}
+
+			/*if(th instanceof HuaweiCrbtServerException) throw (HuaweiCrbtServerException)th;*/
+			try {
+				HuaweiCrbtServerException exceptionClass = (HuaweiCrbtServerException)th;
+				throw exceptionClass;
+
+			} catch(HuaweiCrbtServerException exception) {
+				throw exception;
+
+			} catch(NullPointerException exception) {
+
+			} catch(ClassCastException exception) {
+
+			} catch(Exception exception) {
+
+			} catch(Throwable throwable) {
+
+			}
 		}
 
 		return null;
@@ -331,14 +496,18 @@ public class DefaultCrbtSongRenewalProcessor implements ItemProcessor<Subscriber
 		Configures RetryTemplate
 		*/
 	    retryTemplate = new RetryTemplate();
-	    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();                        
-	    retryPolicy.setMaxAttempts(3);                    
+	    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+	    retryPolicy.setMaxAttempts(3);
 	    retryTemplate.setRetryPolicy(retryPolicy);
 	    retryTemplate.setListeners(new RetryListenerSupport[] {new CustomRetryOperationsListener()});
 
 	    // calculate crbt next renewal default date
 	    crbtNextRenewalDefaultDate = new Date();
 	    crbtNextRenewalDefaultDate.setDate(crbtNextRenewalDefaultDate.getDate() + productProperties.getCrbt_renewal_days());
+		// validate month M and M-1 : dates'months must be different
+		while(crbtNextRenewalDefaultDate.getMonth() == (new Date()).getMonth()) {
+			crbtNextRenewalDefaultDate.setDate(crbtNextRenewalDefaultDate.getDate() + 1);
+		}
 	}
 
 }
