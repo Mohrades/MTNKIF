@@ -72,7 +72,8 @@ public class JobRunListener implements StepExecutionListener {
 
 			String log = (new SimpleDateFormat("MMM dd', 'yyyy HH:mm:ss' '")).format((stepExecution.getEndTime() == null) ? new Date() : stepExecution.getEndTime()).toUpperCase() + stepName + " completed with the following status: [" + stepStatus + "]";
 
-			if (exitCode.equals(ExitStatus.STOPPED.getExitCode())) ;
+			/*if (exitCode.equals(ExitStatus.STOPPED.getExitCode())) ;*/
+			if (exitCode.startsWith(ExitStatus.STOPPED.getExitCode())) ;
 			else new SMPPConnector().submitSm("APP SERV", productProperties.getAir_test_connection_msisdn(), log);
 
 			Logger logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");

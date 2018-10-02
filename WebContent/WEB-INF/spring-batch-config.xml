@@ -472,6 +472,9 @@
 		<!-- Declares job should end at this point, without the possibility of restart. BatchStatus will be COMPLETED. ExitStatus is configurable. -->
 		<!-- The 'end' element instructs a Job to stop with a BatchStatus of COMPLETED. A Job that has finished with status COMPLETED cannot be restarted (the framework will throw a JobInstanceAlreadyCompleteException) -->
 		<!-- The 'end' element also allows for an optional 'exit-code' attribute that can be used to customize the ExitStatus of the Job. If no 'exit-code' attribute is given, then the ExitStatus will be "COMPLETED" by default, to match the BatchStatus. -->
+    	<!-- In the following scenario, if defaultCrbtSongRenewalDataCalculating fails, then the Job will stop with a BatchStatus of COMPLETED
+    	Note that if defaultCrbtSongRenewalDataCalculating fails, the Job will not be restartable (because the status is COMPLETED). -->
+    	<!-- <batch:end on="FAILED" /> -->
     	<batch:end on="FAILED" exit-code="STOPPED BECAUSE OF ERRORS" />
     	<batch:end on="STOPPED" exit-code="Job should not be run right now." />
     	<batch:end on="COMPLETED WITH NO DATA" />

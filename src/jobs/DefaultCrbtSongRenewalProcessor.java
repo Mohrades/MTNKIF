@@ -220,7 +220,8 @@ public class DefaultCrbtSongRenewalProcessor implements ItemProcessor<Subscriber
 										Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
 										if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = (Date) crbtNextRenewalDefaultDate.clone();
 										else {
-											currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+											currentCrbtNextRenewalDate = (Date) crbtNextRenewalDefaultDate.clone();
+											// currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
 											// validate month M and M-1 : dates'months must be different
 											while(currentCrbtNextRenewalDate.getMonth() == (new Date()).getMonth()) {
 												currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + 1);
@@ -298,7 +299,8 @@ public class DefaultCrbtSongRenewalProcessor implements ItemProcessor<Subscriber
 						Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
 						if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = (Date) crbtNextRenewalDefaultDate.clone();
 						else {
-							currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+							currentCrbtNextRenewalDate = (Date) crbtNextRenewalDefaultDate.clone();
+							// currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
 							// validate month M and M-1 : dates'months must be different
 							while(currentCrbtNextRenewalDate.getMonth() == (new Date()).getMonth()) {
 								currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + 1);

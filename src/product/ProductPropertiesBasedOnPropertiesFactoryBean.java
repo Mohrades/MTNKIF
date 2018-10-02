@@ -76,6 +76,9 @@ public class ProductPropertiesBasedOnPropertiesFactoryBean implements ProductPro
 	@Value("#{appConfig['happy.birthday.bonus.data.volume']}")
 	private long happy_birthday_bonus_data_volume;
 
+	@Value("#{appConfig['happy.birthday.bonus.expires_in_days']}")
+	private short happy_birthday_bonus_expires_in_days;
+
 	@Value("#{appConfig['happy.birthday.bonus.offer.id']}")
 	private int happy_birthday_bonus_offer_id;
 
@@ -365,6 +368,10 @@ public class ProductPropertiesBasedOnPropertiesFactoryBean implements ProductPro
 
 	public long getHappy_birthday_bonus_voice_volume() {
 		return happy_birthday_bonus_voice_volume;
+	}
+
+	public short getHappy_birthday_bonus_expires_in_days() {
+		return happy_birthday_bonus_expires_in_days;
 	}
 
 	public int getBonus_sms_onNet_accumulator() {

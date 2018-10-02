@@ -176,8 +176,19 @@ public class ExternalRequestController {
 
 		originOperatorID = originOperatorID.trim();
 
-		Object[] status = (new HappyBirthDayBonusActions(productProperties)).getStatus(i18n, dao, msisdn, language);
-		return callback(msisdn, (int)(status[0]), (String)(status[1]));
+		Object [] requestStatus = (new PricePlanCurrent()).hasBirthDayBonus(productProperties, i18n, dao, msisdn, language);
+		if((int)(requestStatus[0]) == 0) {
+			if((requestStatus[1] != null) && ((int)(requestStatus[1]) == 0)) {
+				Object[] status = (new HappyBirthDayBonusActions(productProperties)).getStatus(i18n, dao, msisdn, language);
+				return callback(msisdn, (int)(status[0]), (String)(status[1]));
+			}
+			else {
+				return callback(msisdn, 1, i18n.getMessage("happy.birthday.bonus.status.failed", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+			}
+		}
+		else {
+			return callback(msisdn, (int)(requestStatus[0]), (String)(requestStatus[1]));
+		}
 	}
 
     @RequestMapping(value="/happyBirthdayEvent/{msisdn}", params={"authentication=true", "originOperatorID", "name"}, method=RequestMethod.POST, produces = "text/xml;charset=UTF-8")
@@ -190,8 +201,13 @@ public class ExternalRequestController {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
 		}
 
-		happyBirthdayEventListener.handle(msisdn, name, language, originOperatorID, productProperties, dao);
-		return callback(msisdn, 0, "HANDLED");
+		if((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "A")) {
+			happyBirthdayEventListener.handle(msisdn, name, language, originOperatorID, productProperties, dao);
+			return callback(msisdn, 0, "HANDLED");
+		}
+		else {
+			return callback(msisdn, -1, i18n.getMessage("menu.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+		}
 	}
 
 	private String XMLResponse(String msisdn, int statusCode, String message) {

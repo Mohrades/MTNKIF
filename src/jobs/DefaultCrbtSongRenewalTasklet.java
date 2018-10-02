@@ -265,7 +265,8 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 										Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
 										if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = (Date) now.clone();
 										else {
-											currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+											currentCrbtNextRenewalDate = (Date) now.clone();
+											// currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
 											// validate month M and M-1 : dates'months must be different
 											while(currentCrbtNextRenewalDate.getMonth() == (new Date()).getMonth()) {
 												currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + 1);
@@ -422,7 +423,8 @@ public class DefaultCrbtSongRenewalTasklet implements Tasklet {
 														Date currentCrbtNextRenewalDate = subscriber.getCrbtNextRenewalDate();
 														if(currentCrbtNextRenewalDate == null) currentCrbtNextRenewalDate = (Date) now.clone();
 														else {
-															currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
+															currentCrbtNextRenewalDate = (Date) now.clone();
+															// currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + productProperties.getCrbt_renewal_days());
 															// validate month M and M-1 : dates'months must be different
 															while(currentCrbtNextRenewalDate.getMonth() == (new Date()).getMonth()) {
 																currentCrbtNextRenewalDate.setDate(currentCrbtNextRenewalDate.getDate() + 1);

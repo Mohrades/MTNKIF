@@ -46,7 +46,7 @@ public class HappyBirthDayBonusActions {
 
 		try {
 			Date expires = new Date();
-			expires.setDate(expires.getDate() + 0);
+			expires.setDate(expires.getDate() + productProperties.getHappy_birthday_bonus_expires_in_days());
 			expires.setSeconds(59); expires.setMinutes(59); expires.setHours(23);
 			// set bonus expiry date
 			birthdayBonusSubscriber.setBonus_expires_in(expires);

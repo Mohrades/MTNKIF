@@ -21,9 +21,9 @@ public class MSISDNValidator {
 			}
 		}
 		else if(type.equals("B")) {
-			if(onNet(productProperties, msisdn)) {
+			/*if(onNet(productProperties, msisdn)) {*/
 				return validate(dao, productProperties.getBnumber_serviceClass_include_filter(), productProperties.getBnumber_db_include_filter(), productProperties.getBnumber_serviceClass_exclude_filter(), productProperties.getBnumber_db_exclude_filter(), msisdn, productProperties);
-			}
+			/*}*/
 		}
 
 		return false;
