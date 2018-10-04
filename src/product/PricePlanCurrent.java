@@ -14,6 +14,7 @@ import dao.DAO;
 import dao.queries.JdbcHappyBirthDayBonusSubscriberDao;
 import dao.queries.JdbcSubscriberDao;
 import domain.models.Subscriber;
+import filter.MSISDNValidator;
 import util.AccumulatorInformation;
 import util.BalanceAndDate;
 
@@ -36,39 +37,49 @@ public class PricePlanCurrent {
 		int statusCode = -1; // default
 
 		if(subscriber == null) {
-			statusCode = (new PricePlanCurrentActions()).isActivated(productProperties, dao, msisdn);
+			if((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "A")) {
+				statusCode = (new PricePlanCurrentActions()).isActivated(productProperties, dao, msisdn);
 
-			// initialization the former price plan Status (formerly)
-			if((statusCode == 0) || (statusCode == 1)) {
-				subscriber = new Subscriber(0, msisdn, (statusCode == 0) ? true : false, (statusCode == 0) ? true : false, null, null, false);
-				boolean registered = (new JdbcSubscriberDao(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
+				// initialization the former price plan Status (formerly)
+				if((statusCode == 0) || (statusCode == 1)) {
+					subscriber = new Subscriber(0, msisdn, (statusCode == 0) ? true : false, (statusCode == 0) ? true : false, null, null, false);
+					boolean registered = (new JdbcSubscriberDao(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
 
-				if(registered) {
-					subscriber = (new JdbcSubscriberDao(dao)).getOneSubscriber(msisdn);
+					if(registered) {
+						subscriber = (new JdbcSubscriberDao(dao)).getOneSubscriber(msisdn);
+					}
+					else {
+						statusCode = -1;
+					}
 				}
-				else {
-					statusCode = -1;
-				}
+			}
+			else {
+				return new Object [] {-1, i18n.getMessage("service.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null};
 			}
 		}
 		else {
 			 if(subscriber.isLocked()) statusCode = -1;
 			 else {
 				 if(subscriber.getLast_update_time() == null) { // update new initial status
-					 statusCode = new PricePlanCurrentActions().isActivated(productProperties, dao, msisdn);
+					 if((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "A")) {
+						 statusCode = new PricePlanCurrentActions().isActivated(productProperties, dao, msisdn);
 
-					 if(statusCode >= 0) {
-						 if(((statusCode == 0) && (!subscriber.isFlag())) || ((statusCode == 1) && (subscriber.isFlag()))) {
-							 subscriber.setFlag((statusCode == 0) ? true : false);
+						 if(statusCode >= 0) {
+							 if(((statusCode == 0) && (!subscriber.isFlag())) || ((statusCode == 1) && (subscriber.isFlag()))) {
+								 subscriber.setFlag((statusCode == 0) ? true : false);
 
-							 subscriber.setId(-subscriber.getId()); // negative id to update database
-							 boolean registered = (new JdbcSubscriberDao(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
-							 subscriber.setId(-subscriber.getId()); // to release negative id
+								 subscriber.setId(-subscriber.getId()); // negative id to update database
+								 boolean registered = (new JdbcSubscriberDao(dao).saveOneSubscriber(subscriber) == 1) ? true : false;
+								 subscriber.setId(-subscriber.getId()); // to release negative id
 
-							 if(!registered) statusCode = -1; // check databse is actually updated
+								 if(!registered) statusCode = -1; // check databse is actually updated
+							 }
 						 }
+						 else if(statusCode == -1) statusCode = -1; // erreur AIR
 					 }
-					 else if(statusCode == -1) statusCode = -1; // erreur AIR
+					 else {
+						 return new Object [] {-1, i18n.getMessage("service.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null};
+					 }
 				 }
 				 else {
 					 if(subscriber.isFlag()) {

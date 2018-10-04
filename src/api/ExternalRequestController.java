@@ -152,7 +152,7 @@ public class ExternalRequestController {
 			}
 		}
 		else {
-			return callback(msisdn, -1, i18n.getMessage("menu.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
+			return callback(msisdn, -1, i18n.getMessage("service.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH));
 		}
 	}
 
@@ -201,7 +201,7 @@ public class ExternalRequestController {
 			return callback(msisdn, -1, i18n.getMessage("service.internal.error", null, null, Locale.FRENCH));
 		}
 
-		if((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "A")) {
+		if((new MSISDNValidator()).isFiltered(dao, productProperties, msisdn, "HBD")) {
 			happyBirthdayEventListener.handle(msisdn, name, language, originOperatorID, productProperties, dao);
 			return callback(msisdn, 0, "HANDLED");
 		}

@@ -127,6 +127,11 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 	@Value("${song.rbt.id}")
 	private String song_rbt_id;
 
+	private List<String> hbd_serviceClass_include_filter;
+	private List<String> hbd_db_include_filter;
+	private List<String> hbd_serviceClass_exclude_filter;
+	private List<String> hbd_db_exclude_filter;
+
 	private List<String> Anumber_serviceClass_include_filter;
 	private List<String> Anumber_db_include_filter;
 	private List<String> Anumber_serviceClass_exclude_filter;
@@ -234,6 +239,34 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 	public void setXtra_removal_offer_IDs(final String xtra_removal_offer_IDs) {
 		if(isSet(xtra_removal_offer_IDs)) {
 			this.xtra_removal_offer_IDs = Splitter.onPattern("[,]").trimResults().omitEmptyStrings().splitToList(xtra_removal_offer_IDs);
+		}
+	}
+
+	@Value("${hbd.serviceClass.include_filter}")
+	public void setHbd_serviceClass_include_filter(final String hbd_serviceClass_include_filter) {
+		if(isSet(hbd_serviceClass_include_filter)) {
+			this.hbd_serviceClass_include_filter = Splitter.onPattern("[,]").trimResults().omitEmptyStrings().splitToList(hbd_serviceClass_include_filter);
+		}
+	}
+
+	@Value("${hbd.db.include_filter}")
+	public void setHbd_db_include_filter(final String hbd_db_include_filter) {
+		if(isSet(hbd_db_include_filter)) {
+			this.hbd_db_include_filter = Splitter.onPattern("[,]").trimResults().omitEmptyStrings().splitToList(hbd_db_include_filter);
+		}
+	}
+
+	@Value("${hbd.serviceClass.exclude_filter}")
+	public void setHbd_serviceClass_exclude_filter(final String hbd_serviceClass_exclude_filter) {
+		if(isSet(hbd_serviceClass_exclude_filter)) {
+			this.hbd_serviceClass_exclude_filter = Splitter.onPattern("[,]").trimResults().omitEmptyStrings().splitToList(hbd_serviceClass_exclude_filter);
+		}
+	}
+
+	@Value("${hbd.db.exclude_filter}")
+	public void setHbd_db_exclude_filter(final String hbd_db_exclude_filter) {
+		if(isSet(hbd_db_exclude_filter)) {
+			this.hbd_db_exclude_filter = Splitter.onPattern("[,]").trimResults().omitEmptyStrings().splitToList(hbd_db_exclude_filter);
 		}
 	}
 
@@ -498,6 +531,22 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 
 	public List<String> getXtra_removal_offer_IDs() {
 		return xtra_removal_offer_IDs;
+	}
+
+	public List<String> getHbd_serviceClass_include_filter() {
+		return hbd_serviceClass_include_filter;
+	}
+
+	public List<String> getHbd_db_include_filter() {
+		return hbd_db_include_filter;
+	}
+
+	public List<String> getHbd_serviceClass_exclude_filter() {
+		return hbd_serviceClass_exclude_filter;
+	}
+
+	public List<String> getHbd_db_exclude_filter() {
+		return hbd_db_exclude_filter;
 	}
 
 	public List<String> getAnumber_serviceClass_include_filter() {

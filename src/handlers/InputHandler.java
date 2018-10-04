@@ -148,7 +148,7 @@ public class InputHandler {
 							endStep(dao, ussd, modele, productProperties, i18n.getMessage("request.unavailable", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 						}
 					}
-					else endStep(dao, ussd, modele, productProperties, i18n.getMessage("menu.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
+					else endStep(dao, ussd, modele, productProperties, i18n.getMessage("service.disabled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);
 				}
 				else if(((ussd.getInput().startsWith(short_code + "*1")) || (ussd.getInput().startsWith(short_code + "*0"))) && (ussd.getInput().endsWith("*2"))) {
 					endStep(dao, ussd, modele, productProperties, i18n.getMessage("price.plan.change.canceled", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH), null, null, null, null);

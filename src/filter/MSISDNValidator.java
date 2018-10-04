@@ -15,7 +15,12 @@ public class MSISDNValidator {
 	}
 
 	public boolean isFiltered(DAO dao, ProductProperties productProperties, String msisdn, String type) {
-		if(type.equals("A")) {
+		if(type.equals("HBD")) {
+			if(onNet(productProperties, msisdn)) {
+				return validate(dao, productProperties.getHbd_serviceClass_include_filter(), productProperties.getHbd_db_include_filter(), productProperties.getHbd_serviceClass_exclude_filter(), productProperties.getHbd_db_exclude_filter(), msisdn, productProperties);
+			}
+		}
+		else if(type.equals("A")) {
 			if(onNet(productProperties, msisdn)) {
 				return validate(dao, productProperties.getAnumber_serviceClass_include_filter(), productProperties.getAnumber_db_include_filter(), productProperties.getAnumber_serviceClass_exclude_filter(), productProperties.getAnumber_db_exclude_filter(), msisdn, productProperties);
 			}

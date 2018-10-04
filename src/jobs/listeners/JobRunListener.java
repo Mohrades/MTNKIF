@@ -142,9 +142,9 @@ public class JobRunListener implements StepExecutionListener {
 				// StepExecution: id=2, version=1, name=runningPAM, status=STARTED, exitStatus=EXECUTING, readCount=0, filterCount=0, writeCount=0 readSkipCount=0, writeSkipCount=0, processSkipCount=0, commitCount=0, rollbackCount=0, exitDescription=
 				String StepExecutionDescription = stepExecution.toString();
 
-				if(StepExecutionDescription.contains("name=nightAdvantagesNotificationThroughSms")) ;
+				/*if(StepExecutionDescription.contains("name=nightAdvantagesNotificationThroughSms")) ;
 				else if(StepExecutionDescription.contains("name=periodicSubscriberManagement")) ;
-				else {
+				else {*/
 					String stepName = StepExecutionDescription.substring(StepExecutionDescription.indexOf("name=") + 5, StepExecutionDescription.indexOf(", status=", StepExecutionDescription.indexOf("name="))).trim();
 					@SuppressWarnings("deprecation")
 					ScheduledTask task = (new JdbcScheduledTaskDao(dao)).getOneScheduledTask(productProperties.getSc(), stepName, now.getHours(), now.getMinutes());
@@ -163,7 +163,7 @@ public class JobRunListener implements StepExecutionListener {
 						Logger logger = LogManager.getLogger("logging.log4j.JobExecutionLogger");
 						logger.log(Level.INFO, log);
 					}
-				}
+				/*}*/
 			}
 
 		} catch(Throwable th) {

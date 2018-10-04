@@ -7,6 +7,7 @@ import org.apache.logging.log4j.web.Log4jServletContextListener;
 import org.apache.logging.log4j.web.Log4jWebSupport;
 
 public class Log4j2WebConfiguration implements ServletContextListener {
+
 	private Log4jServletContextListener listener = new Log4jServletContextListener();
 
 	@Override
