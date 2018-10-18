@@ -4,27 +4,27 @@ import java.text.MessageFormat;
 import java.util.Locale;
 import org.springframework.context.support.ResourceBundleMessageSource;
 
-import dao.DatabaseMessageSource;
+import dao.queries.JdbcResourceBundleMessageSourceDao;
 
 public class DatabaseBackedResourceBundleMessageSource extends ResourceBundleMessageSource {
 
-	private DatabaseMessageSource databaseMessageSource;
+	private JdbcResourceBundleMessageSourceDao jdbcResourceBundleMessageSourceDao;
 
 	private int serviceShortCode;
 
 	private boolean fallbackToSystemLocale;
 
-	public DatabaseBackedResourceBundleMessageSource(DatabaseMessageSource databaseMessageSource) {
-		setDatabaseMessageSource(databaseMessageSource);
+	public DatabaseBackedResourceBundleMessageSource(JdbcResourceBundleMessageSourceDao jdbcResourceBundleMessageSourceDao) {
+		setJdbcResourceBundleMessageSourceDao(jdbcResourceBundleMessageSourceDao);
 		setFallbackToSystemLocale(true);
 	}
 
-	private DatabaseMessageSource getDatabaseMessageSource() {
-		return databaseMessageSource;
+	private JdbcResourceBundleMessageSourceDao getJdbcResourceBundleMessageSourceDao() {
+		return jdbcResourceBundleMessageSourceDao;
 	}
 
-	public void setDatabaseMessageSource(DatabaseMessageSource databaseMessageSource) {
-		this.databaseMessageSource = databaseMessageSource;
+	public void setJdbcResourceBundleMessageSourceDao(JdbcResourceBundleMessageSourceDao jdbcResourceBundleMessageSourceDao) {
+		this.jdbcResourceBundleMessageSourceDao = jdbcResourceBundleMessageSourceDao;
 	}
 
 	public int getServiceShortCode() {
@@ -48,8 +48,8 @@ public class DatabaseBackedResourceBundleMessageSource extends ResourceBundleMes
     protected MessageFormat resolveCode(String code, Locale locale) {
 		MessageFormat format;
 
-		// String msgForCurrentLanguage = getDatabaseMessageSource().findByCode(getServiceShortCode(), code, ((locale == null) ? (isFallbackToSystemLocale() ? Locale.getDefault() : null) : locale), isFallbackToSystemLocale());
-		String msgForCurrentLanguage = getDatabaseMessageSource().findByCode(getServiceShortCode(), code, locale, locale.getLanguage(), locale.getCountry(), isFallbackToSystemLocale());
+		// String msgForCurrentLanguage = getJdbcResourceBundleMessageSourceDao().findByCode(getServiceShortCode(), code, ((locale == null) ? (isFallbackToSystemLocale() ? Locale.getDefault() : null) : locale), isFallbackToSystemLocale());
+		String msgForCurrentLanguage = getJdbcResourceBundleMessageSourceDao().findByCode(getServiceShortCode(), code, locale, locale.getLanguage(), locale.getCountry(), isFallbackToSystemLocale());
 
 		if((msgForCurrentLanguage != null) && (!msgForCurrentLanguage.isEmpty())) {
 			// format = createMessageFormat(msgForCurrentLanguage, locale);
@@ -64,8 +64,8 @@ public class DatabaseBackedResourceBundleMessageSource extends ResourceBundleMes
 
     @Override
     protected String resolveCodeWithoutArguments(String code, Locale locale) {
-    	// String msgForCurrentLanguage = getDatabaseMessageSource().findByCode(getServiceShortCode(), code, ((locale == null) ? (isFallbackToSystemLocale() ? Locale.getDefault() : null) : locale), isFallbackToSystemLocale());
-    	String msgForCurrentLanguage = getDatabaseMessageSource().findByCode(getServiceShortCode(), code, locale, locale.getLanguage(), locale.getCountry(), isFallbackToSystemLocale());
+    	// String msgForCurrentLanguage = getJdbcResourceBundleMessageSourceDao().findByCode(getServiceShortCode(), code, ((locale == null) ? (isFallbackToSystemLocale() ? Locale.getDefault() : null) : locale), isFallbackToSystemLocale());
+    	String msgForCurrentLanguage = getJdbcResourceBundleMessageSourceDao().findByCode(getServiceShortCode(), code, locale, locale.getLanguage(), locale.getCountry(), isFallbackToSystemLocale());
 
         if ((msgForCurrentLanguage != null) && (!msgForCurrentLanguage.isEmpty())) ;
         else {

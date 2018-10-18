@@ -167,6 +167,8 @@ public class ProductPropertiesBasedOnPropertiesFactoryBean implements ProductPro
 	@Value("#{appConfig['crbt.server.io.timeout']}")
 	private int crbt_server_io_timeout;
 
+	@Value("#{appConfig['bonus.reset.required']}")
+	private boolean bonus_reset_required;
 	@Value("#{appConfig['bonus.sms.onNet.accumulator']}")
 	private int bonus_sms_onNet_accumulator;
 	@Value("#{appConfig['bonus.sms.offNet.accumulator']}")
@@ -405,6 +407,10 @@ public class ProductPropertiesBasedOnPropertiesFactoryBean implements ProductPro
 
 	public short getHappy_birthday_bonus_expires_in_days() {
 		return happy_birthday_bonus_expires_in_days;
+	}
+
+	public boolean isBonus_reset_required() {
+		return bonus_reset_required;
 	}
 
 	public int getBonus_sms_onNet_accumulator() {

@@ -1,4 +1,4 @@
-package dao;
+package dao.queries;
 
 import java.util.List;
 import java.util.Locale;
@@ -10,12 +10,14 @@ import javax.cache.annotation.CacheResult;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 
+import dao.DAO;
+
 @SuppressWarnings("unused")
-public class DatabaseMessageSource {
+public class JdbcResourceBundleMessageSourceDao {
 
 	private DAO dao;
 
-	public DatabaseMessageSource(DAO dao) {
+	public JdbcResourceBundleMessageSourceDao(DAO dao) {
 		setDao(dao);
 	}
 

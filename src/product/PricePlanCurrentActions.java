@@ -517,6 +517,11 @@ public class PricePlanCurrentActions {
 
 								}
 
+								// reset bonus DA
+								if(productProperties.isBonus_reset_required()) {
+									(new BonusResettingActions()).execute(msisdn, productProperties);
+								}
+
 								return 0;
 							}
 							else {

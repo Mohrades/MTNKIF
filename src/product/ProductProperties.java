@@ -87,6 +87,8 @@ public interface ProductProperties extends InitializingBean, DisposableBean {
 
 	public short getHappy_birthday_bonus_expires_in_days() ;
 
+	public boolean isBonus_reset_required() ;
+
 	public int getBonus_sms_onNet_accumulator() ;
 
 	public int getBonus_sms_offNet_accumulator() ;

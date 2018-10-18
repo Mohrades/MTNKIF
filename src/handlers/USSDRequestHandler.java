@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import dao.DAO;
-import dao.DatabaseMessageSource;
 import dao.queries.JdbcMSISDNRedirectionDao;
+import dao.queries.JdbcResourceBundleMessageSourceDao;
 import dao.queries.JdbcUSSDServiceDao;
 import domain.models.MSISDNRedirection;
 import environment.Development;
@@ -38,7 +38,7 @@ public class USSDRequestHandler {
 	private MessageSource i18n;
 
 	@Autowired
-	private DatabaseMessageSource databaseMessageSource;
+	private JdbcResourceBundleMessageSourceDao databaseMessageSource;
 
 	@Autowired
 	private DAO dao;

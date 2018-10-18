@@ -169,6 +169,8 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 	@Value("${crbt.server.io.timeout}")
 	private int crbt_server_io_timeout;
 
+	@Value("${bonus.reset.required}")
+	private boolean bonus_reset_required;
 	@Value("${bonus.sms.onNet.accumulator}")
 	private int bonus_sms_onNet_accumulator;
 	@Value("${bonus.sms.offNet.accumulator}")
@@ -407,6 +409,10 @@ public class ProductPropertiesBasedOnPropertyPlaceholderConfigurer implements Pr
 
 	public short getHappy_birthday_bonus_expires_in_days() {
 		return happy_birthday_bonus_expires_in_days;
+	}
+
+	public boolean isBonus_reset_required() {
+		return bonus_reset_required;
 	}
 
 	public int getBonus_sms_onNet_accumulator() {

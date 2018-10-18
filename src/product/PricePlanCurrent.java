@@ -146,7 +146,7 @@ public class PricePlanCurrent {
 		ACC 211  57  Wed Jul 04 23:59:59 WAT 2018  null
 
 		CYCLE ACCUMULATEUR 211 : 50-149,0,1,2,3(50) : begin 50,....,149,last 0(150); 3 billed : 1,2 and 3(50) */
-		
+
 		try {
 			AIRRequest request = new AIRRequest(productProperties.getAir_hosts(), productProperties.getAir_io_sleep(), productProperties.getAir_io_timeout(), productProperties.getAir_io_threshold(), productProperties.getAir_preferred_host());
 			HashSet<AccumulatorInformation> balanceBonusSms = (productProperties.getBonus_sms_remaining_accumulator() > 0) ? request.getAccumulators(msisdn, new int[][] {{productProperties.getBonus_sms_remaining_accumulator(), productProperties.getBonus_sms_remaining_accumulator()}}) : null;

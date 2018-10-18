@@ -77,7 +77,7 @@ public class PricePlanCurrentActivation {
 							// Notification message :
 							if((productProperties.isAdvantages_always()) || ((subscriber.getId() == 0) || (subscriber.getLast_update_time() == null))) {
 								String message = i18n.getMessage("welcome.gift.notification.message", null, null, (language == 2) ? Locale.ENGLISH : Locale.FRENCH);
-								new SMPPConnector().submitSm(productProperties.getSms_notifications_header(), msisdn.substring((productProperties.getMcc() + "").length()), message);
+								new SMPPConnector().submitSm(productProperties.getSms_notifications_header(), msisdn, message);
 
 								Logger logger = LogManager.getLogger("logging.log4j.SubmitSMLogger");
 								logger.trace("[" + subscriber.getValue() + "] " + message);

@@ -73,25 +73,69 @@
 	<!-- Load Application Properties from Database : nous définirons notre classe de processeur de propriété personnalisée qui étendra le PropertyPlaceholderConfigurer de Spring et chargera les propriétés de la base de données -->
 	<!-- The names of the beans that this bean depends on being initialized. The bean factory will guarantee that these beans get initialized before this bean.
 	Note that dependencies are normally expressed through bean properties or  constructor arguments. This property should just be necessary for other kinds of dependencies like statics (*ugh*) or database preparation on startup. -->
-	<bean id="propertyConfigurer" class="com.util.PropertiesUtils" depends-on="db_connection">
-		<!-- Load Application Properties from Database : uniquement les propriétés métier ou logic du service et qui peuvent changer -->
-		<!-- The names of the beans that this bean depends on being initialized. The bean factory will guarantee that these beans get initialized before this bean.
-		Note that dependencies are normally expressed through bean properties or  constructor arguments. This property should just be necessary for other kinds of dependencies like statics (*ugh*) or database preparation on startup. -->
+	<!-- <bean id="propertyConfigurer" class="com.util.PropertiesUtils" depends-on="db_connection">
+		Load Application Properties from Database : uniquement les propriétés métier ou logic du service et qui peuvent changer
+		The names of the beans that this bean depends on being initialized. The bean factory will guarantee that these beans get initialized before this bean.
+		Note that dependencies are normally expressed through bean properties or  constructor arguments. This property should just be necessary for other kinds of dependencies like statics (*ugh*) or database preparation on startup.
 		<property name="dataSourceName" value="db_connection" />
 
 		<property name="serviceShortCode" value="#{dbConfig['db.serviceShortCode']}" />
 
-		<!-- You can also note that we have set localOverride as true. This will make sure that properties from database take precedence over that available in any properties file. -->
+		You can also note that we have set localOverride as true. This will make sure that properties from database take precedence over that available in any properties file.
 		<property name="localOverride" value="true" />
 
-		<!-- uniquement les propriétés liées aux ressources pour configurer les différents composants de l'application et démarrer l'application -->
+		uniquement les propriétés liées aux ressources pour configurer les différents composants de l'application et démarrer l'application
 		<property name="locations">
 			<list>
-				<!-- <value>classpath:app-custom.properties</value> -->
+				<value>classpath:app-custom.properties</value>
 				<value>classpath:applicationContext.properties</value>
 			</list>
 		</property>
-	</bean>
+	</bean> -->
+	<bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<!-- You can also note that we have set localOverride as true. This will make sure that properties from database take precedence over that available in any properties file. -->
+		<property name="localOverride" value="true" />
+
+		<!-- Commons-configuration (1.6) -->
+		<!-- <property name="properties" ref="commonsConfigurationFactoryBean" /> -->
+
+		<!-- Commons-configuration (2.x) -->
+  		<property name="properties">
+      		<bean class="org.apache.commons.configuration2.spring.ConfigurationPropertiesFactoryBean">
+          		<constructor-arg>
+					<!-- Commons-configuration (2.x) -->
+					<bean id="databaseConfiguration" class="org.apache.commons.configuration2.DatabaseConfiguration">
+					    <property name="dataSource" ref="db_connection" /><!-- DataSource for obtaining database connections -->
+					    <property name="table" value="SERVICE_CONFIG_PARAMS_EBA" /><!-- name of the table containing configuration data -->
+					    <property name="configurationNameColumn" value="CODE" /><!-- name of the table column with the configuration name -->
+					    <property name="keyColumn" value="CONFIG_KEY" /><!-- name of the column containing the configuration keys -->
+					    <property name="valueColumn" value="CONFIG_VALUE" /><!-- name of the column containing the configuration values -->
+					    <property name="configurationName" value="#{dbConfig['db.serviceShortCode']}" /><!-- the name of this configuration instance => the name of the table column with the configuration name -->
+					</bean>
+          		</constructor-arg>
+      		</bean>
+  		</property>
+
+		<!-- uniquement les propriétés liées aux ressources pour configurer les différents composants de l'application et démarrer l'application -->
+  		<property name="locations">
+   			<list>
+   				<!-- <value>classpath:app-custom.properties</value> -->
+    			<value>classpath:applicationContext.properties</value>
+   			</list>
+  		</property>
+    </bean>
+	<!-- <bean id="commonsConfigurationFactoryBean" class="org.springmodules.commons.configuration.CommonsConfigurationFactoryBean">
+    	<constructor-arg ref="databaseConfiguration" />
+	</bean> -->
+	<!-- Commons-configuration (1.6) -->
+	<!-- <bean id="databaseConfiguration" class="org.apache.commons.configuration.DatabaseConfiguration">
+	    <constructor-arg type="javax.sql.DataSource" ref="db_connection" />DataSource for obtaining database connections
+	    <constructor-arg name="table" value="SERVICE_CONFIG_PARAMS_EBA" />name of the table containing configuration data
+	    <constructor-arg name="nameColumn" value="CODE" />name of the table column with the configuration name
+	    <constructor-arg name="keyColumn" value="CONFIG_KEY" />name of the column containing the configuration keys
+	    <constructor-arg name="valueColumn" value="CONFIG_VALUE" />name of the column containing the configuration values
+	    <constructor-arg name="name" value="#{dbConfig['db.serviceShortCode']}" />the name of this configuration instance => the name of the table column with the configuration name
+	</bean> -->
     <!-- Spring propose l'espace de nommage context qui simplifie cette déclaration en utilisant le tag <property-placeholder> -->
     <!-- <context:property-placeholder location="classpath:applicationContext.properties" /> -->
 
@@ -189,7 +233,7 @@
         </property>
 	</bean> -->
 
-   	<bean id="databaseMessageSource" class="dao.DatabaseMessageSource">
+   	<bean id="jdbcResourceBundleMessageSourceDao" class="dao.queries.JdbcResourceBundleMessageSourceDao">
    		<constructor-arg index="0" type="dao.DAO">
    			<ref bean="dao" />
    		</constructor-arg>
@@ -201,8 +245,8 @@
     <!-- <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource"> -->
 	<!-- You have to implement custom message source. It's a class that extends AbstractMessageSource and implements the abstract resolveCode(java.lang.String, java.util.Locale) method	 -->
 	<bean id="messageSource" class="com.util.DatabaseBackedResourceBundleMessageSource">
-   		<constructor-arg index="0" type="dao.DatabaseMessageSource">
-   			<ref bean="databaseMessageSource" />
+   		<constructor-arg index="0" type="dao.queries.JdbcResourceBundleMessageSourceDao">
+   			<ref bean="jdbcResourceBundleMessageSourceDao" />
    		</constructor-arg>
 
 		<property name="basenames">

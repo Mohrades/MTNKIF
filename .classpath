@@ -61,8 +61,11 @@
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/slf4j-api-1.8.0-alpha2.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/slf4j-jdk14-1.8.0-alpha2.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/slf4j-log4j12-1.8.0-alpha2.jar"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/commons-configuration2-2.3.jar"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/commons-lang3-3.7.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-9">
 		<attributes>
+			<attribute name="module" value="true"/>
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
