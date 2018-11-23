@@ -52,7 +52,6 @@
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/ZXing Core-3.3.0.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/jaf-1.1.1.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/javax.mail-1.6.1.jar"/>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/AIRLog4j2.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/cache-api-1.0.0.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/ehcache-3.5.2.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/management-model-2.0.0.jar"/>
@@ -63,6 +62,7 @@
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/slf4j-log4j12-1.8.0-alpha2.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/commons-configuration2-2.3.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/commons-lang3-3.7.jar"/>
+	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/AIRLog4j2.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-9">
 		<attributes>
 			<attribute name="module" value="true"/>

@@ -3,6 +3,7 @@ package log4j;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.web.Log4jServletContextListener;
 import org.apache.logging.log4j.web.Log4jWebSupport;
 
@@ -13,6 +14,10 @@ public class Log4j2WebConfiguration implements ServletContextListener {
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
 		// TODO Auto-generated method stub
+
+		/*Starting in Log4j 2.6, you can now use org.apache.logging.log4j.LogManager.shutdown() to initiate shutdown manually.*/
+		LogManager.shutdown();
+
 		listener.contextDestroyed(event);
 	}
 
