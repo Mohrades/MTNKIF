@@ -28,7 +28,7 @@ public class DAO extends JdbcDaoSupport implements Serializable {
 	// DBA
 	public void analyze() {
 		// getJdbcTemplate().update("ANALYZE");
-		getJdbcTemplate().update("VACUUM ANALYZE");
+		getJdbcTemplate().update("VACUUM ANALYZE"); 
 	}
 
 }
